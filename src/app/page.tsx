@@ -10,15 +10,23 @@ import {
   CheckCheck,
   ChevronRight,
   ClipboardList,
+  Droplets,
   Eye,
   FileSignature,
   Forward,
+  Grid2x2,
+  Hammer,
+  Layers,
+  Leaf,
   Mic,
+  PaintRoller,
+  PanelTop,
   Pencil,
   Phone,
   Play,
   Plus,
   Signal,
+  Snowflake,
   Tag,
   Video,
   Wifi,
@@ -155,19 +163,22 @@ export default async function LandingPage() {
           </div>
         </div>
 
-        {/* trades marquee */}
-        <div className="border-y border-line/70 bg-white/60 backdrop-blur-sm py-4 overflow-hidden" dir="ltr">
-          <div className="flex w-max anim-marquee gap-10 text-sm text-muted whitespace-nowrap" dir="ltr">
-            {[0, 1].map((k) => (
-              <div key={k} className="flex gap-10">
-                {TRADES.map((t) => (
-                  <span key={t} className="inline-flex items-center gap-2" dir="rtl">
-                    <Wrench className="h-3.5 w-3.5 text-brand" /> {t}
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
+        {/* trades */}
+        <div className="max-w-6xl mx-auto px-5 pb-16 md:pb-20">
+          <Reveal className="rounded-3xl border border-line/80 bg-white/70 backdrop-blur-sm px-6 py-6 md:px-10 md:py-7 flex flex-col md:flex-row md:items-center gap-5">
+            <div className="md:w-56 shrink-0">
+              <div className="font-bold">נבנה לבעלי מקצוע בשטח</div>
+              <div className="text-sm text-muted">כל מי שנותן הצעת מחיר מהרכב או מהאתר</div>
+            </div>
+            <ul className="flex flex-wrap gap-2.5">
+              {TRADES.map(({ label, icon: Icon }) => (
+                <li key={label} className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-3.5 py-2 text-sm">
+                  <Icon className="h-4 w-4 text-brand" />
+                  {label}
+                </li>
+              ))}
+            </ul>
+          </Reveal>
         </div>
       </section>
 
@@ -293,7 +304,18 @@ export default async function LandingPage() {
   );
 }
 
-const TRADES = ["חשמל", "אינסטלציה", "מיזוג אוויר", "שיפוצים", "אלומיניום", "גינון", "התקנות", "צבע", "ריצוף", "גבס", "נגרות", "מנעולנות"];
+const TRADES: { label: string; icon: LucideIcon }[] = [
+  { label: "חשמל", icon: Zap },
+  { label: "אינסטלציה", icon: Droplets },
+  { label: "מיזוג אוויר", icon: Snowflake },
+  { label: "שיפוצים", icon: Hammer },
+  { label: "אלומיניום", icon: PanelTop },
+  { label: "גינון", icon: Leaf },
+  { label: "התקנות", icon: Wrench },
+  { label: "צבע", icon: PaintRoller },
+  { label: "ריצוף", icon: Grid2x2 },
+  { label: "גבס", icon: Layers },
+];
 
 const FAQ = [
   {
