@@ -19,7 +19,7 @@
 ## מצב הפרויקט
 
 - **MVP בנוי ועובד מקצה לקצה מקומית (20.9.2026).** כל 11 סעיפי ה-MVP ב-PRODUCT.md §12 קיימים חוץ מ-PDF (נדחה במכוון). נבדק נגד מוק של iBot + LLM (ראה README) — **עדיין לא נבדק מול iBot אמיתי ו-OpenAI אמיתי.** זה השלב הבא.
-- **Git:** ריפו מקומי מאותחל, `origin` = https://github.com/itadmit/quickvoice.git — **הריפו ב-GitHub ריק, אין commit עדיין.** לא לדחוף בלי שהמשתמש מבקש.
+- **Git:** `origin` = https://github.com/itadmit/quickvoice.git, ענף `main`. commit ראשון נדחף ב-20.9.2026. לא לדחוף בלי שהמשתמש מבקש.
 - **סביבה מקומית:** Postgres 15 מקומי (`quickvoice_dev`), `.env.local` קיים (gitignored). `npm run dev` / `npm run mock` / `npm run seed:local`.
 - **התיקייה המקומית נקראת `VoiceQuote`** (השם הישן). השם הנכון הוא QuickVoice. המשתמש ישנה כשנוח לו.
 - שם המוצר שונה מ-VoiceQuote ל-QuickVoice ב-20.9.2026. אם מופיע VoiceQuote במקום כלשהו חוץ מ-start.md — זה שריד.
