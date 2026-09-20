@@ -164,7 +164,7 @@ export default async function LandingPage() {
                 <ChatMockup />
               </div>
               {/* floating notification */}
-              <NotificationToast className="absolute -end-14 top-[14%] hidden sm:flex" />
+              <NotificationToast className="absolute hidden sm:flex" />
             </div>
           </div>
         </div>
