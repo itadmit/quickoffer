@@ -24,6 +24,8 @@ export const SETTING_KEYS = {
   "ibot.instance_status": { secret: false, env: null, default: "unknown" },
   "ibot.instance_checked_at": { secret: false, env: null, default: "" },
   "app.url": { secret: false, env: "APP_URL", default: "http://localhost:3000" },
+  // The bot's WhatsApp number (digits). Temporary: Quick Shop's number until QuickVoice gets its own.
+  "bot.phone": { secret: false, env: "BOT_PHONE", default: "972552554432" },
 } as const;
 
 export type SettingKey = keyof typeof SETTING_KEYS;

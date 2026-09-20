@@ -4,8 +4,8 @@ import { useState, useTransition } from "react";
 import { saveSettingsAction, sendTestMessageAction } from "../actions";
 
 type Cur = { value: string; source: string };
-export function IbotForm({ current }: { current: { token: Cur; instanceId: string; webhookToken: Cur; baseUrl: string; appUrl: string } }) {
-  const [v, setV] = useState({ "ibot.token": "", "ibot.instance_id": current.instanceId, "ibot.webhook_token": "", "ibot.base_url": current.baseUrl, "app.url": current.appUrl });
+export function IbotForm({ current }: { current: { token: Cur; instanceId: string; webhookToken: Cur; baseUrl: string; appUrl: string; botPhone: string } }) {
+  const [v, setV] = useState({ "ibot.token": "", "ibot.instance_id": current.instanceId, "ibot.webhook_token": "", "ibot.base_url": current.baseUrl, "app.url": current.appUrl, "bot.phone": current.botPhone });
   const [phone, setPhone] = useState("");
   const [result, setResult] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -24,6 +24,8 @@ export function IbotForm({ current }: { current: { token: Cur; instanceId: strin
           <input className="input" dir="ltr" type="password" autoComplete="off" value={v["ibot.webhook_token"]} onChange={(e) => set("ibot.webhook_token", e.target.value)} placeholder="הדבק כדי להחליף" /></label>
         <label className="block"><span className="label">iBot API base URL</span>
           <input className="input" dir="ltr" value={v["ibot.base_url"]} onChange={(e) => set("ibot.base_url", e.target.value)} /></label>
+        <label className="block"><span className="label">מספר ה-WhatsApp של הבוט (לדף הנחיתה, ספרות בלבד)</span>
+          <input className="input" dir="ltr" inputMode="tel" value={v["bot.phone"]} onChange={(e) => set("bot.phone", e.target.value.replace(/\D/g, ""))} placeholder="9725XXXXXXXX" /></label>
         <label className="block"><span className="label">כתובת האפליקציה (לקישורים ב-WhatsApp)</span>
           <input className="input" dir="ltr" value={v["app.url"]} onChange={(e) => set("app.url", e.target.value)} placeholder="https://quickvoice.vercel.app" /></label>
         <button disabled={pending} onClick={() => start(async () => { await saveSettingsAction(v); setV((s) => ({ ...s, "ibot.token": "", "ibot.webhook_token": "" })); setResult("נשמר ✓"); })} className="btn-primary">שמור</button>

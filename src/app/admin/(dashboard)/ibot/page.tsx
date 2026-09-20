@@ -30,6 +30,7 @@ export default async function AdminIbot() {
           webhookToken: { value: s["ibot.webhook_token"].value, source: s["ibot.webhook_token"].source },
           baseUrl: s["ibot.base_url"].value,
           appUrl: s["app.url"].value,
+          botPhone: s["bot.phone"].value,
         }}
       />
       <section className="space-y-2">
