@@ -64,7 +64,7 @@ function client(cfg: OpenAIConfig) {
     apiKey: cfg.apiKey,
     baseURL: cfg.baseURL || undefined,
     timeout: 60_000,
-    maxRetries: 1,
+    maxRetries: 2,
   });
 }
 

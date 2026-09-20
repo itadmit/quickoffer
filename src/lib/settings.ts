@@ -51,11 +51,25 @@ export function invalidateSettingsCache() {
   cache = null;
 }
 
+function readStored(key: string, stored: string, secret: boolean): string {
+  if (!secret) return stored;
+  try {
+    return decryptSecret(stored);
+  } catch (err) {
+    // Wrong SETTINGS_ENCRYPTION_KEY for this environment - fall through to env/default
+    console.error(`[settings] cannot decrypt ${key}: ${err instanceof Error ? err.message : err}`);
+    return "";
+  }
+}
+
 export async function getSetting(key: SettingKey): Promise<string> {
   const meta = SETTING_KEYS[key];
   const values = await loadAll();
   const stored = values.get(key);
-  if (stored) return meta.secret ? decryptSecret(stored) : stored;
+  if (stored) {
+    const v = readStored(key, stored, meta.secret);
+    if (v) return v;
+  }
   if (meta.env && process.env[meta.env]) return process.env[meta.env]!;
   return meta.default;
 }
@@ -93,9 +107,10 @@ export async function describeSettings() {
     const stored = values.get(key);
     let source: "db" | "env" | "default" = "default";
     let value = meta.default as string;
-    if (stored) {
+    const decrypted = stored ? readStored(key, stored, meta.secret) : "";
+    if (decrypted) {
       source = "db";
-      value = meta.secret ? decryptSecret(stored) : stored;
+      value = decrypted;
     } else if (meta.env && process.env[meta.env]) {
       source = "env";
       value = process.env[meta.env]!;

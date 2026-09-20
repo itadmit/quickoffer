@@ -72,9 +72,12 @@ const CLASSIFY: { t: string; draft: boolean; want: string }[] = [
 async function main() {
   const llm = openaiLLM({ apiKey: process.env.GROQ_API_KEY!, baseURL: "https://api.groq.com/openai/v1", providerName: "groq", model: "openai/gpt-oss-120b" });
   let fails = 0;
+  const pace = (ms: number) => new Promise((r) => setTimeout(r, ms));
   for (const c of CASES) {
     const t0 = Date.now();
-    const { result } = await llm.structureQuote(c.t, profile);
+    const { result, usage } = await llm.structureQuote(c.t, profile);
+    process.stdout.write(`   [${usage.inputTokens}→${usage.outputTokens} tok] `);
+    await pace(Number(process.env.PACE_MS ?? 15000));
     const problems = c.expect(result).filter(Boolean);
     fails += problems.length;
     console.log(`${problems.length ? "❌" : "✅"} ${Date.now() - t0}ms  ${c.t.slice(0, 60)}…`);
@@ -83,6 +86,7 @@ async function main() {
   }
   console.log("--- classify");
   for (const c of CLASSIFY) {
+    await pace(Number(process.env.PACE_MS ?? 15000) / 3);
     const { result } = await llm.classifyMessage(c.t, { hasActiveDraft: c.draft, draftCustomer: c.draft ? "דני כהן" : null });
     const ok = result.intent === c.want;
     if (!ok) fails++;
