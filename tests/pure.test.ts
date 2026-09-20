@@ -68,6 +68,15 @@ assert.equal(decryptSecret(enc), "sk-abc123");
 
 console.log("ALL PURE TESTS PASSED");
 
+// --- upload naming for Whisper endpoints (.oga → .ogg)
+import { uploadName } from "@/lib/ai/openai";
+assert.equal(uploadName("EgrnRi_inbox.oga", "audio/ogg; codecs=opus"), "voice.ogg");
+assert.equal(uploadName("voice.oga", "audio/ogg"), "voice.ogg");
+assert.equal(uploadName("file_12.oga", undefined), "voice.ogg");
+assert.equal(uploadName("audio.mp3", "audio/mpeg"), "audio.mp3");
+assert.equal(uploadName(undefined, "audio/mp4"), "voice.m4a");
+assert.equal(uploadName("test.wav", "audio/wav"), "test.wav");
+
 // --- Telegram parser
 import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
 {

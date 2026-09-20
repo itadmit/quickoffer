@@ -70,12 +70,39 @@ function client(cfg: OpenAIConfig) {
 
 // ------------------------------------------------------------ transcription
 
+const ACCEPTED_EXT = new Set(["flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", "opus", "wav", "webm"]);
+const MIME_EXT: Record<string, string> = {
+  "audio/ogg": "ogg",
+  "audio/opus": "ogg",
+  "audio/mpeg": "mp3",
+  "audio/mp3": "mp3",
+  "audio/mp4": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/aac": "m4a",
+  "audio/wav": "wav",
+  "audio/x-wav": "wav",
+  "audio/webm": "webm",
+  "audio/flac": "flac",
+};
+
+/**
+ * Whisper endpoints (OpenAI, Groq) validate by file extension. WhatsApp and
+ * Telegram voice notes arrive as ".oga" (Ogg/Opus), which Groq rejects
+ * ("file must be one of the following types") - so name the upload by MIME type.
+ */
+export function uploadName(fileName: string | undefined, mimetype: string | undefined): string {
+  const ext = (fileName ?? "").split(".").pop()?.toLowerCase() ?? "";
+  if (ACCEPTED_EXT.has(ext)) return fileName!;
+  const mime = (mimetype ?? "audio/ogg").split(";")[0].trim().toLowerCase();
+  return `voice.${MIME_EXT[mime] ?? "ogg"}`;
+}
+
 export function openaiTranscription(cfg: OpenAIConfig): TranscriptionProvider {
   return {
     async transcribe(audio, opts) {
       const started = Date.now();
-      const file = await toFile(audio, opts.fileName ?? "voice.ogg", {
-        type: opts.mimetype ?? "audio/ogg",
+      const file = await toFile(audio, uploadName(opts.fileName, opts.mimetype), {
+        type: (opts.mimetype ?? "audio/ogg").split(";")[0].trim(),
       });
       const res = await client(cfg).audio.transcriptions.create({
         file,
