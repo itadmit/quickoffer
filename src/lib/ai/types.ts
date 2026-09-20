@@ -49,7 +49,7 @@ export const COMMANDS = [
 export type Command = (typeof COMMANDS)[number];
 
 export const IntentSchema = z.object({
-  intent: z.enum(["correction", "new_quote", "command", "question", "unclear"]),
+  intent: z.enum(["greeting", "correction", "new_quote", "command", "question", "unclear"]),
   command: z.enum(COMMANDS).nullable(),
 });
 export type Intent = z.infer<typeof IntentSchema>;

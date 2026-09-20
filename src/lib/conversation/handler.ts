@@ -265,11 +265,13 @@ async function handleReady(user: User, msg: InboundMessage, run: RunLog) {
   const draft = await getActiveDraft(user.id);
   const llm = await getLLMProvider();
 
-  // Cheap exact-match fallback for commands before spending an LLM call
+  // Cheap exact-match fallback for commands/greetings before spending an LLM call
   const exact = exactCommand(text);
   let intent: Awaited<ReturnType<typeof llm.classifyMessage>>["result"];
   if (exact) {
     intent = { intent: "command", command: exact };
+  } else if (isGreeting(text)) {
+    intent = { intent: "greeting", command: null };
   } else {
     const r = await llm.classifyMessage(text, {
       hasActiveDraft: !!draft,
@@ -280,6 +282,9 @@ async function handleReady(user: User, msg: InboundMessage, run: RunLog) {
   }
 
   switch (intent.intent) {
+    case "greeting":
+      await sendText(user.phone, cmd.greeting(!!draft));
+      return;
     case "command":
       await runCommand(user, intent.command ?? "help", draft);
       return;
@@ -319,6 +324,15 @@ const EXACT: Record<string, Command> = {
   עריכה: "edit",
   "?": "help",
 };
+
+const GREETINGS = new Set([
+  "היי", "הי", "שלום", "אהלן", "בוקר טוב", "ערב טוב", "צהריים טובים", "לילה טוב",
+  "תודה", "תודה רבה", "מעולה", "סבבה", "אוקיי", "אוקי", "ok", "יופי", "מגניב", "👍", "🙏", "תותח",
+]);
+
+function isGreeting(text: string): boolean {
+  return GREETINGS.has(text.trim().toLowerCase().replace(/[.!?,]+$/g, ""));
+}
 
 function exactCommand(text: string): Command | null {
   return EXACT[text.trim().toLowerCase().replace(/[.!]+$/, "")] ?? null;

@@ -6,7 +6,7 @@ import {
   correctionSystemPrompt,
   onboardingSystemPrompt,
   structureSystemPrompt,
-  TRANSCRIPTION_HINTS,
+  transcriptionPrompt,
 } from "./prompts";
 import {
   CorrectionResultSchema,
@@ -81,7 +81,7 @@ export function openaiTranscription(cfg: OpenAIConfig): TranscriptionProvider {
         file,
         model: cfg.model,
         language: opts.language,
-        prompt: [...TRANSCRIPTION_HINTS, ...opts.hints].join(", "),
+        prompt: transcriptionPrompt(opts.hints),
         response_format: "json",
       });
       const ms = Date.now() - started;

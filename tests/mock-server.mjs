@@ -8,6 +8,7 @@ const sent = [];
 function llmAnswer(system, user) {
   const msg = user;
   if (system.includes("מסווג הודעה")) {
+    if (/"""\s*(היי|שלום|תודה)\s*"""/.test(msg)) return { intent: "greeting", command: null };
     if (/תשנה|תוסיף|תמחק|בלי/.test(msg)) return { intent: "correction", command: null };
     if (/הצעת מחיר|נקודות|שקל/.test(msg)) return { intent: "new_quote", command: null };
     return { intent: "unclear", command: null };
