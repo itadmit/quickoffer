@@ -198,7 +198,7 @@ export default async function LandingPage() {
           </p>
         </Reveal>
         <ol className="grid md:grid-cols-3 gap-5">
-          <Step n="1" icon={Mic} title="מדברים" delay={0}>
+          <Step n="1" icon={Mic} title="מקליטים" delay={0}>
             &quot;הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200, לפני מע״מ&quot;
           </Step>
           <Step n="2" icon={ClipboardList} title="מקבלים הצעה מוכנה" delay={120}>
