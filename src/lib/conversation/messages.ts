@@ -9,7 +9,7 @@ import type { QuoteWithItems } from "../quotes/service";
 
 export const onboarding = {
   askName: (suggested: string | null) =>
-    `היי! אני QuickVoice - הופך הודעות קוליות להצעות מחיר מעוצבות.\nשתי שאלות קצרות ומתחילים.\n1️⃣ איך קוראים לעסק?${
+    `היי! אני QuickOffer - הופך הודעות קוליות להצעות מחיר מעוצבות.\nשתי שאלות קצרות ומתחילים.\n1️⃣ איך קוראים לעסק?${
       suggested ? ` (לפי WhatsApp: "${suggested}" - שלח "כן" או שם אחר)` : ""
     }`,
   askVat: () => `2️⃣ עוסק פטור או עוסק מורשה?\n(מורשה = ההצעות יכללו מע״מ 18%)`,

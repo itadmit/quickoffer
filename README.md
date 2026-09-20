@@ -1,4 +1,4 @@
-# QuickVoice
+# QuickOffer
 
 שלח הודעה קולית ב-WhatsApp → קבל הצעת מחיר מעוצבת → הלקוח מאשר וחותם.
 
@@ -25,6 +25,10 @@ Postgres מקומי (`localhost`) עובד עם דרייבר `pg`; Neon עובד
 
 בדשבורד iBot: Webhook URL = `https://<domain>/api/webhooks/ibot`, ולייצר **webhook token** (נשלח כ-`X-Webhook-Token`). בלי טוקן — 401.
 
+### טלגרם (ערוץ שני, נוח לבדיקות)
+
+בוט מ-@BotFather → `/admin → טלגרם` → הדבק טוקן → "הגדר webhook" (דורש HTTPS ציבורי - Vercel או ngrok). משתמשי טלגרם עוברים בדיוק את אותה שיחה.
+
 ### בדיקה מקומית בלי WhatsApp ובלי OpenAI
 
 ```bash
@@ -42,7 +46,8 @@ python3 tests/sent.py                             # מה הבוט "שלח"
 
 | נתיב | תפקיד |
 |---|---|
-| `POST /api/webhooks/ibot` | קליטת הודעות (200 מיד, עיבוד ב-`waitUntil`) |
+| `POST /api/webhooks/ibot` | קליטת הודעות WhatsApp (200 מיד, עיבוד ב-`waitUntil`) |
+| `POST /api/webhooks/telegram` | קליטת הודעות טלגרם, אותו חוזה |
 | `GET /api/cron/tick?secret=` | הרמת הודעות תקועות, פקיעת תוקף — כל 5 דק׳ מפינגר חיצוני |
 | `/q/{publicId}` | דף לקוח: צפייה, אישור + חתימה, שאלה, דחייה |
 | `/e/{token}` | מסך עריכה (magic link, 7 ימים) |

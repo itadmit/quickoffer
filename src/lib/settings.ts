@@ -24,7 +24,11 @@ export const SETTING_KEYS = {
   "ibot.instance_status": { secret: false, env: null, default: "unknown" },
   "ibot.instance_checked_at": { secret: false, env: null, default: "" },
   "app.url": { secret: false, env: "APP_URL", default: "http://localhost:3000" },
-  // The bot's WhatsApp number (digits). Temporary: Quick Shop's number until QuickVoice gets its own.
+  // Telegram bot (second channel; mainly for testing without a WhatsApp instance)
+  "telegram.bot_token": { secret: true, env: "TELEGRAM_BOT_TOKEN", default: "" },
+  "telegram.webhook_secret": { secret: true, env: "TELEGRAM_WEBHOOK_SECRET", default: "" },
+  "telegram.bot_username": { secret: false, env: "TELEGRAM_BOT_USERNAME", default: "" },
+  // The bot's WhatsApp number (digits). Temporary: Quick Shop's number until QuickOffer gets its own.
   "bot.phone": { secret: false, env: "BOT_PHONE", default: "972552554432" },
 } as const;
 

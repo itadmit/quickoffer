@@ -79,5 +79,5 @@ export async function POST(req: NextRequest) {
 }
 
 export function GET() {
-  return NextResponse.json({ ok: true, service: "quickvoice-ibot-webhook" });
+  return NextResponse.json({ ok: true, service: "quickoffer-ibot-webhook" });
 }

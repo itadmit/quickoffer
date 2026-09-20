@@ -2,12 +2,18 @@ import { db } from "../db";
 import { outboundMessages } from "../db/schema";
 import { setSetting } from "../settings";
 import { ibot } from "./ibot";
+import { isTelegramAddress, telegram } from "./telegram";
 import type { SendResult, WhatsAppGateway } from "./types";
 
-export type { InboundMessage, InboundType, ParseResult } from "./types";
+export type { Channel, InboundMessage, InboundType, ParseResult } from "./types";
 
-/** The active gateway. Swap here to move off iBot (PRODUCT.md §3.5). */
+/** The WhatsApp gateway. Swap here to move off iBot (PRODUCT.md §3.5). */
 export const gateway: WhatsAppGateway = ibot;
+
+/** Pick the gateway by address: "tg:<chatId>" → Telegram, digits → WhatsApp. */
+export function gatewayFor(address: string): WhatsAppGateway {
+  return isTelegramAddress(address) ? telegram : gateway;
+}
 
 const GAP_MS = 400;
 const MAX_ATTEMPTS = 3;
@@ -65,6 +71,7 @@ async function log(
       ibotResponse: result.body as Record<string, unknown>,
       ok: result.ok,
     });
+    if (isTelegramAddress(to)) return;
     if (result.instanceDisconnected) {
       await setSetting("ibot.instance_status", "disconnected", "system");
       await setSetting("ibot.instance_checked_at", new Date().toISOString(), "system");
@@ -97,7 +104,7 @@ function chunk(text: string): string[] {
 export async function sendText(to: string, text: string): Promise<SendResult> {
   let last: SendResult = { ok: true, status: 200, body: null };
   for (const part of chunk(text)) {
-    last = await enqueue(() => withRetry(() => gateway.sendText(to, part)));
+    last = await enqueue(() => withRetry(() => gatewayFor(to).sendText(to, part)));
     await log(to, "text", part, null, last);
     if (!last.ok) break;
   }
@@ -109,7 +116,7 @@ export async function sendDoc(
   docUrl: string,
   caption = "",
 ): Promise<SendResult> {
-  const r = await enqueue(() => withRetry(() => gateway.sendDoc(to, docUrl, caption)));
+  const r = await enqueue(() => withRetry(() => gatewayFor(to).sendDoc(to, docUrl, caption)));
   await log(to, "doc", caption, docUrl, r);
   return r;
 }
@@ -120,7 +127,7 @@ export async function sendImage(
   caption = "",
 ): Promise<SendResult> {
   const r = await enqueue(() =>
-    withRetry(() => gateway.sendImage(to, imageUrl, caption)),
+    withRetry(() => gatewayFor(to).sendImage(to, imageUrl, caption)),
   );
   await log(to, "image", caption, imageUrl, r);
   return r;

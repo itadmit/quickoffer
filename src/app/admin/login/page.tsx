@@ -17,7 +17,7 @@ export default async function AdminLogin({ searchParams }: { searchParams: Promi
   return (
     <main className="flex-1 grid place-items-center p-6">
       <form action={login} className="w-full max-w-xs space-y-3 rounded-2xl border border-line bg-card p-5">
-        <h1 className="text-xl font-bold">QuickVoice · Admin</h1>
+        <h1 className="text-xl font-bold">QuickOffer · Admin</h1>
         {!process.env.ADMIN_PASSWORD && (
           <p className="text-sm text-danger">ADMIN_PASSWORD לא מוגדר בסביבה.</p>
         )}

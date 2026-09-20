@@ -7,7 +7,7 @@ import { users } from "@/lib/db/schema";
 import { SettingsEditor } from "./settings-editor";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "הגדרות העסק - QuickVoice" };
+export const metadata: Metadata = { title: "הגדרות העסק - QuickOffer" };
 
 export default async function SettingsPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -29,7 +29,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ token
   return (
     <SettingsEditor
       token={token}
-      phone={user.phone}
+      phone={user.channel === "whatsapp" ? user.phone : null}
       plan={user.plan}
       logoUrl={user.logoUrl}
       initial={{

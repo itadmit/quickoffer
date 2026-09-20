@@ -9,6 +9,7 @@ const NAV = [
   ["/admin", "סקירה"],
   ["/admin/ai", "ספקי AI"],
   ["/admin/ibot", "iBot"],
+  ["/admin/telegram", "טלגרם"],
   ["/admin/users", "משתמשים"],
   ["/admin/quotes", "הצעות"],
   ["/admin/messages", "לוג הודעות"],
@@ -20,7 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex-1 flex flex-col">
       <nav className="border-b border-line bg-card px-4 py-2 flex items-center gap-1 overflow-x-auto text-sm">
-        <span className="font-bold me-3 inline-flex items-center gap-1.5"><Mic className="h-4 w-4 text-brand" /> QuickVoice</span>
+        <span className="font-bold me-3 inline-flex items-center gap-1.5"><Mic className="h-4 w-4 text-brand" /> QuickOffer</span>
         {NAV.map(([href, label]) => (
           <Link key={href} href={href} className="px-3 py-1.5 rounded-lg hover:bg-surface whitespace-nowrap">
             {label}

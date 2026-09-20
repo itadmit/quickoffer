@@ -5,7 +5,7 @@ import { safeEqual } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { inboundMessages, quotes } from "@/lib/db/schema";
 import { getSetting } from "@/lib/settings";
-import { gateway, type InboundMessage } from "@/lib/whatsapp";
+import { gatewayFor, type InboundMessage } from "@/lib/whatsapp";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     .limit(5);
   let reprocessed = 0;
   for (const row of stuck) {
-    const parsed = gateway.parseInbound(row.raw);
+    const parsed = gatewayFor(row.userPhone).parseInbound(row.raw);
     if (!parsed.ok) continue;
     await db
       .update(inboundMessages)

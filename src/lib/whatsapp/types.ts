@@ -1,10 +1,13 @@
 /** Normalized inbound message (PRODUCT.md §5.1). Provider-agnostic. */
 export type InboundType = "text" | "audio" | "image" | "document" | "other";
 
+export type Channel = "whatsapp" | "telegram";
+
 export type InboundMessage = {
   /** provider message id - dedup key */
   id: string;
-  /** digits only, e.g. 972501234567 */
+  channel: Channel;
+  /** messaging address: WhatsApp digits (972501234567) or "tg:<chatId>" */
   from: string;
   /** WhatsApp push name */
   fromName: string | null;

@@ -27,7 +27,7 @@ export function IbotForm({ current }: { current: { token: Cur; instanceId: strin
         <label className="block"><span className="label">מספר ה-WhatsApp של הבוט (לדף הנחיתה, ספרות בלבד)</span>
           <input className="input" dir="ltr" inputMode="tel" value={v["bot.phone"]} onChange={(e) => set("bot.phone", e.target.value.replace(/\D/g, ""))} placeholder="9725XXXXXXXX" /></label>
         <label className="block"><span className="label">כתובת האפליקציה (לקישורים ב-WhatsApp)</span>
-          <input className="input" dir="ltr" value={v["app.url"]} onChange={(e) => set("app.url", e.target.value)} placeholder="https://quickvoice.vercel.app" /></label>
+          <input className="input" dir="ltr" value={v["app.url"]} onChange={(e) => set("app.url", e.target.value)} placeholder="https://quickoffer.vercel.app" /></label>
         <button disabled={pending} onClick={() => start(async () => { await saveSettingsAction(v); setV((s) => ({ ...s, "ibot.token": "", "ibot.webhook_token": "" })); setResult("נשמר ✓"); })} className="btn-primary">שמור</button>
       </section>
       <section className="rounded-2xl border border-line bg-card p-4 space-y-3">

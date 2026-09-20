@@ -33,12 +33,12 @@ import { getSetting } from "@/lib/settings";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "QuickVoice - הצעת מחיר מהודעה קולית ב-WhatsApp",
+  title: "QuickOffer - הצעת מחיר מהודעה קולית ב-WhatsApp",
   description:
     "בעל מקצוע? שלח הודעה קולית ב-WhatsApp וקבל תוך דקה הצעת מחיר מעוצבת, מוכנה להעברה ללקוח. הלקוח מאשר וחותם בקישור. בלי אפליקציה, בלי הרשמה.",
   robots: { index: true, follow: true },
   openGraph: {
-    title: "QuickVoice - שלח הודעה קולית. קבל הצעת מחיר. סגור עסקה.",
+    title: "QuickOffer - שלח הודעה קולית. קבל הצעת מחיר. סגור עסקה.",
     description: "הצעות מחיר מעוצבות מהודעה קולית ב-WhatsApp, תוך דקה.",
     locale: "he_IL",
     type: "website",
@@ -50,6 +50,8 @@ const WELCOME = "היי";
 export default async function LandingPage() {
   const phone = (await getSetting("bot.phone")).replace(/\D/g, "");
   const wa = `https://wa.me/${phone}?text=${encodeURIComponent(WELCOME)}`;
+  const tgUser = await getSetting("telegram.bot_username");
+  const tg = tgUser ? `https://t.me/${tgUser}` : null;
 
   return (
     <main className="flex-1 overflow-x-hidden">
@@ -78,7 +80,7 @@ export default async function LandingPage() {
               <span className="grid place-items-center h-10 w-10 rounded-2xl bg-brand text-brand-ink shadow-md shadow-brand/30">
                 <Mic className="h-5 w-5" />
               </span>
-              QuickVoice
+              QuickOffer
             </div>
             <div className="flex items-center gap-6 text-sm">
               <a href="#how" className="text-muted hover:text-ink hidden sm:block">איך זה עובד</a>
@@ -115,6 +117,14 @@ export default async function LandingPage() {
                   <div dir="ltr" className="text-xs">
                     <span dir="rtl">או שמור את המספר:</span> {formatPhone(phone)}
                   </div>
+                  {tg && (
+                    <div className="text-xs">
+                      מעדיף טלגרם?{" "}
+                      <a href={tg} target="_blank" rel="noopener" className="underline text-ink" dir="ltr">
+                        @{tgUser}
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
               <ul className="anim-fade-up [animation-delay:320ms] flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted pt-2">
@@ -196,7 +206,7 @@ export default async function LandingPage() {
       <section className="relative bg-card border-y border-line">
         <div className="max-w-6xl mx-auto px-5 py-20 md:py-28">
           <Reveal className="text-center max-w-2xl mx-auto mb-14">
-            <p className="text-sm font-semibold text-brand mb-3">למה QuickVoice</p>
+            <p className="text-sm font-semibold text-brand mb-3">למה QuickOffer</p>
             <h2 className="text-3xl md:text-4xl font-bold">נבנה לידיים עסוקות</h2>
           </Reveal>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -226,7 +236,7 @@ export default async function LandingPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
           <Plan name="ניסיון" price="0" per="5 הצעות" items={["כל היכולות", "בלי כרטיס אשראי"]} delay={0} />
           <Plan name="Basic" price="49" per="20 הצעות בחודש" items={["לוגו על ההצעה", "אישור לקוח בקישור", "התראות ב-WhatsApp"]} highlight delay={100} />
-          <Plan name="Pro" price="99" per="100 הצעות בחודש" items={["הכול ב-Basic", "חתימה דיגיטלית", "בלי מיתוג QuickVoice", "תזכורות ללקוח"]} delay={200} />
+          <Plan name="Pro" price="99" per="100 הצעות בחודש" items={["הכול ב-Basic", "חתימה דיגיטלית", "בלי מיתוג QuickOffer", "תזכורות ללקוח"]} delay={200} />
           <Plan name="Unlimited" price="149" per="ללא הגבלה" items={["הכול ב-Pro", "שליחה מהמספר שלך", "סליקת מקדמות"]} delay={300} />
         </div>
         <p className="text-center text-xs text-muted mt-6">המחירים בש״ח לחודש, לפני מע״מ. חלק מיכולות Pro/Unlimited בפיתוח.</p>
@@ -275,7 +285,7 @@ export default async function LandingPage() {
       <footer className="max-w-6xl mx-auto px-5 py-10 text-sm text-muted flex flex-wrap gap-x-6 gap-y-2 justify-between items-center">
         <span className="inline-flex items-center gap-2 font-semibold text-ink">
           <span className="grid place-items-center h-7 w-7 rounded-lg bg-brand text-brand-ink"><Mic className="h-3.5 w-3.5" /></span>
-          QuickVoice
+          QuickOffer
         </span>
         <span>© {new Date().getFullYear()} · הצעות מחיר בלבד - לא תוכנת הנהלת חשבונות.</span>
       </footer>
@@ -304,7 +314,7 @@ const FAQ = [
   },
   {
     q: "זה מוציא חשבוניות?",
-    a: "לא, ובכוונה. QuickVoice עושה דבר אחד: הצעות מחיר מהודעה קולית. חיבור לתוכנת החשבוניות שלך - בהמשך.",
+    a: "לא, ובכוונה. QuickOffer עושה דבר אחד: הצעות מחיר מהודעה קולית. חיבור לתוכנת החשבוניות שלך - בהמשך.",
   },
   {
     q: "כמה זה עולה להתחיל?",
@@ -430,7 +440,7 @@ function ChatMockup() {
                 <Mic className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1 leading-tight">
-                <div className="font-semibold text-[14px] truncate">QuickVoice</div>
+                <div className="font-semibold text-[14px] truncate">QuickOffer</div>
                 <div className="text-[11px] text-muted">מקוון</div>
               </div>
               <Video className="h-5 w-5 text-[#007aff]" />
@@ -484,7 +494,7 @@ function ChatMockup() {
             <Bubble time="10:02" delay={1450}>
               שלום דני, מצורפת הצעת מחיר מיוסי חשמל:
               <br />
-              <span className="text-[#027eb5] underline">qv.app/q/a8Hd3kQ</span>
+              <span className="text-[#027eb5] underline">qo.app/q/a8Hd3kQ</span>
               <br />
               ההצעה תקפה ל-14 יום. לאישור - לחץ על הקישור.
             </Bubble>

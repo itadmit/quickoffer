@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { QuoteDocument, type QuoteView } from "@/components/quote-document";
 import { recordView } from "@/lib/quotes/customer-actions";
-import { getQuoteByPublicId } from "@/lib/quotes/service";
+import { contactPhone, getQuoteByPublicId } from "@/lib/quotes/service";
 import { CustomerActions } from "./customer-actions";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const q = await getQuoteByPublicId(publicId);
   if (!q) return { title: "הצעת מחיר" };
   return {
-    title: `הצעת מחיר #${q.number}${q.customerName ? ` ל${q.customerName}` : ""} - ${q.user.businessName ?? "QuickVoice"}`,
+    title: `הצעת מחיר #${q.number}${q.customerName ? ` ל${q.customerName}` : ""} - ${q.user.businessName ?? "QuickOffer"}`,
     description: q.title ?? undefined,
   };
 }
@@ -59,7 +59,7 @@ export default async function CustomerQuotePage({ params }: Props) {
         business: {
           businessName: q.user.businessName,
           logoUrl: q.user.logoUrl,
-          businessPhone: q.user.businessPhone ?? q.user.phone,
+          businessPhone: contactPhone(q.user),
           address: q.user.address,
           taxId: q.user.taxId,
           vatStatus: q.user.vatStatus,
@@ -83,7 +83,7 @@ export default async function CustomerQuotePage({ params }: Props) {
 
       {showBadge && (
         <p className="text-center text-xs text-muted pt-4">
-          נוצר ב-<span className="font-semibold">QuickVoice</span> · הצעות מחיר מהודעה קולית
+          נוצר ב-<span className="font-semibold">QuickOffer</span> · הצעות מחיר מהודעה קולית
         </p>
       )}
     </main>

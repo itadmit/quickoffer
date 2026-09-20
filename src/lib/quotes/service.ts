@@ -256,6 +256,11 @@ export async function deleteQuote(quoteId: string) {
   await db.delete(quotes).where(eq(quotes.id, quoteId));
 }
 
+/** Phone shown to customers: explicit business phone, else the WhatsApp number (never a Telegram id). */
+export function contactPhone(user: Pick<User, "businessPhone" | "phone" | "channel">): string | null {
+  return user.businessPhone ?? (user.channel === "whatsapp" ? user.phone : null);
+}
+
 /** Snapshot used by the public page after approval (§6.3, §8.2). */
 export function snapshotOf(q: QuoteWithItems & { user: User }) {
   return {
@@ -264,7 +269,7 @@ export function snapshotOf(q: QuoteWithItems & { user: User }) {
     business: {
       businessName: q.user.businessName,
       logoUrl: q.user.logoUrl,
-      businessPhone: q.user.businessPhone ?? q.user.phone,
+      businessPhone: contactPhone(q.user),
       address: q.user.address,
       taxId: q.user.taxId,
       vatStatus: q.user.vatStatus,

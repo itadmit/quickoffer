@@ -13,6 +13,7 @@ async function main() {
   await setSetting("llm.model", "mock-llm");
   await setSetting("llm.api_key", "mock-key");
   await setSetting("app.url", "http://localhost:3000");
+  await setSetting("telegram.webhook_secret", "tg-secret");
   console.log("seeded app_settings for local mock");
   process.exit(0);
 }

@@ -86,6 +86,7 @@ export function parseIbotInbound(payload: unknown): ParseResult {
 
   const message: InboundMessage = {
     id: a.msgId,
+    channel: "whatsapp",
     from: jidToPhone(jid),
     fromName: a.senderName?.trim() || null,
     type,

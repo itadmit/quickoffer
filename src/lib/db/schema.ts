@@ -16,6 +16,7 @@ import {
 const money = (name: string) =>
   numeric(name, { precision: 12, scale: 2, mode: "number" });
 
+export const channelEnum = pgEnum("channel", ["whatsapp", "telegram"]);
 export const vatStatusEnum = pgEnum("vat_status", ["exempt", "registered"]);
 export const planEnum = pgEnum("plan", ["trial", "basic", "pro", "unlimited"]);
 export const onboardingStateEnum = pgEnum("onboarding_state", [
@@ -53,8 +54,10 @@ export const inboundTypeEnum = pgEnum("inbound_type", [
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  // Logical PK - digits only, derived from the WhatsApp jid (972501234567)
+  // Logical PK / messaging address. WhatsApp: digits from the jid (972501234567).
+  // Telegram: "tg:<chatId>". Everything that sends to a user passes this string to sendText().
   phone: text("phone").notNull().unique(),
+  channel: channelEnum("channel").notNull().default("whatsapp"),
   displayName: text("display_name"),
   businessName: text("business_name"),
   logoUrl: text("logo_url"),

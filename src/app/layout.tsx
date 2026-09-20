@@ -25,7 +25,7 @@ const ploni = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "QuickVoice",
+  title: "QuickOffer",
   description: "שלח הודעה קולית. קבל הצעת מחיר. סגור עסקה.",
   robots: { index: false, follow: false },
 };

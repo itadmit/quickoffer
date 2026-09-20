@@ -92,7 +92,7 @@ async function getOrCreateUser(
   }
   const [created] = await db
     .insert(users)
-    .values({ phone: msg.from, displayName: msg.fromName })
+    .values({ phone: msg.from, channel: msg.channel, displayName: msg.fromName })
     .onConflictDoNothing()
     .returning();
   if (created) return { user: created, isNew: true };

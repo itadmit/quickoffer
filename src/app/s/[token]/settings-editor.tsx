@@ -6,7 +6,7 @@ import { removeLogoAction, saveSettingsAction, uploadLogoAction, type SettingsFo
 
 type Props = {
   token: string;
-  phone: string;
+  phone: string | null;
   plan: string;
   logoUrl: string | null;
   initial: SettingsForm;
@@ -51,7 +51,7 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, initi
       <header>
         <h1 className="text-2xl font-bold">הגדרות העסק</h1>
         <p className="text-sm text-muted" dir="ltr">
-          {formatPhone(phone)} · <span dir="rtl">{PLAN_LABEL[plan] ?? plan}</span>
+          {phone ? `${formatPhone(phone)} · ` : ""}<span dir="rtl">{PLAN_LABEL[plan] ?? plan}</span>
         </p>
       </header>
 
@@ -94,7 +94,7 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, initi
         <div className="grid grid-cols-2 gap-3">
           <label>
             <span className="label">טלפון להצעות</span>
-            <input className="input" dir="ltr" inputMode="tel" value={form.businessPhone ?? ""} onChange={(e) => update("businessPhone", e.target.value)} placeholder={formatPhone(phone)} />
+            <input className="input" dir="ltr" inputMode="tel" value={form.businessPhone ?? ""} onChange={(e) => update("businessPhone", e.target.value)} placeholder={phone ? formatPhone(phone) : "050-0000000"} />
           </label>
           <label>
             <span className="label">ח.פ. / ע.מ.</span>

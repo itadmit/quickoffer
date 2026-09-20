@@ -67,3 +67,33 @@ assert(enc.startsWith("enc:"));
 assert.equal(decryptSecret(enc), "sk-abc123");
 
 console.log("ALL PURE TESTS PASSED");
+
+// --- Telegram parser
+import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
+{
+  const voice = {
+    update_id: 1,
+    message: {
+      message_id: 42, from: { id: 777, is_bot: false, first_name: "יוגב", last_name: "אביטן", username: "yogev" },
+      chat: { id: 777, type: "private" }, date: 1789897973,
+      voice: { file_id: "AwACAgQAAxkBAAI", file_unique_id: "u", duration: 5, mime_type: "audio/ogg", file_size: 5800 },
+    },
+  };
+  const v = parseTelegramInbound(voice);
+  assert(v.ok);
+  assert.equal(v.message.channel, "telegram");
+  assert.equal(v.message.from, "tg:777");
+  assert.equal(v.message.id, "tg:777:42");
+  assert.equal(v.message.type, "audio");
+  assert.equal(v.message.media?.url, "tg-file:AwACAgQAAxkBAAI");
+  assert.equal(v.message.fromName, "יוגב אביטן");
+  const t = parseTelegramInbound({ update_id: 2, message: { message_id: 43, from: { id: 777 }, chat: { id: 777, type: "private" }, date: 1, text: "היי" } });
+  assert(t.ok && t.message.type === "text" && t.message.text === "היי");
+  const g = parseTelegramInbound({ update_id: 3, message: { message_id: 1, chat: { id: -100, type: "supergroup" }, date: 1, text: "x" } });
+  assert(!g.ok && g.reason === "group");
+  const e = parseTelegramInbound({ update_id: 4, edited_message: { message_id: 1, chat: { id: 777, type: "private" }, date: 1, text: "x" } });
+  assert(!e.ok);
+  const p = parseTelegramInbound({ update_id: 5, message: { message_id: 2, from: { id: 777 }, chat: { id: 777, type: "private" }, date: 1, photo: [{ file_id: "small", width: 90, height: 90 }, { file_id: "big", width: 1280, height: 1280 }] } });
+  assert(p.ok && p.message.type === "image" && p.message.media?.url === "tg-file:big");
+  console.log("TELEGRAM PARSER OK");
+}

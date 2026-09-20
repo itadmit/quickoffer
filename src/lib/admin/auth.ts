@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { makeToken, safeEqual, verifyToken } from "../crypto";
 
-const COOKIE = "qv_admin";
+const COOKIE = "qo_admin";
 const TTL = 12 * 3600;
 
 export async function isAdmin(): Promise<boolean> {

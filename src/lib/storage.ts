@@ -1,4 +1,5 @@
 import { put } from "@vercel/blob";
+import { resolveTelegramFileUrl, TG_FILE_PREFIX } from "./whatsapp/telegram";
 
 /**
  * Files: audio copies (30 days, debugging), logos, signatures. Vercel Blob.
@@ -35,7 +36,9 @@ export async function fetchMedia(
   let lastErr: unknown;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+      // Telegram files: resolve the (token-bearing) download URL just in time
+      const target = url.startsWith(TG_FILE_PREFIX) ? await resolveTelegramFileUrl(url) : url;
+      const res = await fetch(target, { signal: AbortSignal.timeout(20_000) });
       if (!res.ok) throw new Error(`media fetch ${res.status}`);
       const ab = await res.arrayBuffer();
       if (ab.byteLength > MAX_MEDIA_BYTES) throw new Error("media too large");

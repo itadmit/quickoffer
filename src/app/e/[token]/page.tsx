@@ -6,11 +6,11 @@ import { verifyToken } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { publicLink } from "@/lib/quotes/links";
-import { getQuote } from "@/lib/quotes/service";
+import { contactPhone, getQuote } from "@/lib/quotes/service";
 import { QuoteEditor } from "./quote-editor";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "עריכת הצעה - QuickVoice" };
+export const metadata: Metadata = { title: "עריכת הצעה - QuickOffer" };
 
 export default async function EditQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -45,7 +45,7 @@ export default async function EditQuotePage({ params }: { params: Promise<{ toke
         business: {
           businessName: user.businessName,
           logoUrl: user.logoUrl,
-          businessPhone: user.businessPhone ?? user.phone,
+          businessPhone: contactPhone(user),
           address: user.address,
           taxId: user.taxId,
           vatStatus: user.vatStatus,

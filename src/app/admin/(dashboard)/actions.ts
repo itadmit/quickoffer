@@ -7,8 +7,10 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { handleInbound } from "@/lib/conversation/handler";
 import { db } from "@/lib/db";
 import { inboundMessages, users } from "@/lib/db/schema";
-import { SETTING_KEYS, setSetting, type SettingKey } from "@/lib/settings";
-import { gateway, sendText } from "@/lib/whatsapp";
+import { randomBytes } from "node:crypto";
+import { getSetting, SETTING_KEYS, setSetting, type SettingKey } from "@/lib/settings";
+import { gatewayFor, sendText } from "@/lib/whatsapp";
+import { getTelegramMe, setTelegramWebhook } from "@/lib/whatsapp/telegram";
 
 export async function saveSettingsAction(values: Record<string, string>) {
   await requireAdmin();
@@ -20,7 +22,31 @@ export async function saveSettingsAction(values: Record<string, string>) {
   }
   revalidatePath("/admin/ai");
   revalidatePath("/admin/ibot");
+  revalidatePath("/admin/telegram");
   return { ok: true as const };
+}
+
+export async function telegramSetWebhookAction() {
+  await requireAdmin();
+  const appUrl = await getSetting("app.url");
+  let secret = await getSetting("telegram.webhook_secret");
+  if (!secret) {
+    secret = randomBytes(24).toString("base64url");
+    await setSetting("telegram.webhook_secret", secret);
+  }
+  const r = await setTelegramWebhook(appUrl, secret);
+  const me = await getTelegramMe();
+  if (me.ok && me.result?.username) await setSetting("telegram.bot_username", me.result.username);
+  revalidatePath("/admin/telegram");
+  return r.ok
+    ? { ok: true as const, username: me.result?.username ?? null, url: `${appUrl}/api/webhooks/telegram` }
+    : { ok: false as const, error: r.description ?? "setWebhook failed" };
+}
+
+export async function telegramTestAction() {
+  await requireAdmin();
+  const me = await getTelegramMe();
+  return me.ok ? { ok: true as const, me: me.result } : { ok: false as const, error: me.description ?? "getMe failed" };
 }
 
 /** "בדוק חיבור" for transcription: transcribe a short bundled Hebrew sample. */
@@ -62,7 +88,7 @@ export async function sendTestMessageAction(phone: string) {
   await requireAdmin();
   const to = phone.replace(/\D/g, "");
   if (to.length < 9) return { ok: false as const, error: "מספר לא תקין" };
-  const r = await sendText(to, `בדיקה מ-QuickVoice ✅ ${new Date().toLocaleTimeString("he-IL")}`);
+  const r = await sendText(to, `בדיקה מ-QuickOffer ✅ ${new Date().toLocaleTimeString("he-IL")}`);
   revalidatePath("/admin/ibot");
   return r.ok ? { ok: true as const, body: r.body } : { ok: false as const, error: JSON.stringify(r.body) };
 }
@@ -89,7 +115,7 @@ export async function reprocessMessageAction(id: string) {
   await requireAdmin();
   const row = await db.query.inboundMessages.findFirst({ where: eq(inboundMessages.id, id) });
   if (!row) return { ok: false as const, error: "not found" };
-  const parsed = gateway.parseInbound(row.raw);
+  const parsed = gatewayFor(row.userPhone).parseInbound(row.raw);
   if (!parsed.ok) return { ok: false as const, error: `unparseable: ${parsed.reason}` };
   await db.update(inboundMessages).set({ processedAt: null, error: null }).where(eq(inboundMessages.id, id));
   await handleInbound(parsed.message);
