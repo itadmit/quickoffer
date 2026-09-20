@@ -31,7 +31,7 @@ export default async function AdminQuotes({ searchParams }: { searchParams: Prom
               <tr key={r.id} className="border-t border-line">
                 <td className="p-2">{r.number}</td>
                 <td className="p-2">{business ?? phone}</td>
-                <td className="p-2">{r.customerName ?? <span className="text-muted">—</span>}</td>
+                <td className="p-2">{r.customerName ?? <span className="text-muted">-</span>}</td>
                 <td className="p-2 whitespace-nowrap">{formatMoney(r.total)}</td>
                 <td className="p-2">{r.status}</td>
                 <td className="p-2 whitespace-nowrap">{r.createdAt.toLocaleString("he-IL")}</td>

@@ -36,7 +36,7 @@ export default async function AdminUsers() {
           </thead>
           <tbody>
             {rows.map((r) => <UserRow key={r.user.id} user={r.user} monthQuotes={r.monthQuotes} totalQuotes={r.totalQuotes} />)}
-            {!rows.length && <tr><td colSpan={9} className="p-4 text-muted">עדיין אין משתמשים — שלח הודעה לבוט</td></tr>}
+            {!rows.length && <tr><td colSpan={9} className="p-4 text-muted">עדיין אין משתמשים - שלח הודעה לבוט</td></tr>}
           </tbody>
         </table>
       </div>

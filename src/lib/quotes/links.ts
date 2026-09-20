@@ -1,7 +1,7 @@
 import { makeToken } from "../crypto";
 import { getSetting } from "../settings";
 
-const EDIT_TTL = 7 * 24 * 3600; // §8.1 — 7 days
+const EDIT_TTL = 7 * 24 * 3600; // §8.1 - 7 days
 const SETTINGS_TTL = 30 * 24 * 3600;
 
 export async function appUrl(): Promise<string> {

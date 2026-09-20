@@ -8,12 +8,12 @@ type Setting = { key: string; secret: boolean; source: "db" | "env" | "default";
 const ASR_PROVIDERS = [
   ["openai", "OpenAI (whisper-1 / gpt-4o-transcribe)"],
   ["groq", "Groq (whisper-large-v3, תואם OpenAI)"],
-  ["custom", "Custom — URL תואם OpenAI"],
+  ["custom", "Custom - URL תואם OpenAI"],
 ];
 const LLM_PROVIDERS = [
   ["openai", "OpenAI"],
   ["groq", "Groq (תואם OpenAI)"],
-  ["custom", "Custom — URL תואם OpenAI"],
+  ["custom", "Custom - URL תואם OpenAI"],
 ];
 const ASR_MODELS = ["gpt-4o-transcribe", "gpt-4o-mini-transcribe", "whisper-1", "whisper-large-v3", "whisper-large-v3-turbo"];
 const LLM_MODELS = ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-5-mini", "gpt-4.1-mini", "gpt-4o-mini", "llama-3.3-70b-versatile"];
@@ -114,7 +114,7 @@ function Secret({ label, current, value, onChange }: { label: string; current?: 
   const src = current?.source === "db" ? "DB (מוצפן)" : current?.source === "env" ? "env" : "לא מוגדר";
   return (
     <label className="block">
-      <span className="label">{label} <span className="text-xs">· נוכחי: <code dir="ltr">{current?.value || "—"}</code> ({src})</span></span>
+      <span className="label">{label} <span className="text-xs">· נוכחי: <code dir="ltr">{current?.value || "-"}</code> ({src})</span></span>
       <input className="input" dir="ltr" type="password" autoComplete="off" value={value} onChange={(e) => onChange(e.target.value)} placeholder="הדבק מפתח חדש כדי להחליף" />
     </label>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { BadgeCheck, Hourglass, MessageCircle, PenLine, Printer } from "lucide-react";
 import { formatPhone } from "@/components/quote-document";
 import { approveAction, questionAction, rejectAction } from "./actions";
 
@@ -23,12 +24,14 @@ export function CustomerActions({ publicId, status, expired, businessName, busin
   if (done === "approved") {
     return (
       <Card tone="ok">
-        <div className="text-lg font-bold">✅ ההצעה אושרה</div>
+        <div className="text-lg font-bold flex items-center gap-2">
+          <BadgeCheck className="h-5 w-5 text-ok" /> ההצעה אושרה
+        </div>
         <p className="text-sm text-muted">
           {businessName ?? "בעל המקצוע"} קיבל הודעה ויחזור אליך בהקדם.
         </p>
         <button onClick={() => window.print()} className="btn-secondary mt-2 no-print">
-          🖨️ הדפס / שמור כ-PDF
+          <Printer className="h-4 w-4" /> הדפס / שמור כ-PDF
         </button>
       </Card>
     );
@@ -44,9 +47,11 @@ export function CustomerActions({ publicId, status, expired, businessName, busin
   if (expired) {
     return (
       <Card tone="warn">
-        <div className="text-lg font-bold">⌛ ההצעה פגה</div>
+        <div className="text-lg font-bold flex items-center gap-2">
+          <Hourglass className="h-5 w-5" /> ההצעה פגה
+        </div>
         <p className="text-sm">
-          לקבלת הצעה מעודכנת — צור קשר עם {businessName ?? "בעל המקצוע"}
+          לקבלת הצעה מעודכנת - צור קשר עם {businessName ?? "בעל המקצוע"}
           {businessPhone && (
             <>
               {" "}
@@ -67,18 +72,18 @@ export function CustomerActions({ publicId, status, expired, businessName, busin
       {mode === "idle" && (
         <>
           <button onClick={() => setMode("approve")} className="btn-primary w-full text-lg py-4">
-            ✍️ מאשר את ההצעה
+            <PenLine className="h-5 w-5" /> מאשר את ההצעה
           </button>
           <div className="flex gap-3">
             <button onClick={() => setMode("question")} className="btn-secondary flex-1">
-              💬 יש לי שאלה
+              <MessageCircle className="h-4 w-4" /> יש לי שאלה
             </button>
             <button onClick={() => setMode("reject")} className="btn-ghost text-sm">
               לא מתאים לי
             </button>
           </div>
           {done === "question" && (
-            <p className="text-center text-sm text-ok">השאלה נשלחה — תקבל תשובה ב-WhatsApp 👍</p>
+            <p className="text-center text-sm text-ok">השאלה נשלחה - תקבל תשובה ב-WhatsApp</p>
           )}
         </>
       )}

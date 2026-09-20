@@ -3,7 +3,7 @@ import { appSettings } from "./db/schema";
 import { decryptSecret, encryptSecret } from "./crypto";
 
 /**
- * app_settings — provider/model/key configuration edited from /admin.
+ * app_settings - provider/model/key configuration edited from /admin.
  * Env vars are fallback only (PRODUCT.md §7.6, §16).
  */
 

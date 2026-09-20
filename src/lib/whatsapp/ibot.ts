@@ -9,7 +9,7 @@ import type {
 
 /**
  * iBot Chat adapter. Facts verified against a real webhook capture on 20.9.2026
- * (see CLAUDE.md) — NOT against the docs page, which documents sending only.
+ * (see CLAUDE.md) - NOT against the docs page, which documents sending only.
  */
 
 // Payload shape as actually received
@@ -37,7 +37,7 @@ type IbotPayload = {
     timestamp?: number;
     senderName?: string;
     route?: string;
-    // null in audio/text; {"jid":null,"id":null} in image — handle both
+    // null in audio/text; {"jid":null,"id":null} in image - handle both
     context?: { jid?: string | null; id?: string | null } | null;
   };
 };
@@ -77,7 +77,7 @@ export function parseIbotInbound(payload: unknown): ParseResult {
   }
   const jid = p.remoteJid ?? a.remoteJid;
   if (!jid || !a.msgId) return { ok: false, reason: "invalid" };
-  // Group jids end with @g.us — belt and braces in case `group` is missing
+  // Group jids end with @g.us - belt and braces in case `group` is missing
   if (jid.endsWith("@g.us")) return { ok: false, reason: "group" };
 
   const ctx = a.msgContext ?? {};

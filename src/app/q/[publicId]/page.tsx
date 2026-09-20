@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const q = await getQuoteByPublicId(publicId);
   if (!q) return { title: "הצעת מחיר" };
   return {
-    title: `הצעת מחיר #${q.number}${q.customerName ? ` ל${q.customerName}` : ""} — ${q.user.businessName ?? "QuickVoice"}`,
+    title: `הצעת מחיר #${q.number}${q.customerName ? ` ל${q.customerName}` : ""} - ${q.user.businessName ?? "QuickVoice"}`,
     description: q.title ?? undefined,
   };
 }
@@ -31,7 +31,7 @@ export default async function CustomerQuotePage({ params }: Props) {
     ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
     ua: h.get("user-agent"),
   };
-  // View tracking after the response (§8.2) — never blocks the customer.
+  // View tracking after the response (§8.2) - never blocks the customer.
   after(() => recordView(publicId, meta).catch((e) => console.error("[recordView]", e)));
 
   const expired =

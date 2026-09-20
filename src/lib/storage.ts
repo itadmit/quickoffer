@@ -26,7 +26,7 @@ export async function storeFile(
 const MAX_MEDIA_BYTES = 25 * 1024 * 1024;
 
 /**
- * iBot media is public and deleted after 30 days — fetch immediately
+ * iBot media is public and deleted after 30 days - fetch immediately
  * (PRODUCT.md §5.2). Retries 3× within ~1 minute.
  */
 export async function fetchMedia(

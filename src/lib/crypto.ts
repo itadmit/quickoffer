@@ -46,7 +46,7 @@ export function decryptSecret(value: string): string {
   ]).toString("utf8");
 }
 
-/** sk-…7f3a — never expose full secrets to the admin UI */
+/** sk-…7f3a - never expose full secrets to the admin UI */
 export function maskSecret(value: string | null | undefined): string {
   if (!value) return "";
   if (value.length <= 8) return "••••";

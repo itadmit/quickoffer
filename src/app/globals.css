@@ -28,12 +28,19 @@
   --color-warn-ink: var(--warn-ink);
   --color-danger: var(--danger);
   --color-ok: var(--ok);
-  --font-sans: var(--font-heebo), system-ui, sans-serif;
+  --font-sans: var(--font-ploni), system-ui, "Noto Sans Hebrew", "Arial Hebrew", sans-serif;
+  --font-display: var(--font-ping), var(--font-ploni), system-ui, sans-serif;
 }
 
 body {
   font-family: var(--font-sans);
   font-feature-settings: "tnum";
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.005em;
+  line-height: 1.2;
 }
 
 input, select, textarea {

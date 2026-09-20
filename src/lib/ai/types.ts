@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** PRODUCT.md §7.2 — allowed units. Default is יח׳. */
+/** PRODUCT.md §7.2 - allowed units. Default is יח׳. */
 export const UNITS = ["יח׳", "מ״ר", "מ״א", "שעה", "יום", "קומפלט", "נקודה"] as const;
 
 export const QuoteItemSchema = z.object({
@@ -31,7 +31,7 @@ export type QuoteItemJSON = z.infer<typeof QuoteItemSchema>;
 
 export const CorrectionResultSchema = z.object({
   quote: QuoteJSONSchema,
-  /** Human-readable Hebrew lines for the chat summary, e.g. "ביקור — 250 ₪ (היה 200)" */
+  /** Human-readable Hebrew lines for the chat summary, e.g. "ביקור - 250 ₪ (היה 200)" */
   changes: z.array(z.string()),
 });
 export type CorrectionResult = z.infer<typeof CorrectionResultSchema>;

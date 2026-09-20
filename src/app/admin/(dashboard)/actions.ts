@@ -32,7 +32,7 @@ export async function testTranscriptionAction() {
     const path = `${process.cwd()}/public/test-audio.ogg`;
     const audio = await readFile(path).catch(() => null);
     if (!audio) {
-      return { ok: false as const, error: "אין קובץ בדיקה ב-public/test-audio.ogg — שלח הודעה קולית אמיתית לבוט במקום" };
+      return { ok: false as const, error: "אין קובץ בדיקה ב-public/test-audio.ogg - שלח הודעה קולית אמיתית לבוט במקום" };
     }
     const asr = await getTranscriptionProvider();
     const r = await asr.transcribe(audio, { language: "he", hints: [], fileName: "test-audio.ogg", mimetype: "audio/ogg" });

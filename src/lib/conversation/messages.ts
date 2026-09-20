@@ -3,19 +3,19 @@ import { formatMoney, formatQty } from "../quotes/calc";
 import type { QuoteWithItems } from "../quotes/service";
 
 /**
- * Bot copy — word for word from PRODUCT.md §6. Don't improvise here;
+ * Bot copy - word for word from PRODUCT.md §6. Don't improvise here;
  * change the spec first.
  */
 
 export const onboarding = {
   askName: (suggested: string | null) =>
-    `היי! אני QuickVoice — הופך הודעות קוליות להצעות מחיר מעוצבות.\nשתי שאלות קצרות ומתחילים.\n1️⃣ איך קוראים לעסק?${
-      suggested ? ` (לפי WhatsApp: "${suggested}" — שלח "כן" או שם אחר)` : ""
+    `היי! אני QuickVoice - הופך הודעות קוליות להצעות מחיר מעוצבות.\nשתי שאלות קצרות ומתחילים.\n1️⃣ איך קוראים לעסק?${
+      suggested ? ` (לפי WhatsApp: "${suggested}" - שלח "כן" או שם אחר)` : ""
     }`,
   askVat: () => `2️⃣ עוסק פטור או עוסק מורשה?\n(מורשה = ההצעות יכללו מע״מ 18%)`,
   askLogo: () => `מעולה. יש לוגו? שלח אותו כתמונה, או "דלג".`,
   done: (settingsUrl: string) =>
-    `✅ מוכן! עכשיו פשוט שלח לי הודעה קולית, למשל:\n🎤 "הצעת מחיר לדני כהן — שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200"\nואני מחזיר הצעה מוכנה תוך דקה.\nפרטים נוספים (כתובת, ח.פ., תנאי תשלום קבועים) — כאן: ${settingsUrl}`,
+    `✅ מוכן! עכשיו פשוט שלח לי הודעה קולית, למשל:\n🎤 "הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200"\nואני מחזיר הצעה מוכנה תוך דקה.\nפרטים נוספים (כתובת, ח.פ., תנאי תשלום קבועים) - כאן: ${settingsUrl}`,
   didntGetName: () => `לא הבנתי 🙂 איך קוראים לעסק? שלח את השם, או "כן" לאישור השם מ-WhatsApp.`,
   didntGetVat: () => `עוסק פטור או עוסק מורשה? (מורשה = ההצעות יכללו מע״מ 18%)`,
   logoSaved: () => `הלוגו נשמר 👌`,
@@ -25,7 +25,7 @@ export const processing = () => `⏳ מעבד...`;
 
 function itemLine(it: QuoteItem): string {
   const flag = it.needsReview ? " ⚠️" : "";
-  return `• ${it.description} ×${formatQty(it.quantity)} — ${formatMoney(it.lineTotal)}${flag}`;
+  return `• ${it.description} ×${formatQty(it.quantity)} - ${formatMoney(it.lineTotal)}${flag}`;
 }
 
 function totalsLines(q: Quote): string[] {
@@ -41,10 +41,10 @@ function totalsLines(q: Quote): string[] {
   return lines;
 }
 
-/** §6.3 message 1 — summary + edit link */
+/** §6.3 message 1 - summary + edit link */
 export function quoteSummary(q: QuoteWithItems, editUrl: string): string {
   const lines: string[] = [
-    `📋 הצעה #${q.number}${q.customerName ? ` — ${q.customerName}` : ""}`,
+    `📋 הצעה #${q.number}${q.customerName ? ` - ${q.customerName}` : ""}`,
     ...q.items.map(itemLine),
     ...totalsLines(q),
   ];
@@ -52,7 +52,7 @@ export function quoteSummary(q: QuoteWithItems, editUrl: string): string {
   const missing = q.items.filter((it) => it.needsReview && it.unitPrice === 0);
   if (missing.length) {
     lines.push(
-      `⚠️ חסר מחיר: ${missing.map((m) => m.description).join(", ")} — תגיד לי את המחיר או תקן בעריכה`,
+      `⚠️ חסר מחיר: ${missing.map((m) => m.description).join(", ")} - תגיד לי את המחיר או תקן בעריכה`,
     );
   }
   if (!q.customerName) lines.push(`❓ למי ההצעה? (תגיד לי את שם הלקוח)`);
@@ -61,15 +61,15 @@ export function quoteSummary(q: QuoteWithItems, editUrl: string): string {
 }
 
 /** §6.3 message 2 */
-export const forwardHint = () => `👇 להעביר ללקוח — לחץ לחיצה ארוכה על ההודעה הבאה ← Forward`;
+export const forwardHint = () => `👇 להעביר ללקוח - לחץ לחיצה ארוכה על ההודעה הבאה ← Forward`;
 
-/** §6.3 message 3 — the clean, forwardable message */
+/** §6.3 message 3 - the clean, forwardable message */
 export function customerMessage(q: Quote, user: User, publicUrl: string): string {
   const greeting = q.customerName ? `שלום ${q.customerName}, ` : "שלום, ";
   const days = q.validUntil
     ? Math.max(1, Math.round((q.validUntil.getTime() - Date.now()) / 86_400_000))
     : user.defaultValidDays;
-  return `${greeting}מצורפת הצעת מחיר מ${user.businessName ?? "העסק"}:\n${publicUrl}\nההצעה תקפה ל-${days} יום. לאישור — לחץ על הקישור.`;
+  return `${greeting}מצורפת הצעת מחיר מ${user.businessName ?? "העסק"}:\n${publicUrl}\nההצעה תקפה ל-${days} יום. לאישור - לחץ על הקישור.`;
 }
 
 /** §6.4 */
@@ -93,7 +93,7 @@ export function quotesList(list: Quote[], editUrls: string[]): string {
     `📂 ההצעות האחרונות:`,
     ...list.map(
       (q, i) =>
-        `#${q.number} ${q.customerName ?? "(ללא שם)"} — ${formatMoney(q.total)} · ${status[q.status]}\n   ${editUrls[i]}`,
+        `#${q.number} ${q.customerName ?? "(ללא שם)"} - ${formatMoney(q.total)} · ${status[q.status]}\n   ${editUrls[i]}`,
     ),
   ].join("\n");
 }
@@ -108,19 +108,19 @@ export const commands = {
   editLink: (q: Quote, url: string) => `🖊️ עריכת הצעה #${q.number}: ${url}`,
   noQuotes: () => `עדיין אין הצעות. שלח לי הודעה קולית ונתחיל 🎤`,
   pdfNotYet: () =>
-    `PDF יגיע בקרוב. בינתיים הקישור ללקוח הוא ההצעה — הוא תמיד מעודכן ומאפשר אישור וחתימה.`,
+    `PDF יגיע בקרוב. בינתיים הקישור ללקוח הוא ההצעה - הוא תמיד מעודכן ומאפשר אישור וחתימה.`,
   help: () =>
     [
-      `🎤 שלח הודעה קולית — ואני מחזיר הצעת מחיר.`,
+      `🎤 שלח הודעה קולית - ואני מחזיר הצעת מחיר.`,
       `כשיש טיוטה פעילה, כתוב או תגיד תיקון: "תשנה ביקור ל-250".`,
       ``,
       `פקודות:`,
-      `• הצעות — 5 ההצעות האחרונות`,
-      `• שלחתי — לסמן שההצעה נשלחה ללקוח`,
-      `• ערוך — קישור לעריכה מלאה`,
-      `• בטל — למחוק את הטיוטה`,
-      `• חדש — להתחיל הצעה חדשה`,
-      `• הגדרות — פרטי העסק והלוגו`,
+      `• הצעות - 5 ההצעות האחרונות`,
+      `• שלחתי - לסמן שההצעה נשלחה ללקוח`,
+      `• ערוך - קישור לעריכה מלאה`,
+      `• בטל - למחוק את הטיוטה`,
+      `• חדש - להתחיל הצעה חדשה`,
+      `• הגדרות - פרטי העסק והלוגו`,
     ].join("\n"),
   unclearCorrectionOrNew: (customer: string | null) =>
     `לתקן את ההצעה${customer ? ` ל${customer}` : " הפעילה"}, או הצעה חדשה? (ענה "תקן" או "חדש")`,
@@ -134,9 +134,9 @@ export const errors = {
   transcriptionFailed: () =>
     `לא הצלחתי לשמוע 🙉 נסה שוב במקום שקט יותר, או כתוב לי את ההצעה בטקסט.`,
   noItems: (transcript: string) =>
-    `שמעתי: "${transcript.slice(0, 200)}" — אבל לא זיהיתי פריטים ומחירים. נסה: "לדני — 3 נקודות חשמל 180 שקל ליחידה".`,
+    `שמעתי: "${transcript.slice(0, 200)}" - אבל לא זיהיתי פריטים ומחירים. נסה: "לדני - 3 נקודות חשמל 180 שקל ליחידה".`,
   mediaUnavailable: () => `יש תקלה זמנית, נסה שוב בעוד דקה.`,
-  tooLong: () => `ההקלטה ארוכה מדי — עד 3 דקות.`,
+  tooLong: () => `ההקלטה ארוכה מדי - עד 3 דקות.`,
   quotaExceeded: (plan: string, limit: number, upgradeUrl: string) =>
     `השתמשת ב-${limit} ההצעות של חבילת ${plan} החודש. לשדרוג: ${upgradeUrl}`,
   generic: () => `משהו השתבש אצלי 😕 נסה שוב בעוד רגע.`,
@@ -150,5 +150,5 @@ export const notifications = {
   rejected: (q: Quote, reason: string | null) =>
     `❌ ${q.customerName ?? "הלקוח"} דחה את הצעה #${q.number}.${reason ? ` סיבה: "${reason}"` : ""}`,
   question: (q: Quote, text: string) =>
-    `💬 ${q.customerName ?? "הלקוח"} שאל על #${q.number}: "${text}" — ענה לו ישירות ב-WhatsApp`,
+    `💬 ${q.customerName ?? "הלקוח"} שאל על #${q.number}: "${text}" - ענה לו ישירות ב-WhatsApp`,
 };

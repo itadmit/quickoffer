@@ -20,7 +20,7 @@ export default async function AdminMessages() {
                 <td className="p-2 whitespace-nowrap">{m.at.toLocaleString("he-IL")}</td>
                 <td className="p-2" dir="ltr">{m.userPhone}</td>
                 <td className="p-2">{m.type}</td>
-                <td className="p-2 max-w-sm truncate">{m.text ?? (m.mediaUrl ? <a href={m.mediaUrl} target="_blank" className="underline" dir="ltr">{m.mediaUrl.split("/").pop()}</a> : "—")}</td>
+                <td className="p-2 max-w-sm truncate">{m.text ?? (m.mediaUrl ? <a href={m.mediaUrl} target="_blank" className="underline" dir="ltr">{m.mediaUrl.split("/").pop()}</a> : "-")}</td>
                 <td className="p-2 whitespace-nowrap">{m.processedAt ? m.processedAt.toLocaleTimeString("he-IL") : `ממתין (${m.attempts})`}</td>
                 <td className="p-2 max-w-xs truncate text-danger text-xs">{m.error}</td>
                 <td className="p-2"><ReprocessButton id={m.id} /></td>

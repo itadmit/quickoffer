@@ -1,3 +1,4 @@
+import { BadgeCheck, TriangleAlert } from "lucide-react";
 import { formatMoney, formatQty } from "@/lib/quotes/calc";
 
 export type QuoteView = {
@@ -98,7 +99,7 @@ export function QuoteDocument({ q, showReviewFlags = false }: { q: QuoteView; sh
               <tr key={i} className={`border-b border-line/60 ${showReviewFlags && it.needsReview ? "bg-warn" : ""}`}>
                 <td className="py-2.5 pe-2">
                   {it.description}
-                  {showReviewFlags && it.needsReview && <span className="ms-1 text-warn-ink">⚠️</span>}
+                  {showReviewFlags && it.needsReview && <TriangleAlert className="inline h-3.5 w-3.5 ms-1 text-warn-ink" />}
                 </td>
                 <td className="py-2.5 text-center text-muted whitespace-nowrap">
                   {formatQty(it.quantity)} {it.unit}
@@ -121,7 +122,7 @@ export function QuoteDocument({ q, showReviewFlags = false }: { q: QuoteView; sh
             </>
           )}
           {q.vatRate === 0 ? (
-            <Row label="סה״כ לתשלום" value={formatMoney(q.total)} strong note="עוסק פטור — ללא מע״מ" />
+            <Row label="סה״כ לתשלום" value={formatMoney(q.total)} strong note="עוסק פטור - ללא מע״מ" />
           ) : q.vatIncluded ? (
             <>
               <Row label="לפני מע״מ" value={formatMoney(q.total - q.vatAmount)} />
@@ -163,7 +164,9 @@ export function QuoteDocument({ q, showReviewFlags = false }: { q: QuoteView; sh
         <section className="px-5 pb-5">
           <div className="rounded-xl border border-ok/30 bg-ok/5 p-4 flex items-center gap-4">
             <div className="flex-1 text-sm">
-              <div className="font-semibold text-ok">✅ אושר ונחתם</div>
+              <div className="font-semibold text-ok flex items-center gap-1.5">
+                <BadgeCheck className="h-4 w-4" /> אושר ונחתם
+              </div>
               <div>{q.approval.signerName}</div>
               <div className="text-muted">
                 {new Intl.DateTimeFormat("he-IL", { dateStyle: "medium", timeStyle: "short" }).format(

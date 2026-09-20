@@ -12,7 +12,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-// PRODUCT.md §9 — data model. Money is numeric(12,2) read as JS numbers.
+// PRODUCT.md §9 - data model. Money is numeric(12,2) read as JS numbers.
 const money = (name: string) =>
   numeric(name, { precision: 12, scale: 2, mode: "number" });
 
@@ -53,7 +53,7 @@ export const inboundTypeEnum = pgEnum("inbound_type", [
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  // Logical PK — digits only, derived from the WhatsApp jid (972501234567)
+  // Logical PK - digits only, derived from the WhatsApp jid (972501234567)
   phone: text("phone").notNull().unique(),
   displayName: text("display_name"),
   businessName: text("business_name"),
@@ -161,7 +161,7 @@ export const quoteEvents = pgTable(
 export const inboundMessages = pgTable(
   "inbound_messages",
   {
-    // iBot msgId — dedup key
+    // iBot msgId - dedup key
     id: text("id").primaryKey(),
     userPhone: text("user_phone").notNull(),
     type: inboundTypeEnum("type").notNull(),

@@ -38,7 +38,7 @@ export default async function AdminOverview() {
     ["הצעות החודש", month.n],
     ["משתמשים", usersCount.n],
     ["עלות AI מצטברת", `${Number(ai.cost ?? 0).toFixed(2)} ₪`],
-    ["זמן עיבוד p50 / p90", p90row?.p50 ? `${(p90row.p50 / 1000).toFixed(1)}s / ${(p90row.p90 / 1000).toFixed(1)}s` : "—"],
+    ["זמן עיבוד p50 / p90", p90row?.p50 ? `${(p90row.p50 / 1000).toFixed(1)}s / ${(p90row.p90 / 1000).toFixed(1)}s` : "-"],
     ["כשלי תמלול", `${asrFail.n} / ${ai.n}`],
     ["הודעות ממתינות", unprocessed.n],
   ] as const;
@@ -61,7 +61,7 @@ export default async function AdminOverview() {
           סטטוס: {instanceStatus} · webhook אחרון: {lastWebhook ? new Date(lastWebhook).toLocaleString("he-IL") : "טרם התקבל"}
         </Status>
         <Status ok={aiKeySet} title="מפתחות AI">
-          {aiKeySet ? "מפתח LLM מוגדר" : "אין מפתח LLM — הגדר בלשונית ספקי AI"}
+          {aiKeySet ? "מפתח LLM מוגדר" : "אין מפתח LLM - הגדר בלשונית ספקי AI"}
         </Status>
       </div>
     </div>

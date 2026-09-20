@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 /**
- * GET /api/cron/tick?secret=… — called every 5 minutes by an external pinger
+ * GET /api/cron/tick?secret=… - called every 5 minutes by an external pinger
  * (cron-job.org) for the demo; Vercel Cron in production (PRODUCT.md §16).
  *  - re-runs inbound messages stuck without processed_at for > 2 min (max 3 attempts)
  *  - expires quotes past valid_until

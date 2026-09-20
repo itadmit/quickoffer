@@ -1,16 +1,31 @@
 import type { Metadata } from "next";
+import {
+  BadgeCheck,
+  Ban,
+  Check,
+  ClipboardList,
+  Eye,
+  FileSignature,
+  Forward,
+  Mic,
+  Pencil,
+  Play,
+  Tag,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { formatPhone } from "@/components/quote-document";
 import { getSetting } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "QuickVoice — הצעת מחיר מהודעה קולית ב-WhatsApp",
+  title: "QuickVoice - הצעת מחיר מהודעה קולית ב-WhatsApp",
   description:
     "בעל מקצוע? שלח הודעה קולית ב-WhatsApp וקבל תוך דקה הצעת מחיר מעוצבת, מוכנה להעברה ללקוח. הלקוח מאשר וחותם בקישור. בלי אפליקציה, בלי הרשמה.",
   robots: { index: true, follow: true },
   openGraph: {
-    title: "QuickVoice — שלח הודעה קולית. קבל הצעת מחיר. סגור עסקה.",
+    title: "QuickVoice - שלח הודעה קולית. קבל הצעת מחיר. סגור עסקה.",
     description: "הצעות מחיר מעוצבות מהודעה קולית ב-WhatsApp, תוך דקה.",
     locale: "he_IL",
     type: "website",
@@ -30,7 +45,9 @@ export default async function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 pt-6 pb-14 md:pt-10 md:pb-20">
           <nav className="flex items-center justify-between mb-10 md:mb-16">
             <div className="flex items-center gap-2 font-bold text-lg">
-              <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand text-brand-ink">🎤</span>
+              <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand text-brand-ink">
+                <Mic className="h-5 w-5" />
+              </span>
               QuickVoice
             </div>
             <a href="#pricing" className="text-sm text-muted hover:text-ink hidden sm:block">
@@ -48,7 +65,7 @@ export default async function LandingPage() {
                 <span className="text-brand">סגור עסקה.</span>
               </h1>
               <p className="text-lg text-muted max-w-prose">
-                לבעלי מקצוע בשטח — חשמלאים, אינסטלטורים, מזגנים, שיפוצים. מדברים 20 שניות ב-WhatsApp,
+                לבעלי מקצוע בשטח - חשמלאים, אינסטלטורים, מזגנים, שיפוצים. מדברים 20 שניות ב-WhatsApp,
                 ותוך דקה יש הצעת מחיר מעוצבת עם הלוגו שלך, מוכנה להעברה ללקוח. הלקוח פותח, מאשר וחותם.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
@@ -71,18 +88,18 @@ export default async function LandingPage() {
       <section className="max-w-5xl mx-auto px-4 py-14 md:py-20">
         <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">איך זה עובד</h2>
         <ol className="grid md:grid-cols-3 gap-4">
-          <Step n="1" icon="🎤" title="מדברים">
-            &quot;הצעת מחיר לדני כהן — שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200, לפני מע״מ&quot;
+          <Step n="1" icon={Mic} title="מדברים">
+            &quot;הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200, לפני מע״מ&quot;
           </Step>
-          <Step n="2" icon="📋" title="מקבלים הצעה מוכנה">
-            הבוט מחזיר סיכום, קישור לעריכה, והודעה נקייה להעברה ללקוח — מהמספר שלך.
+          <Step n="2" icon={ClipboardList} title="מקבלים הצעה מוכנה">
+            הבוט מחזיר סיכום, קישור לעריכה, והודעה נקייה להעברה ללקוח - מהמספר שלך.
           </Step>
-          <Step n="3" icon="✅" title="הלקוח מאשר וחותם">
+          <Step n="3" icon={FileSignature} title="הלקוח מאשר וחותם">
             הלקוח פותח דף מעוצב מהטלפון, מאשר וחותם באצבע. אתה מקבל התראה ב-WhatsApp.
           </Step>
         </ol>
         <p className="text-center text-sm text-muted mt-8">
-          טעית? כותבים או אומרים &quot;תשנה ביקור ל-250&quot; — וההצעה מתעדכנת. הקישור ללקוח תמיד מציג את הגרסה
+          טעית? כותבים או אומרים &quot;תשנה ביקור ל-250&quot; - וההצעה מתעדכנת. הקישור ללקוח תמיד מציג את הגרסה
           העדכנית.
         </p>
       </section>
@@ -90,16 +107,16 @@ export default async function LandingPage() {
       {/* -------------------------------------------------------------- benefits */}
       <section className="bg-card border-y border-line">
         <div className="max-w-5xl mx-auto px-4 py-14 md:py-20 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Benefit icon="⚡" title="דקה אחת">
-            מהודעה קולית להצעה מוכנה להעברה — פחות מ-60 שניות, כולל תמלול.
+          <Benefit icon={Zap} title="דקה אחת">
+            מהודעה קולית להצעה מוכנה להעברה - פחות מ-60 שניות, כולל תמלול.
           </Benefit>
-          <Benefit icon="🏷️" title="נראה מקצועי">
+          <Benefit icon={Tag} title="נראה מקצועי">
             לוגו, פירוט סעיפים, כמויות, מע״מ מחושב, תנאי תשלום ותוקף. לא עוד &quot;3 נקודות 450 + ביקור&quot;.
           </Benefit>
-          <Benefit icon="👀" title="יודעים מה קורה">
-            הלקוח פתח? אישר? דחה? שאל שאלה? — מקבלים הודעה ב-WhatsApp מיד.
+          <Benefit icon={Eye} title="יודעים מה קורה">
+            הלקוח פתח? אישר? דחה? שאל שאלה? - מקבלים הודעה ב-WhatsApp מיד.
           </Benefit>
-          <Benefit icon="🚫" title="לא הנהלת חשבונות">
+          <Benefit icon={Ban} title="לא הנהלת חשבונות">
             רק הצעות מחיר. בלי חשבוניות, בלי CRM, בלי ללמוד מערכת. WhatsApp הוא האפליקציה.
           </Benefit>
         </div>
@@ -121,7 +138,7 @@ export default async function LandingPage() {
       {/* -------------------------------------------------------------------- CTA */}
       <section className="bg-brand text-brand-ink">
         <div className="max-w-5xl mx-auto px-4 py-14 md:py-16 text-center space-y-5">
-          <h2 className="text-2xl md:text-3xl font-bold">ההצעה הבאה שלך — בהודעה קולית אחת</h2>
+          <h2 className="text-2xl md:text-3xl font-bold">ההצעה הבאה שלך - בהודעה קולית אחת</h2>
           <p className="opacity-90">שלח &quot;{WELCOME}&quot; לבוט, ענה על שתי שאלות, ותשלח את ההצעה הראשונה תוך דקה.</p>
           <div className="flex justify-center">
             <WhatsAppButton href={wa} big inverted />
@@ -131,7 +148,7 @@ export default async function LandingPage() {
 
       <footer className="max-w-5xl mx-auto px-4 py-8 text-xs text-muted flex flex-wrap gap-x-6 gap-y-2 justify-between">
         <span>© {new Date().getFullYear()} QuickVoice</span>
-        <span>הצעות מחיר בלבד — לא תוכנת הנהלת חשבונות.</span>
+        <span>הצעות מחיר בלבד - לא תוכנת הנהלת חשבונות.</span>
       </footer>
     </main>
   );
@@ -163,21 +180,25 @@ function WhatsAppIcon() {
   );
 }
 
-function Step({ n, icon, title, children }: { n: string; icon: string; title: string; children: React.ReactNode }) {
+function Step({ n, icon: Icon, title, children }: { n: string; icon: LucideIcon; title: string; children: React.ReactNode }) {
   return (
-    <li className="rounded-2xl border border-line bg-card p-5 space-y-2 relative">
+    <li className="rounded-2xl border border-line bg-card p-5 space-y-3 relative">
       <span className="absolute top-4 end-4 text-xs text-muted font-mono">{n}/3</span>
-      <div className="text-3xl">{icon}</div>
+      <div className="grid place-items-center h-11 w-11 rounded-xl bg-brand-soft text-brand">
+        <Icon className="h-6 w-6" />
+      </div>
       <h3 className="font-bold text-lg">{title}</h3>
       <p className="text-sm text-muted leading-relaxed">{children}</p>
     </li>
   );
 }
 
-function Benefit({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
+function Benefit({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <div className="text-2xl">{icon}</div>
+      <div className="grid place-items-center h-10 w-10 rounded-xl bg-brand-soft text-brand">
+        <Icon className="h-5 w-5" />
+      </div>
       <h3 className="font-bold">{title}</h3>
       <p className="text-sm text-muted leading-relaxed">{children}</p>
     </div>
@@ -197,8 +218,8 @@ function Plan({ name, price, per, items, highlight }: { name: string; price: str
       </div>
       <ul className="text-sm space-y-1.5">
         {items.map((it) => (
-          <li key={it} className="flex gap-2">
-            <span className="text-brand">✓</span>
+          <li key={it} className="flex gap-2 items-start">
+            <Check className="h-4 w-4 mt-0.5 shrink-0 text-brand" />
             {it}
           </li>
         ))}
@@ -212,7 +233,9 @@ function ChatMockup() {
   return (
     <div className="mx-auto w-full max-w-[340px] rounded-[2rem] border-8 border-ink/90 bg-[#efeae2] shadow-2xl overflow-hidden" aria-hidden>
       <div className="bg-[#075e54] text-white px-4 py-3 flex items-center gap-3 text-sm">
-        <span className="h-8 w-8 rounded-full bg-white/20 grid place-items-center">🎤</span>
+        <span className="h-8 w-8 rounded-full bg-white/20 grid place-items-center">
+          <Mic className="h-4 w-4" />
+        </span>
         <div>
           <div className="font-semibold">QuickVoice</div>
           <div className="text-[11px] opacity-80">מחובר</div>
@@ -221,29 +244,43 @@ function ChatMockup() {
       <div className="p-3 space-y-2 text-[13px] leading-snug">
         <Bubble me>
           <span className="inline-flex items-center gap-2 text-ink/80">
-            <span className="h-6 w-6 rounded-full bg-[#25D366] grid place-items-center text-white text-[10px]">▶</span>
+            <span className="h-6 w-6 rounded-full bg-[#25D366] grid place-items-center text-white">
+              <Play className="h-3 w-3 fill-current" />
+            </span>
             <span className="inline-block h-1 w-28 rounded bg-ink/30" />
             0:19
           </span>
         </Bubble>
         <Bubble>
-          📋 הצעה #1042 — דני כהן
-          <br />• התקנת גוף תאורה ×3 — 450 ₪
-          <br />• ביקור ×1 — 200 ₪
+          <span className="inline-flex items-center gap-1 font-semibold">
+            <ClipboardList className="h-3.5 w-3.5" /> הצעה #1042 - דני כהן
+          </span>
+          <br />• התקנת גוף תאורה ×3 - 450 ₪
+          <br />• ביקור ×1 - 200 ₪
           <br />
           סה״כ 650 ₪ + מע״מ = 767 ₪
           <br />
-          <span className="text-ink/60">✏️ לתקן: כתוב או תגיד לי</span>
+          <span className="inline-flex items-center gap-1 text-ink/60">
+            <Pencil className="h-3 w-3" /> לתקן: כתוב או תגיד לי
+          </span>
         </Bubble>
-        <Bubble>👇 להעביר ללקוח — לחיצה ארוכה ← Forward</Bubble>
+        <Bubble>
+          <span className="inline-flex items-center gap-1">
+            <Forward className="h-3.5 w-3.5" /> להעביר ללקוח - לחיצה ארוכה ← Forward
+          </span>
+        </Bubble>
         <Bubble>
           שלום דני, מצורפת הצעת מחיר מיוסי חשמל:
           <br />
           <span className="text-[#027eb5] underline">qv.app/q/a8Hd3kQ</span>
           <br />
-          ההצעה תקפה ל-14 יום. לאישור — לחץ על הקישור.
+          ההצעה תקפה ל-14 יום. לאישור - לחץ על הקישור.
         </Bubble>
-        <Bubble>✅ דני כהן אישר וחתם על הצעה #1042 (767 ₪)</Bubble>
+        <Bubble>
+          <span className="inline-flex items-center gap-1">
+            <BadgeCheck className="h-4 w-4 text-ok" /> דני כהן אישר וחתם על הצעה #1042 (767 ₪)
+          </span>
+        </Bubble>
       </div>
     </div>
   );

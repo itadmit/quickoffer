@@ -13,7 +13,7 @@ export const maxDuration = 60;
 const MAX_BODY_BYTES = 64 * 1024;
 
 /**
- * POST /api/webhooks/ibot — PRODUCT.md §5.1, §5.3.
+ * POST /api/webhooks/ibot - PRODUCT.md §5.1, §5.3.
  * 1. auth header → 401
  * 2. normalize + filter + dedup + write inbound_messages
  * 3. return 200 immediately; processing continues in waitUntil
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
   } else if (process.env.NODE_ENV === "production") {
-    // Refuse to run unauthenticated in production — configure the token in /admin
+    // Refuse to run unauthenticated in production - configure the token in /admin
     console.error("[webhook] ibot.webhook_token not configured");
     return NextResponse.json({ error: "webhook token not configured" }, { status: 503 });
   }

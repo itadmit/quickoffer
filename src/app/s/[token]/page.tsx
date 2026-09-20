@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Link2Off } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { verifyToken } from "@/lib/crypto";
 import { db } from "@/lib/db";
@@ -6,7 +7,7 @@ import { users } from "@/lib/db/schema";
 import { SettingsEditor } from "./settings-editor";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "הגדרות העסק — QuickVoice" };
+export const metadata: Metadata = { title: "הגדרות העסק - QuickVoice" };
 
 export default async function SettingsPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -17,7 +18,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ token
     return (
       <main className="flex-1 grid place-items-center p-6 text-center">
         <div className="space-y-2">
-          <div className="text-4xl">🔗</div>
+          <Link2Off className="h-10 w-10 mx-auto text-muted" />
           <h1 className="text-xl font-bold">הקישור לא תקף</h1>
           <p className="text-muted text-sm">שלח &quot;הגדרות&quot; ב-WhatsApp לקבלת קישור חדש.</p>
         </div>

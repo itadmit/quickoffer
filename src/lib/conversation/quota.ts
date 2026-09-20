@@ -2,7 +2,7 @@ import { and, eq, gte, sql } from "drizzle-orm";
 import { db } from "../db";
 import { quotes, type User } from "../db/schema";
 
-/** PRODUCT.md §11 — plan limits. Trial is a lifetime total, others are per calendar month. */
+/** PRODUCT.md §11 - plan limits. Trial is a lifetime total, others are per calendar month. */
 const LIMITS: Record<User["plan"], { limit: number; monthly: boolean; label: string }> = {
   trial: { limit: 5, monthly: false, label: "ניסיון" },
   basic: { limit: 20, monthly: true, label: "Basic" },

@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Link2, Trash2, TriangleAlert } from "lucide-react";
 import { UNITS } from "@/lib/ai/types";
 import { calcTotals, formatMoney } from "@/lib/quotes/calc";
 import { QuoteDocument, type QuoteView } from "@/components/quote-document";
@@ -140,7 +141,7 @@ export function QuoteEditor({ token, quote, initial }: Props) {
 
       {locked && (
         <div className="m-4 rounded-xl bg-warn text-warn-ink text-sm p-3">
-          ההצעה {status === "approved" ? "אושרה ונחתמה" : "נדחתה"} — נעולה לעריכה.
+          ההצעה {status === "approved" ? "אושרה ונחתמה" : "נדחתה"} - נעולה לעריכה.
         </div>
       )}
 
@@ -175,7 +176,9 @@ export function QuoteEditor({ token, quote, initial }: Props) {
               <div className="flex items-center justify-between">
                 <h2 className="font-bold">פריטים</h2>
                 {form.items.some((i) => i.needsReview) && (
-                  <span className="text-xs bg-warn text-warn-ink rounded-full px-2 py-0.5">⚠️ יש פריטים לבדיקה</span>
+                  <span className="inline-flex items-center gap-1 text-xs bg-warn text-warn-ink rounded-full px-2 py-0.5">
+                    <TriangleAlert className="h-3 w-3" /> יש פריטים לבדיקה
+                  </span>
                 )}
               </div>
               <div className="space-y-2">
@@ -207,7 +210,7 @@ export function QuoteEditor({ token, quote, initial }: Props) {
                         </select>
                       </label>
                       <label>
-                        <span className="label">מחיר ליח׳ {it.needsReview && it.unitPrice === 0 && <span className="text-warn-ink">— חסר</span>}</span>
+                        <span className="label">מחיר ליח׳ {it.needsReview && it.unitPrice === 0 && <span className="text-warn-ink">- חסר</span>}</span>
                         <NumberInput value={it.unitPrice} onChange={(v) => updateItem(i, { unitPrice: v })} />
                       </label>
                       <button type="button" onClick={() => removeItem(i)} className="btn-ghost text-danger" aria-label="מחק">✕</button>
@@ -236,7 +239,7 @@ export function QuoteEditor({ token, quote, initial }: Props) {
                     <span className="text-sm">המחירים כוללים מע״מ</span>
                   </label>
                 ) : (
-                  <div className="text-sm text-muted pb-2.5">עוסק פטור — ללא מע״מ</div>
+                  <div className="text-sm text-muted pb-2.5">עוסק פטור - ללא מע״מ</div>
                 )}
               </div>
               <dl className="text-sm space-y-1">
@@ -279,7 +282,7 @@ export function QuoteEditor({ token, quote, initial }: Props) {
       <div className="fixed bottom-0 inset-x-0 bg-card border-t border-line p-3">
         <div className="max-w-lg mx-auto flex gap-2">
           <button onClick={copyLink} className="btn-primary flex-1">
-            {copied ? "✓ הועתק" : "🔗 העתק קישור ללקוח"}
+            {copied ? "✓ הועתק" : <><Link2 className="h-5 w-5" /> העתק קישור ללקוח</>}
           </button>
           {!locked && status === "draft" && (
             <button
@@ -308,7 +311,7 @@ export function QuoteEditor({ token, quote, initial }: Props) {
               className="btn-ghost text-danger"
               aria-label="מחק"
             >
-              🗑️
+              <Trash2 className="h-5 w-5" />
             </button>
           )}
         </div>
@@ -320,7 +323,7 @@ export function QuoteEditor({ token, quote, initial }: Props) {
 function NumberInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [text, setText] = useState(String(value));
   const [lastValue, setLastValue] = useState(value);
-  // Prop changed from outside (e.g. reorder) — resync the text (React "adjust state on prop change" pattern)
+  // Prop changed from outside (e.g. reorder) - resync the text (React "adjust state on prop change" pattern)
   if (value !== lastValue) {
     setLastValue(value);
     if (Number(text) !== value) setText(String(value));

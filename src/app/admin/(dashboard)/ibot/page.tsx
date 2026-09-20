@@ -21,7 +21,7 @@ export default async function AdminIbot() {
       <div className="rounded-2xl border border-line bg-card p-4 text-sm space-y-1">
         <div className="font-semibold">כתובת ה-webhook להגדרה בדשבורד iBot</div>
         <code dir="ltr" className="block bg-surface rounded-lg p-2 select-all">{webhookUrl}</code>
-        <p className="text-muted">חובה ליצור webhook token בעמוד ה-webhook ב-iBot ולהדביק אותו כאן — בלעדיו iBot לא שולח את ה-header ואנחנו מחזירים 401.</p>
+        <p className="text-muted">חובה ליצור webhook token בעמוד ה-webhook ב-iBot ולהדביק אותו כאן - בלעדיו iBot לא שולח את ה-header ואנחנו מחזירים 401.</p>
       </div>
       <IbotForm
         current={{
@@ -57,7 +57,7 @@ export default async function AdminIbot() {
   );
 }
 
-const fmt = (iso: string) => (iso ? new Date(iso).toLocaleString("he-IL") : "—");
+const fmt = (iso: string) => (iso ? new Date(iso).toLocaleString("he-IL") : "-");
 
 function Info({ label, value, tone }: { label: string; value: string; tone?: "ok" | "bad" }) {
   const cls = tone === "ok" ? "border-ok/40 bg-ok/5" : tone === "bad" ? "border-danger/40 bg-danger/5" : "border-line bg-card";

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Link2Off } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { UNITS } from "@/lib/ai/types";
 import { verifyToken } from "@/lib/crypto";
@@ -9,7 +10,7 @@ import { getQuote } from "@/lib/quotes/service";
 import { QuoteEditor } from "./quote-editor";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "עריכת הצעה — QuickVoice" };
+export const metadata: Metadata = { title: "עריכת הצעה - QuickVoice" };
 
 export default async function EditQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -20,7 +21,7 @@ export default async function EditQuotePage({ params }: { params: Promise<{ toke
     return (
       <main className="flex-1 grid place-items-center p-6 text-center">
         <div className="space-y-2">
-          <div className="text-4xl">🔗</div>
+          <Link2Off className="h-10 w-10 mx-auto text-muted" />
           <h1 className="text-xl font-bold">הקישור לא תקף</h1>
           <p className="text-muted text-sm">
             קישורי עריכה תקפים ל-7 ימים. שלח &quot;ערוך&quot; ב-WhatsApp לקבלת קישור חדש.

@@ -14,8 +14,8 @@ type Props = {
 
 const PLAN_LABEL: Record<string, string> = {
   trial: "ניסיון (5 הצעות)",
-  basic: "Basic — 20 הצעות בחודש",
-  pro: "Pro — 100 הצעות בחודש",
+  basic: "Basic - 20 הצעות בחודש",
+  pro: "Pro - 100 הצעות בחודש",
   unlimited: "Unlimited",
 };
 
@@ -31,7 +31,7 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, initi
   const save = () =>
     start(async () => {
       const r = await saveSettingsAction(token, form);
-      setMsg(r.ok ? { ok: true, text: "נשמר ✓" } : { ok: false, text: "לא נשמר — בדוק את השדות" });
+      setMsg(r.ok ? { ok: true, text: "נשמר ✓" } : { ok: false, text: "לא נשמר - בדוק את השדות" });
       setTimeout(() => setMsg(null), 2500);
     });
 

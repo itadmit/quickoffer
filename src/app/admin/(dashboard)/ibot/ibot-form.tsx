@@ -10,7 +10,7 @@ export function IbotForm({ current }: { current: { token: Cur; instanceId: strin
   const [result, setResult] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const set = (k: keyof typeof v, val: string) => setV((s) => ({ ...s, [k]: val }));
-  const mask = (s: string) => (!s ? "—" : s.length <= 8 ? "••••" : `${s.slice(0, 3)}…${s.slice(-4)}`);
+  const mask = (s: string) => (!s ? "-" : s.length <= 8 ? "••••" : `${s.slice(0, 3)}…${s.slice(-4)}`);
 
   return (
     <div className="grid lg:grid-cols-2 gap-4">

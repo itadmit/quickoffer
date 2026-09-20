@@ -70,7 +70,7 @@ export async function handleInbound(msg: InboundMessage): Promise<void> {
     try {
       await sendText(msg.from, errors.generic());
     } catch {
-      /* gateway down — nothing more to do */
+      /* gateway down - nothing more to do */
     }
   } finally {
     await run.save(Date.now() - started);
@@ -122,7 +122,7 @@ async function handleOnboarding(
   run.kind = "onboarding";
   const suggested = user.displayName;
 
-  // A voice note during onboarding is probably a quote — accept defaults and process it (§6.2).
+  // A voice note during onboarding is probably a quote - accept defaults and process it (§6.2).
   if (msg.type === "audio") {
     await finishOnboardingWithDefaults(user, suggested);
     const fresh = (await db.query.users.findFirst({ where: eq(users.id, user.id) }))!;
@@ -150,7 +150,7 @@ async function handleOnboarding(
     return;
   }
 
-  // Very first message from a new user — greet, don't interpret it as an answer,
+  // Very first message from a new user - greet, don't interpret it as an answer,
   // unless it already looks like a quote.
   const llm = await getLLMProvider();
   const step = user.onboardingState as "name" | "vat" | "logo";
@@ -347,7 +347,7 @@ async function transcribeInbound(
     return null;
   }
 
-  // Keep our own copy (30 days, debugging) — never the public iBot URL
+  // Keep our own copy (30 days, debugging) - never the public iBot URL
   const audioUrl = await storeFile(
     `audio/${user.id}/${msg.id}.oga`,
     buffer,
@@ -419,7 +419,7 @@ async function correctDraft(user: User, draft: QuoteWithItems, text: string, run
   await sendText(user.phone, correctionSummary(updated, result.changes));
 }
 
-/** §6.3 — three messages: summary, forward hint, clean customer message. */
+/** §6.3 - three messages: summary, forward hint, clean customer message. */
 async function sendQuoteMessages(user: User, quote: QuoteWithItems) {
   await sendText(user.phone, quoteSummary(quote, await editLink(quote.id)));
   await sendText(user.phone, forwardHint());

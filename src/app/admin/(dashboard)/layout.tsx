@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Mic } from "lucide-react";
 import { redirect } from "next/navigation";
 import { endAdminSession, requireAdmin } from "@/lib/admin/auth";
 
@@ -19,7 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex-1 flex flex-col">
       <nav className="border-b border-line bg-card px-4 py-2 flex items-center gap-1 overflow-x-auto text-sm">
-        <span className="font-bold me-3">🎤 QuickVoice</span>
+        <span className="font-bold me-3 inline-flex items-center gap-1.5"><Mic className="h-4 w-4 text-brand" /> QuickVoice</span>
         {NAV.map(([href, label]) => (
           <Link key={href} href={href} className="px-3 py-1.5 rounded-lg hover:bg-surface whitespace-nowrap">
             {label}

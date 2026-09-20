@@ -13,7 +13,7 @@ const GAP_MS = 400;
 const MAX_ATTEMPTS = 3;
 const MAX_LEN = 3900;
 
-// Serial outbound queue: iBot asks for no parallel calls. Per-instance only —
+// Serial outbound queue: iBot asks for no parallel calls. Per-instance only -
 // good enough while a single webhook invocation sends a handful of messages.
 let chain: Promise<unknown> = Promise.resolve();
 let lastSentAt = 0;

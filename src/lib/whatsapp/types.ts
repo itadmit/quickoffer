@@ -2,7 +2,7 @@
 export type InboundType = "text" | "audio" | "image" | "document" | "other";
 
 export type InboundMessage = {
-  /** provider message id — dedup key */
+  /** provider message id - dedup key */
   id: string;
   /** digits only, e.g. 972501234567 */
   from: string;

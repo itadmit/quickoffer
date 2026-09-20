@@ -18,7 +18,7 @@ export default async function AdminQuoteDebug({ params }: { params: Promise<{ id
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
-        <h1 className="text-2xl font-bold">הצעה #{q.number} — {q.customerName ?? "ללא שם"}</h1>
+        <h1 className="text-2xl font-bold">הצעה #{q.number} - {q.customerName ?? "ללא שם"}</h1>
         <span className="text-sm text-muted">{q.status}</span>
         <div className="ms-auto text-sm flex gap-3">
           <a href={await publicLink(q.publicId)} target="_blank" className="underline">דף לקוח</a>
@@ -29,7 +29,7 @@ export default async function AdminQuoteDebug({ params }: { params: Promise<{ id
 
       <div className="grid lg:grid-cols-2 gap-4">
         <Box title="תמלול גולמי">
-          <p className="whitespace-pre-wrap">{q.transcript ?? <span className="text-muted">— (נוצר מטקסט או בעריכה)</span>}</p>
+          <p className="whitespace-pre-wrap">{q.transcript ?? <span className="text-muted">- (נוצר מטקסט או בעריכה)</span>}</p>
           {q.audioUrl && <audio controls src={q.audioUrl} className="mt-3 w-full" />}
         </Box>
         <Box title="מצב נוכחי (אחרי עריכות)">

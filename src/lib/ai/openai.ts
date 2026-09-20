@@ -21,7 +21,7 @@ import {
 
 /**
  * OpenAI implementation of both pipeline stages. Also serves any
- * OpenAI-compatible endpoint (Groq, custom) via `baseURL` — that's the
+ * OpenAI-compatible endpoint (Groq, custom) via `baseURL` - that's the
  * `custom` provider in the admin dashboard.
  */
 
