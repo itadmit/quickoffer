@@ -60,6 +60,7 @@ export default async function LandingPage() {
   const wa = `https://wa.me/${phone}?text=${encodeURIComponent(WELCOME)}`;
   const tgUser = await getSetting("telegram.bot_username");
   const tg = tgUser ? `https://t.me/${tgUser}` : null;
+  const channels = tg ? "WhatsApp או טלגרם" : "WhatsApp";
 
   return (
     <main className="flex-1 overflow-x-hidden">
@@ -105,7 +106,7 @@ export default async function LandingPage() {
                   <span className="anim-ring absolute inset-0 rounded-full text-[#25D366]" />
                   <span className="h-2 w-2 rounded-full bg-[#25D366]" />
                 </span>
-                עובד בתוך WhatsApp. בלי אפליקציה.
+                עובד בתוך {channels}. בלי אפליקציה.
               </span>
               <h1 className="anim-fade-up [animation-delay:80ms] text-[2.6rem] sm:text-5xl md:text-6xl font-bold leading-[1.12] tracking-tight">
                 שלח הודעה קולית.
@@ -115,24 +116,27 @@ export default async function LandingPage() {
                 <span className="text-brand">סגור עסקה.</span>
               </h1>
               <p className="anim-fade-up [animation-delay:160ms] text-lg md:text-xl text-muted max-w-[34rem] leading-relaxed">
-                לבעלי מקצוע בשטח - חשמלאים, אינסטלטורים, מזגנים, שיפוצים. מדברים 20 שניות ב-WhatsApp,
+                לבעלי מקצוע בשטח - חשמלאים, אינסטלטורים, מזגנים, שיפוצים. מדברים 20 שניות ב-{channels},
                 ותוך דקה יש הצעת מחיר מעוצבת עם הלוגו שלך, מוכנה להעברה ללקוח. הלקוח פותח, מאשר וחותם.
               </p>
-              <div className="anim-fade-up [animation-delay:240ms] flex flex-col sm:flex-row gap-4 sm:items-center">
-                <WhatsAppButton href={wa} big />
-                <div className="text-sm text-muted leading-snug">
+              <div className="anim-fade-up [animation-delay:240ms] space-y-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <WhatsAppButton href={wa} big />
+                  {tg && <TelegramButton href={tg} big />}
+                </div>
+                <div className="text-sm text-muted leading-snug space-y-0.5">
                   <div>5 הצעות ראשונות חינם.</div>
-                  <div dir="ltr" className="text-xs">
-                    <span dir="rtl">או שמור את המספר:</span> {formatPhone(phone)}
+                  <div className="text-xs">
+                    WhatsApp: <bdi dir="ltr">{formatPhone(phone)}</bdi>
+                    {tg && (
+                      <>
+                        {" · "}טלגרם:{" "}
+                        <a href={tg} target="_blank" rel="noopener" className="underline">
+                          <bdi dir="ltr">@{tgUser}</bdi>
+                        </a>
+                      </>
+                    )}
                   </div>
-                  {tg && (
-                    <div className="text-xs">
-                      מעדיף טלגרם?{" "}
-                      <a href={tg} target="_blank" rel="noopener" className="underline text-ink" dir="ltr">
-                        @{tgUser}
-                      </a>
-                    </div>
-                  )}
                 </div>
               </div>
               <ul className="anim-fade-up [animation-delay:320ms] flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted pt-2">
@@ -196,7 +200,7 @@ export default async function LandingPage() {
             &quot;הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200, לפני מע״מ&quot;
           </Step>
           <Step n="2" icon={ClipboardList} title="מקבלים הצעה מוכנה" delay={120}>
-            הבוט מחזיר סיכום, קישור לעריכה, והודעה נקייה להעברה ללקוח - מהמספר שלך.
+            הבוט מחזיר סיכום, קישור לעריכה, והודעה נקייה להעברה ללקוח - מהמספר שלך, באותו צ׳אט שבו שלחת.
           </Step>
           <Step n="3" icon={FileSignature} title="הלקוח מאשר וחותם" delay={240}>
             הלקוח פותח דף מעוצב מהטלפון, מאשר וחותם באצבע. אתה מקבל התראה ב-WhatsApp.
@@ -231,7 +235,7 @@ export default async function LandingPage() {
               הלקוח פתח? אישר? דחה? שאל שאלה? - מקבלים הודעה ב-WhatsApp מיד.
             </Benefit>
             <Benefit icon={Ban} title="לא הנהלת חשבונות" delay={300}>
-              רק הצעות מחיר. בלי חשבוניות, בלי CRM, בלי ללמוד מערכת. WhatsApp הוא האפליקציה.
+              רק הצעות מחיר. בלי חשבוניות, בלי CRM, בלי ללמוד מערכת. {channels} - זו האפליקציה.
             </Benefit>
           </div>
         </div>
@@ -287,8 +291,9 @@ export default async function LandingPage() {
           <Reveal delay={100}>
             <p className="opacity-90 text-lg max-w-xl mx-auto">שלח &quot;{WELCOME}&quot; לבוט, ענה על שתי שאלות, ותשלח את ההצעה הראשונה תוך דקה.</p>
           </Reveal>
-          <Reveal delay={200} className="flex justify-center">
+          <Reveal delay={200} className="flex flex-col sm:flex-row justify-center gap-3">
             <WhatsAppButton href={wa} big inverted />
+            {tg && <TelegramButton href={tg} big inverted />}
           </Reveal>
         </div>
       </section>
@@ -320,7 +325,7 @@ const TRADES: { label: string; icon: LucideIcon }[] = [
 const FAQ = [
   {
     q: "איך הלקוח מקבל את ההצעה?",
-    a: "הבוט מחזיר לך הודעה נקייה עם קישור. לחיצה ארוכה, Forward, והלקוח מקבל אותה מהמספר שלך - לא ממספר זר. הוא פותח דף מעוצב מהטלפון, בלי להתקין ובלי להירשם.",
+    a: "הבוט מחזיר לך הודעה נקייה עם קישור. לחיצה ארוכה, Forward (ב-WhatsApp או בטלגרם), והלקוח מקבל אותה ממך - לא ממספר זר. הוא פותח דף מעוצב מהטלפון, בלי להתקין ובלי להירשם.",
   },
   {
     q: "מה אם הבוט לא הבין אותי נכון?",
@@ -337,6 +342,10 @@ const FAQ = [
   {
     q: "זה מוציא חשבוניות?",
     a: "לא, ובכוונה. QuickOffer עושה דבר אחד: הצעות מחיר מהודעה קולית. חיבור לתוכנת החשבוניות שלך - בהמשך.",
+  },
+  {
+    q: "אני לא ב-WhatsApp, יש טלגרם?",
+    a: "כן. אותו בוט, אותה שיחה - שולחים הודעה קולית בטלגרם ומקבלים את אותה הצעה עם אותם קישורים. ההודעה ללקוח עדיין נשלחת מהטלפון שלך, באיזה אפליקציה שתבחר.",
   },
   {
     q: "כמה זה עולה להתחיל?",
@@ -366,6 +375,30 @@ function WhatsAppIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor" aria-hidden>
       <path d="M17.5 14.4c-.3-.1-1.8-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.2-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z" />
+    </svg>
+  );
+}
+
+function TelegramButton({ href, big, inverted }: { href: string; big?: boolean; inverted?: boolean }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener"
+      className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl font-semibold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]
+        ${big ? "px-7 py-4 text-lg" : "px-4 py-3"}
+        ${inverted ? "bg-white/15 text-white ring-1 ring-white/40 hover:bg-white/25" : "bg-card text-ink ring-1 ring-line shadow-sm hover:shadow-md"}`}
+    >
+      <TelegramIcon className={inverted ? "text-white" : "text-[#229ED9]"} />
+      התחל בטלגרם
+    </a>
+  );
+}
+
+function TelegramIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={`h-6 w-6 ${className}`} fill="currentColor" aria-hidden>
+      <path d="M21.9 4.6c.3-1.2-.9-2.1-2-1.7L2.6 9.6c-1.3.5-1.2 2.3.1 2.7l4.4 1.4 1.7 5.4c.2.7 1.1 1 1.7.5l2.5-2.1 4.6 3.4c.8.6 2 .1 2.2-.9l2.1-15.4zM9.3 13.3l8.4-6.6c.2-.1.4.1.2.3l-6.9 6.5-.3 3.2-1.4-3.4z" />
     </svg>
   );
 }
