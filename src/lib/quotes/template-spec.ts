@@ -44,7 +44,15 @@ export function planAllows(userPlan: Plan, minPlan: Plan): boolean {
 
 /** Loose match of a spoken/typed template name ("מודרני", "תבנית מינימלית", "modern"). */
 export function matchTemplateName<T extends { key: string; name: string }>(templates: T[], text: string): T | null {
-  const norm = (v: string) => v.toLowerCase().replace(/^(תבנית|עיצוב|ה)\s*/u, "").replace(/[^\p{L}\p{N}]+/gu, "");
+  // drop filler words ("תבנית", "עיצוב"), the definite article and punctuation
+  const norm = (v: string) =>
+    v
+      .toLowerCase()
+      .split(/\s+/)
+      .map((w) => w.replace(/^ה/u, ""))
+      .filter((w) => w && !["תבנית", "עיצוב", "של", "את", "ל"].includes(w))
+      .join("")
+      .replace(/[^\p{L}\p{N}]+/gu, "");
   const q = norm(text);
   if (!q) return null;
   return (

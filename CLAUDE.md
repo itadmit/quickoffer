@@ -122,7 +122,7 @@
 | `app/admin/(dashboard)` | סופר-אדמין; `login/` מחוץ ל-route group. `lib/admin/auth.ts` — cookie `qo_admin` |
 | `components/quote-document.tsx` | רינדור ההצעה - משותף לדף לקוח, תצוגה מקדימה ואדמין. בוחר layout לפי `q.template` |
 | `components/quote-layouts/` | `shared.tsx` (QuoteView + אבני בניין), `classic.tsx`, `modern.tsx`, `minimal.tsx`. `template-thumb.tsx` = תמונה ממוזערת (scale) |
-| `app/admin/(dashboard)/templates` | CRUD תבניות (`quote_templates`: layout + צבע + טקסט תחתית + פעילה/ברירת מחדל) עם preview חי. המשתמש בוחר ב-`/s`; `users.template_id` null = ברירת מחדל. ה-snapshot באישור מקפיא גם את התבנית |
+| `app/admin/(dashboard)/templates` | CRUD תבניות (`quote_templates`: layout + צבע + טקסט תחתית + פעילה/ברירת מחדל + `min_plan`) עם preview חי. המשתמש בוחר ב-`/s` או בצ'אט ("עיצוב" / "תבנית מודרני" - פקודת `template`, `templateName` ב-IntentSchema); `users.template_id` null = ברירת מחדל. תבנית מעל התוכנית = 🔒. ה-snapshot באישור מקפיא גם את התבנית |
 | `tests/` | `pure.test.ts` (ללא DB), `mock-server.mjs`, `seed-local.ts`, `send.sh`, `sent.py`, `approve-flow.ts` |
 
 ## החלטות שנלקחו תוך כדי בנייה (20.9.2026)

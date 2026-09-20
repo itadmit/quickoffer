@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { parseIbotInbound } from "@/lib/whatsapp/ibot";
 import { calcTotals, formatMoney } from "@/lib/quotes/calc";
 import { makeToken, verifyToken, encryptSecret, decryptSecret } from "@/lib/crypto";
+import { matchTemplateName, planAllows } from "@/lib/quotes/template-spec";
 
 // --- real capture from CLAUDE.md (audio)
 const audio = {
@@ -115,7 +116,6 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
 
 // ---- template name matching + plan gating
 {
-  const { matchTemplateName, planAllows } = await import("@/lib/quotes/template-spec");
   const T = [
     { key: "classic", name: "קלאסי" },
     { key: "modern", name: "מודרני" },
