@@ -13,7 +13,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "mock": "node tests/mock-server.mjs",
-    "seed:local": "tsx --tsconfig tsconfig.json tests/seed-local.ts"
+    "seed:local": "tsx --tsconfig tsconfig.json tests/seed-local.ts",
+    "vercel-build": "drizzle-kit migrate && next build"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

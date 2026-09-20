@@ -16,6 +16,11 @@ npm run dev                        # http://localhost:3000
 
 Postgres מקומי (`localhost`) עובד עם דרייבר `pg`; Neon עובד דרך `@neondatabase/serverless`.
 
+### Deploy (Vercel + Neon)
+
+משתני סביבה ב-Vercel: `DATABASE_URL` (Neon, pooled), `APP_URL`, `SETTINGS_ENCRYPTION_KEY`, `TOKEN_SECRET`, `ADMIN_PASSWORD`, `CRON_SECRET`, ואופציונלי `BLOB_READ_WRITE_TOKEN`.
+`vercel-build` מריץ `drizzle-kit migrate` לפני `next build`, אז כל מיגרציה חדשה ב-`drizzle/` מוחלת אוטומטית בכל deploy. הרצה ידנית: `npm run db:migrate` עם `DATABASE_URL` של Neon ב-`.env.local`.
+
 ### הגדרת ספקים (בלי deploy)
 
 `/admin` (סיסמה מ-`ADMIN_PASSWORD`) → **ספקי AI**: ספק/מודל/מפתח לתמלול ול-LLM, "בדוק חיבור". → **iBot**: token, instance_id, webhook token, כתובת האפליקציה.
