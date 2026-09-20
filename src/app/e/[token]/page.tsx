@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import { Link2Off } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { UNITS } from "@/lib/ai/types";
-import { verifyToken } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { publicLink } from "@/lib/quotes/links";
+import { publicLink, resolveLink } from "@/lib/quotes/links";
 import { contactPhone, getQuote } from "@/lib/quotes/service";
 import { getTemplateForUser } from "@/lib/quotes/templates";
 import { QuoteEditor } from "./quote-editor";
@@ -15,8 +14,8 @@ export const metadata: Metadata = { title: "עריכת הצעה - QuickOffer" };
 
 export default async function EditQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const payload = verifyToken(token, "e");
-  const q = payload ? await getQuote(payload.s) : null;
+  const subject = await resolveLink(token, "e");
+  const q = subject ? await getQuote(subject) : null;
 
   if (!q) {
     return (

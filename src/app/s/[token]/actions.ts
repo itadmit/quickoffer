@@ -1,10 +1,11 @@
 "use server";
+import { resolveLink } from "@/lib/quotes/links";
 
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { verifyToken } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { planAllows } from "@/lib/quotes/template-spec";
 import { getTemplate } from "@/lib/quotes/templates";
 import { storeFile } from "@/lib/storage";
 
@@ -24,9 +25,9 @@ export const SettingsSchema = z.object({
 export type SettingsForm = z.infer<typeof SettingsSchema>;
 
 async function authorize(token: string) {
-  const payload = verifyToken(token, "s");
-  if (!payload) return null;
-  return db.query.users.findFirst({ where: eq(users.id, payload.s) });
+  const subject = await resolveLink(token, "s");
+  if (!subject) return null;
+  return db.query.users.findFirst({ where: eq(users.id, subject) });
 }
 
 export async function saveSettingsAction(token: string, form: SettingsForm) {
@@ -35,9 +36,12 @@ export async function saveSettingsAction(token: string, form: SettingsForm) {
   const parsed = SettingsSchema.safeParse(form);
   if (!parsed.success) return { ok: false as const, error: "invalid" };
   const f = parsed.data;
-  // only an existing, enabled template can be chosen
+  // only an existing, enabled template the plan allows can be chosen
   const template = f.templateId ? await getTemplate(f.templateId) : null;
-  const templateId = template?.enabled ? template.id : null;
+  if (f.templateId && !(template?.enabled && planAllows(user.plan, template.minPlan))) {
+    return { ok: false as const, error: "template_locked" };
+  }
+  const templateId = template?.id ?? null;
   await db
     .update(users)
     .set({

@@ -23,9 +23,12 @@ import {
 } from "../quotes/service";
 import { estimateAudioSeconds, fetchMedia, storeFile } from "../storage";
 import { sendText, type InboundMessage } from "../whatsapp";
+import { matchTemplateName, planAllows, PLAN_LABELS } from "../quotes/template-spec";
+import { listTemplates } from "../quotes/templates";
 import { checkQuota } from "./quota";
 import {
   commands as cmd,
+  templates as tpl,
   correctionSummary,
   customerMessage,
   errors,
@@ -267,15 +270,19 @@ async function handleReady(user: User, msg: InboundMessage, run: RunLog) {
 
   // Cheap exact-match fallback for commands/greetings before spending an LLM call
   const exact = exactCommand(text);
+  const exactTemplate = exactTemplateChoice(text);
   let intent: Awaited<ReturnType<typeof llm.classifyMessage>>["result"];
   if (exact) {
-    intent = { intent: "command", command: exact };
+    intent = { intent: "command", command: exact, templateName: null };
+  } else if (exactTemplate) {
+    intent = { intent: "command", command: "template", templateName: exactTemplate };
   } else if (isGreeting(text)) {
-    intent = { intent: "greeting", command: null };
+    intent = { intent: "greeting", command: null, templateName: null };
   } else {
     const r = await llm.classifyMessage(text, {
       hasActiveDraft: !!draft,
       draftCustomer: draft?.customerName ?? null,
+      templateNames: (await listTemplates({ enabledOnly: true })).map((t) => t.name),
     });
     run.llm(r.usage);
     intent = r.result;
@@ -286,6 +293,10 @@ async function handleReady(user: User, msg: InboundMessage, run: RunLog) {
       await sendText(user.phone, cmd.greeting(!!draft));
       return;
     case "command":
+      if (intent.command === "template") {
+        await chooseTemplate(user, intent.templateName, draft);
+        return;
+      }
       await runCommand(user, intent.command ?? "help", draft);
       return;
     case "correction":
@@ -322,6 +333,9 @@ const EXACT: Record<string, Command> = {
   עזרה: "help",
   ערוך: "edit",
   עריכה: "edit",
+  עיצוב: "template",
+  תבנית: "template",
+  תבניות: "template",
   "?": "help",
 };
 
@@ -336,6 +350,12 @@ function isGreeting(text: string): boolean {
 
 function exactCommand(text: string): Command | null {
   return EXACT[text.trim().toLowerCase().replace(/[.!]+$/, "")] ?? null;
+}
+
+/** "תבנית מודרני" / "עיצוב מינימלי" → "מודרני" / "מינימלי" (the bot's own suggested phrasing). */
+function exactTemplateChoice(text: string): string | null {
+  const m = /^(?:תבנית|עיצוב)\s+(.{2,40})$/u.exec(text.trim().replace(/[.!]+$/, ""));
+  return m ? m[1].trim() : null;
 }
 
 async function transcribeInbound(
@@ -441,6 +461,42 @@ async function sendQuoteMessages(user: User, quote: QuoteWithItems) {
 }
 
 // --------------------------------------------------------------- commands
+
+/** "עיצוב" → list of templates; "תבנית מודרני" → switch (plan permitting). */
+async function chooseTemplate(user: User, templateName: string | null, draft: QuoteWithItems | null) {
+  const all = await listTemplates({ enabledOnly: true });
+  if (all.length === 0) {
+    await sendText(user.phone, tpl.none());
+    return;
+  }
+  const currentId = user.templateId ?? all.find((t) => t.isDefault)?.id ?? all[0].id;
+  if (!templateName) {
+    await sendText(
+      user.phone,
+      tpl.list(
+        all.map((t) => ({
+          name: t.name,
+          description: t.description,
+          current: t.id === currentId,
+          lockedFor: planAllows(user.plan, t.minPlan) ? null : PLAN_LABELS[t.minPlan],
+        })),
+        await settingsLink(user.id),
+      ),
+    );
+    return;
+  }
+  const chosen = matchTemplateName(all, templateName);
+  if (!chosen) {
+    await sendText(user.phone, tpl.notFound(all.map((t) => t.name)));
+    return;
+  }
+  if (!planAllows(user.plan, chosen.minPlan)) {
+    await sendText(user.phone, tpl.locked(chosen.name, PLAN_LABELS[chosen.minPlan], await settingsLink(user.id)));
+    return;
+  }
+  await db.update(users).set({ templateId: chosen.isDefault ? null : chosen.id }).where(eq(users.id, user.id));
+  await sendText(user.phone, tpl.chosen(chosen.name, draft ? await editLink(draft.id) : null));
+}
 
 async function runCommand(user: User, command: Command, draft: QuoteWithItems | null) {
   switch (command) {

@@ -32,3 +32,24 @@ export function normalizeTemplateSpec(t: Partial<QuoteTemplateSpec> | null | und
     footerText: t?.footerText?.trim() || null,
   };
 }
+
+// ---- plan gating (§11). Order matters: index = rank.
+export const PLANS = ["trial", "basic", "pro", "unlimited"] as const;
+export type Plan = (typeof PLANS)[number];
+export const PLAN_LABELS: Record<Plan, string> = { trial: "ניסיון", basic: "Basic", pro: "Pro", unlimited: "Unlimited" };
+
+export function planAllows(userPlan: Plan, minPlan: Plan): boolean {
+  return PLANS.indexOf(userPlan) >= PLANS.indexOf(minPlan);
+}
+
+/** Loose match of a spoken/typed template name ("מודרני", "תבנית מינימלית", "modern"). */
+export function matchTemplateName<T extends { key: string; name: string }>(templates: T[], text: string): T | null {
+  const norm = (v: string) => v.toLowerCase().replace(/^(תבנית|עיצוב|ה)\s*/u, "").replace(/[^\p{L}\p{N}]+/gu, "");
+  const q = norm(text);
+  if (!q) return null;
+  return (
+    templates.find((t) => norm(t.name) === q || t.key === q) ??
+    templates.find((t) => norm(t.name).startsWith(q) || q.startsWith(norm(t.name))) ??
+    null
+  );
+}

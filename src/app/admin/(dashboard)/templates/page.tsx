@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import { TemplateThumb } from "@/components/template-thumb";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { LAYOUT_LABELS } from "@/lib/quotes/template-spec";
+import { LAYOUT_LABELS, PLAN_LABELS } from "@/lib/quotes/template-spec";
 import { listTemplates, specOf } from "@/lib/quotes/templates";
 
 export default async function AdminTemplates() {
@@ -43,6 +43,7 @@ export default async function AdminTemplates() {
               <div className="font-bold text-base flex items-center gap-2">
                 {t.name}
                 {t.isDefault && <span className="text-[10px] rounded-full bg-brand-soft text-brand px-2 py-0.5">ברירת מחדל</span>}
+                {t.minPlan !== "trial" && <span className="text-[10px] rounded-full bg-warn text-warn-ink px-2 py-0.5">{PLAN_LABELS[t.minPlan]}+</span>}
               </div>
               <div className="text-muted">{t.description}</div>
               <div className="text-xs text-muted pt-1 space-y-0.5">

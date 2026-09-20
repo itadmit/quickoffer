@@ -1,0 +1,1 @@
+ALTER TABLE "quote_templates" ADD COLUMN "min_plan" "plan" DEFAULT 'trial' NOT NULL;

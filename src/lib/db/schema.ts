@@ -18,7 +18,6 @@ const money = (name: string) =>
 
 export const channelEnum = pgEnum("channel", ["whatsapp", "telegram"]);
 export const vatStatusEnum = pgEnum("vat_status", ["exempt", "registered"]);
-export const planEnum = pgEnum("plan", ["trial", "basic", "pro", "unlimited"]);
 export const onboardingStateEnum = pgEnum("onboarding_state", [
   "name",
   "vat",
@@ -53,6 +52,7 @@ export const inboundTypeEnum = pgEnum("inbound_type", [
 ]);
 
 export const quoteLayoutEnum = pgEnum("quote_layout", ["classic", "modern", "minimal"]);
+export const planEnum = pgEnum("plan", ["trial", "basic", "pro", "unlimited"]);
 
 // Customer-facing quote designs. Rows are managed in /admin/templates; the
 // layout is a React component (components/quote-layouts), the rest is styling.
@@ -65,6 +65,8 @@ export const quoteTemplates = pgTable("quote_templates", {
   accent: text("accent").notNull().default("#0f766e"),
   footerText: text("footer_text"),
   enabled: boolean("enabled").notNull().default(true),
+  // lowest plan that may pick this template (trial = everyone)
+  minPlan: planEnum("min_plan").notNull().default("trial"),
   isDefault: boolean("is_default").notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -264,6 +266,20 @@ export const processingRuns = pgTable(
     at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("processing_runs_quote_idx").on(t.quoteId)],
+);
+
+/** Short codes behind /e/{code} and /s/{code}. 6 chars, no look-alikes, expiring. */
+export const magicLinks = pgTable(
+  "magic_links",
+  {
+    code: text("code").primaryKey(),
+    purpose: text("purpose").notNull(), // e = edit quote, s = settings
+    subject: text("subject").notNull(), // quote id / user id
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  },
+  (t) => [index("magic_links_subject_idx").on(t.purpose, t.subject)],
 );
 
 export type User = typeof users.$inferSelect;

@@ -45,12 +45,15 @@ export const COMMANDS = [
   "settings",
   "help",
   "edit",
+  "template",
 ] as const;
 export type Command = (typeof COMMANDS)[number];
 
 export const IntentSchema = z.object({
   intent: z.enum(["greeting", "correction", "new_quote", "command", "question", "unclear"]),
   command: z.enum(COMMANDS).nullable(),
+  /** for command=template: the template the user named ("מודרני"), null = show the list */
+  templateName: z.string().nullable(),
 });
 export type Intent = z.infer<typeof IntentSchema>;
 
@@ -108,7 +111,7 @@ export interface LLMProvider {
   ): Promise<WithUsage<CorrectionResult>>;
   classifyMessage(
     text: string,
-    ctx: { hasActiveDraft: boolean; draftCustomer: string | null },
+    ctx: { hasActiveDraft: boolean; draftCustomer: string | null; templateNames: string[] },
   ): Promise<WithUsage<Intent>>;
   parseOnboardingAnswer(
     text: string,

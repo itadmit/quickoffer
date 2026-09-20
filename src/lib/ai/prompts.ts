@@ -142,6 +142,7 @@ ${STRUCTURE_RULES}`;
 export function classifySystemPrompt(ctx: {
   hasActiveDraft: boolean;
   draftCustomer: string | null;
+  templateNames: string[];
 }) {
   return `אתה מסווג הודעה של בעל מקצוע ישראלי לבוט QuickOffer (הצעות מחיר ב-WhatsApp/טלגרם). ההודעה יכולה להיות טקסט או תמלול של הודעה קולית (עם שגיאות תמלול).
 ${
@@ -163,11 +164,12 @@ ${
   settings = "הגדרות", "לוגו", "לשנות פרטים", "לשנות את השם של העסק", "תנאי תשלום קבועים"
   help = "עזרה", "מה אתה יודע לעשות", "איך זה עובד", "?", "הוראות"
   edit = "ערוך", "עריכה", "קישור לעריכה", "אני רוצה לערוך"
+  template = עיצוב/תבנית של ההצעה: "עיצוב", "תבנית", "תבניות", "לשנות עיצוב", "איזה עיצובים יש", "תבנית מודרני", "תעביר אותי לעיצוב המינימלי". התבניות הקיימות: ${ctx.templateNames.map((n) => `"${n}"`).join(", ") || "(אין)"}. אם המשתמש נקב בשם תבנית - templateName = השם כפי שמופיע ברשימה; אחרת null.
 - question - שאלה על המערכת או על ההצעה שלא דורשת פעולה: "זה כולל מע״מ?", "כמה זה עולה?", "הלקוח ראה?", "מה הסטטוס?".
 - unclear - לא ניתן להבין, או שלא ברור אם זה תיקון להצעה הקיימת או הצעה חדשה (למשל "300 שקל" לבד כשיש טיוטה).
 
 עדיפות בספק: greeting לפני unclear; command רק כשההודעה קצרה וברורה כפקודה (לא "תשלח לדני הצעה על 3 נקודות" - זו new_quote).
-command חובה כשה-intent הוא command, אחרת null.`;
+command חובה כשה-intent הוא command, אחרת null. templateName רק ל-command=template, אחרת null.`;
 }
 
 export function onboardingSystemPrompt(

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { resolveLink } from "@/lib/quotes/links";
 import { Link2Off } from "lucide-react";
 import { eq } from "drizzle-orm";
-import { verifyToken } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { planAllows, PLAN_LABELS } from "@/lib/quotes/template-spec";
 import { listTemplates, specOf } from "@/lib/quotes/templates";
 import { SettingsEditor } from "./settings-editor";
 
@@ -12,8 +13,8 @@ export const metadata: Metadata = { title: "הגדרות העסק - QuickOffer" 
 
 export default async function SettingsPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const payload = verifyToken(token, "s");
-  const user = payload ? await db.query.users.findFirst({ where: eq(users.id, payload.s) }) : null;
+  const subject = await resolveLink(token, "s");
+  const user = subject ? await db.query.users.findFirst({ where: eq(users.id, subject) }) : null;
 
   if (!user) {
     return (
@@ -32,6 +33,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ token
     name: t.name,
     description: t.description,
     isDefault: t.isDefault,
+    lockedFor: planAllows(user.plan, t.minPlan) ? null : PLAN_LABELS[t.minPlan],
     spec: specOf(t),
   }));
 

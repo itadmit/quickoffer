@@ -68,6 +68,12 @@ assert.equal(decryptSecret(enc), "sk-abc123");
 
 console.log("ALL PURE TESTS PASSED");
 
+// --- short ids
+import { newPublicId, newLinkCode } from "@/lib/ids";
+assert.equal(newPublicId().length, 6);
+assert.equal(newLinkCode().length, 6);
+assert(!/[0O1lI]/.test(newPublicId() + newLinkCode() + newPublicId()), "no look-alike chars");
+
 // --- upload naming for Whisper endpoints (.oga → .ogg)
 import { uploadName } from "@/lib/ai/openai";
 assert.equal(uploadName("EgrnRi_inbox.oga", "audio/ogg; codecs=opus"), "voice.ogg");

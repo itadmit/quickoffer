@@ -7,7 +7,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";
 import { db } from "@/lib/db";
 import { quoteTemplates, users } from "@/lib/db/schema";
-import { HEX_COLOR, QUOTE_LAYOUTS } from "@/lib/quotes/template-spec";
+import { HEX_COLOR, PLANS, QUOTE_LAYOUTS } from "@/lib/quotes/template-spec";
 
 export const TemplateSchema = z.object({
   key: z.string().trim().regex(/^[a-z0-9-]{2,40}$/, "key: a-z, 0-9, מקף"),
@@ -17,6 +17,7 @@ export const TemplateSchema = z.object({
   accent: z.string().trim().regex(HEX_COLOR, "צבע בפורמט #rrggbb"),
   footerText: z.string().trim().max(1000).nullable(),
   enabled: z.boolean(),
+  minPlan: z.enum(PLANS),
   isDefault: z.boolean(),
   sortOrder: z.number().int().min(0).max(999),
 });
@@ -40,6 +41,8 @@ export async function saveTemplateAction(id: string | null, form: TemplateForm) 
     accent: f.accent.toLowerCase(),
     footerText: f.footerText || null,
     enabled: f.isDefault ? true : f.enabled,
+    // the default must be available to everyone
+    minPlan: f.isDefault ? "trial" : f.minPlan,
     isDefault: f.isDefault,
     sortOrder: f.sortOrder,
     updatedAt: new Date(),

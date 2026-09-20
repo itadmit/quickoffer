@@ -1,10 +1,10 @@
 "use server";
+import { resolveLink } from "@/lib/quotes/links";
 
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { UNITS } from "@/lib/ai/types";
-import { verifyToken } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { quotes } from "@/lib/db/schema";
 import { addEvent, deleteQuote, getQuote, markSent, replaceItemsAndRecalc } from "@/lib/quotes/service";
@@ -31,9 +31,9 @@ export const QuoteFormSchema = z.object({
 export type QuoteForm = z.infer<typeof QuoteFormSchema>;
 
 async function authorize(token: string) {
-  const payload = verifyToken(token, "e");
-  if (!payload) return null;
-  const q = await getQuote(payload.s);
+  const subject = await resolveLink(token, "e");
+  if (!subject) return null;
+  const q = await getQuote(subject);
   if (!q) return null;
   return q;
 }

@@ -98,6 +98,25 @@ export function quotesList(list: Quote[], editUrls: string[]): string {
   ].join("\n");
 }
 
+export const templates = {
+  list: (items: { name: string; description: string | null; current: boolean; lockedFor: string | null }[], settingsUrl: string) =>
+    [
+      `🎨 עיצוב ההצעה:`,
+      ...items.map(
+        (t, i) =>
+          `${i + 1}. ${t.name}${t.current ? " ✓ (נוכחי)" : ""}${t.lockedFor ? ` 🔒 ${t.lockedFor}` : ""}${t.description ? ` - ${t.description}` : ""}`,
+      ),
+      ``,
+      `להחלפה כתוב למשל "תבנית ${items.find((t) => !t.current && !t.lockedFor)?.name ?? items[0]?.name ?? "מודרני"}".`,
+      `לראות איך כל תבנית נראית: ${settingsUrl}`,
+    ].join("\n"),
+  chosen: (name: string, previewUrl: string | null) =>
+    `✅ מעכשיו ההצעות שלך בעיצוב "${name}". הצעות שכבר נחתמו לא משתנות.${previewUrl ? `\nלתצוגה מקדימה של הטיוטה: ${previewUrl}` : ""}`,
+  notFound: (names: string[]) => `לא מצאתי תבנית כזו. התבניות: ${names.join(" / ")}. כתוב למשל "תבנית ${names[0] ?? "מודרני"}".`,
+  locked: (name: string, plan: string, upgradeUrl: string) => `🔒 התבנית "${name}" זמינה בתוכנית ${plan} ומעלה. לשדרוג: ${upgradeUrl}`,
+  none: () => `אין כרגע תבניות לבחירה.`,
+};
+
 export const commands = {
   markedSent: (q: Quote) => `👍 הצעה #${q.number} סומנה כנשלחה. אעדכן אותך כשהלקוח יפתח.`,
   nothingToSend: () => `אין טיוטה פעילה לסימון. שלח "הצעות" לרשימה.`,
@@ -121,6 +140,7 @@ export const commands = {
       `• בטל - למחוק את הטיוטה`,
       `• חדש - להתחיל הצעה חדשה`,
       `• הגדרות - פרטי העסק והלוגו`,
+      `• עיצוב - לבחור תבנית להצעה`,
     ].join("\n"),
   unclearCorrectionOrNew: (customer: string | null) =>
     `לתקן את ההצעה${customer ? ` ל${customer}` : " הפעילה"}, או הצעה חדשה? (ענה "תקן" או "חדש")`,

@@ -4,6 +4,7 @@ import { handleInbound } from "@/lib/conversation/handler";
 import { safeEqual } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { inboundMessages, quotes } from "@/lib/db/schema";
+import { purgeExpiredLinks } from "@/lib/quotes/links";
 import { getSetting } from "@/lib/settings";
 import { gatewayFor, type InboundMessage } from "@/lib/whatsapp";
 
@@ -63,6 +64,8 @@ export async function GET(req: NextRequest) {
     )
     .returning({ id: quotes.id });
 
+  const purgedLinks = await purgeExpiredLinks();
+
   const instanceStatus = await getSetting("ibot.instance_status");
   const lastWebhookAt = await getSetting("ibot.last_webhook_at");
 
@@ -70,6 +73,7 @@ export async function GET(req: NextRequest) {
     ok: true,
     reprocessed,
     expired: expired.length,
+    purgedLinks,
     instanceStatus,
     lastWebhookAt,
   });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Check } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import { formatPhone } from "@/components/quote-document";
 import { TemplateThumb } from "@/components/template-thumb";
 import type { QuoteTemplateSpec } from "@/lib/quotes/template-spec";
@@ -12,7 +12,8 @@ type Props = {
   phone: string | null;
   plan: string;
   logoUrl: string | null;
-  templates: { id: string; name: string; description: string | null; isDefault: boolean; spec: QuoteTemplateSpec }[];
+  /** lockedFor: the plan name required, when the user's plan cannot pick it */
+  templates: { id: string; name: string; description: string | null; isDefault: boolean; lockedFor: string | null; spec: QuoteTemplateSpec }[];
   initial: SettingsForm;
 };
 
@@ -35,7 +36,11 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, templ
   const save = () =>
     start(async () => {
       const r = await saveSettingsAction(token, form);
-      setMsg(r.ok ? { ok: true, text: "נשמר ✓" } : { ok: false, text: "לא נשמר - בדוק את השדות" });
+      setMsg(
+        r.ok
+          ? { ok: true, text: "נשמר ✓" }
+          : { ok: false, text: r.error === "template_locked" ? "התבנית שנבחרה לא זמינה בתוכנית שלך" : "לא נשמר - בדוק את השדות" },
+      );
       setTimeout(() => setMsg(null), 2500);
     });
 
@@ -166,9 +171,21 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, templ
                 <button
                   key={t.id}
                   type="button"
-                  onClick={() => update("templateId", t.isDefault ? null : t.id)}
-                  className={`relative text-start rounded-2xl border-2 p-2 space-y-2 ${selected ? "border-brand bg-brand-soft/40" : "border-line bg-card"}`}
+                  onClick={() => {
+                    if (t.lockedFor) {
+                      setMsg({ ok: false, text: `תבנית "${t.name}" זמינה בתוכנית ${t.lockedFor} ומעלה` });
+                      setTimeout(() => setMsg(null), 3000);
+                      return;
+                    }
+                    update("templateId", t.isDefault ? null : t.id);
+                  }}
+                  className={`relative text-start rounded-2xl border-2 p-2 space-y-2 ${selected ? "border-brand bg-brand-soft/40" : "border-line bg-card"} ${t.lockedFor ? "opacity-70" : ""}`}
                 >
+                  {t.lockedFor && (
+                    <span className="absolute top-3 end-3 z-10 inline-flex items-center gap-1 rounded-full bg-ink/80 text-white text-[11px] px-2 py-0.5">
+                      <Lock className="h-3 w-3" /> {t.lockedFor}
+                    </span>
+                  )}
                   {selected && (
                     <span className="absolute top-3 end-3 z-10 grid place-items-center h-6 w-6 rounded-full bg-brand text-brand-ink">
                       <Check className="h-3.5 w-3.5" />

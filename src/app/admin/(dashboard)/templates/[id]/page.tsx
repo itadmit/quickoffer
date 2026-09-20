@@ -8,7 +8,7 @@ export default async function AdminTemplateEdit({ params }: { params: Promise<{ 
     return (
       <TemplateEditor
         id={null}
-        initial={{ key: "", name: "", description: null, layout: "classic", accent: "#0f766e", footerText: null, enabled: true, isDefault: false, sortOrder: 10 }}
+        initial={{ key: "", name: "", description: null, layout: "classic", accent: "#0f766e", footerText: null, enabled: true, minPlan: "trial", isDefault: false, sortOrder: 10 }}
       />
     );
   }
@@ -25,6 +25,7 @@ export default async function AdminTemplateEdit({ params }: { params: Promise<{ 
         accent: t.accent,
         footerText: t.footerText,
         enabled: t.enabled,
+        minPlan: t.minPlan,
         isDefault: t.isDefault,
         sortOrder: t.sortOrder,
       }}
