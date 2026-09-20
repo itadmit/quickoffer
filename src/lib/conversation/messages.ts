@@ -61,7 +61,7 @@ export function quoteSummary(q: QuoteWithItems, editUrl: string): string {
 }
 
 /** §6.3 message 2 */
-export const forwardHint = () => `👇 להעביר ללקוח - לחץ לחיצה ארוכה על ההודעה הבאה ← Forward`;
+export const forwardHint = () => `👇 להעביר ללקוח - לחץ לחיצה ארוכה על ההודעה הבאה ← העבר`;
 
 /** §6.3 message 3 - the clean, forwardable message */
 export function customerMessage(q: Quote, user: User, publicUrl: string): string {
