@@ -112,3 +112,24 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert(p.ok && p.message.type === "image" && p.message.media?.url === "tg-file:big");
   console.log("TELEGRAM PARSER OK");
 }
+
+// ---- template name matching + plan gating
+{
+  const { matchTemplateName, planAllows } = await import("@/lib/quotes/template-spec");
+  const T = [
+    { key: "classic", name: "קלאסי" },
+    { key: "modern", name: "מודרני" },
+    { key: "minimal", name: "מינימלי" },
+  ];
+  assert.equal(matchTemplateName(T, "מודרני")?.key, "modern");
+  assert.equal(matchTemplateName(T, "תבנית מינימלית")?.key, "minimal");
+  assert.equal(matchTemplateName(T, "העיצוב הקלאסי")?.key, "classic");
+  assert.equal(matchTemplateName(T, "modern")?.key, "modern");
+  assert.equal(matchTemplateName(T, "כחול"), null);
+  assert.equal(matchTemplateName(T, ""), null);
+  assert(planAllows("pro", "basic"));
+  assert(planAllows("basic", "basic"));
+  assert(!planAllows("trial", "pro"));
+  assert(planAllows("unlimited", "pro"));
+  console.log("TEMPLATE MATCH OK");
+}
