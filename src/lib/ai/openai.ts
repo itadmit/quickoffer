@@ -42,6 +42,9 @@ const LLM_PRICE_USD_PER_M: Record<string, { in: number; out: number }> = {
   "gpt-5-nano": { in: 0.05, out: 0.4 },
   "gpt-5.4-mini": { in: 0.25, out: 2 },
   "gpt-5.4-nano": { in: 0.05, out: 0.4 },
+  // Groq
+  "openai/gpt-oss-120b": { in: 0.15, out: 0.6 },
+  "openai/gpt-oss-20b": { in: 0.075, out: 0.3 },
 };
 const ASR_PRICE_USD_PER_MIN: Record<string, number> = {
   "whisper-1": 0.006,

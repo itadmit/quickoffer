@@ -16,7 +16,7 @@ const LLM_PROVIDERS = [
   ["custom", "Custom - URL תואם OpenAI"],
 ];
 const ASR_MODELS = ["gpt-4o-transcribe", "gpt-4o-mini-transcribe", "whisper-1", "whisper-large-v3", "whisper-large-v3-turbo"];
-const LLM_MODELS = ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-5-mini", "gpt-4.1-mini", "gpt-4o-mini", "llama-3.3-70b-versatile"];
+const LLM_MODELS = ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-5-mini", "gpt-4.1-mini", "gpt-4o-mini", "openai/gpt-oss-120b", "openai/gpt-oss-20b"];
 
 export function AiSettingsForm({ transcription, llm }: { transcription: Setting[]; llm: Setting[] }) {
   const get = (list: Setting[], k: string) => list.find((s) => s.key === k);

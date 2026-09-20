@@ -125,7 +125,8 @@
 ## החלטות שנלקחו תוך כדי בנייה (20.9.2026)
 
 - **iBot API base = `https://ibot-chat.com/api/v1/`** (לא השורש). פרמטר תמונה `imageurl`, מסמך `docurl`. מאומת מדף ה-docs.
-- ברירות מחדל: תמלול `gpt-4o-transcribe`, LLM `gpt-5.4-mini` (`chat.completions.parse` + `zodResponseFormat`). ניתנים לשינוי ב-`/admin`.
+- ברירות מחדל בקוד: תמלול `gpt-4o-transcribe`, LLM `gpt-5.4-mini` (`chat.completions.parse` + `zodResponseFormat`). ניתנים לשינוי ב-`/admin`.
+- **Groq מאומת (20.9.2026):** המשתמש פתח חשבון Free ב-console.groq.com. `whisper-large-v3` ו-`whisper-large-v3-turbo` תמללו עברית סינתטית (Carmit) מושלם ב-0.3–0.8 שנ׳; `openai/gpt-oss-120b` החזיר JSON נכון ב-2 שנ׳. **אין ב-Groq מודלי Llama 3.x יותר** - הרשימה: `openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `groq/compound`, `qwen/qwen3.8-27b`. `app_settings` ב-Neon מכוונים עכשיו ל-groq בשני השלבים; המפתח ב-`GROQ_API_KEY` (env fallback ב-`lib/ai/index.ts`, ספציפי לספק) או ב-`/admin`. `tests/groq-live.ts <wav>` = בדיקה חיה.
 - Groq / custom = אותו אדפטר OpenAI עם `baseURL`. Anthropic/Gemini עדיין לא ממומשים (`getLLMProvider` זורק).
 - `vatIncluded=true` → המחירים שהוזנו כוללים מע״מ ומחלצים אותו (`net = total/1.18`).
 - טיוטה פעילה = ההצעה **האחרונה** של המשתמש, `draft`, `updated_at` < 30 דק׳. "חדש" מזיז את `updated_at` אחורה ב-31 דק׳.

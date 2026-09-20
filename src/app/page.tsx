@@ -3,7 +3,6 @@ import {
   BadgeCheck,
   Ban,
   BatteryFull,
-  Bell,
   Blinds,
   Bug,
   Cctv,
@@ -45,6 +44,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Reveal } from "@/components/reveal";
+import { NotificationToast } from "@/components/notification-toast";
 import { formatPhone } from "@/components/quote-document";
 import { getSetting } from "@/lib/settings";
 
@@ -164,15 +164,7 @@ export default async function LandingPage() {
                 <ChatMockup />
               </div>
               {/* floating notification */}
-              <div className="anim-pop [animation-delay:1600ms] absolute -end-14 top-[14%] w-[230px] rounded-2xl bg-white/90 backdrop-blur border border-line shadow-xl p-3 hidden sm:flex items-start gap-3">
-                <span className="grid place-items-center h-9 w-9 rounded-xl bg-[#25D366] text-white shrink-0">
-                  <Bell className="h-4 w-4" />
-                </span>
-                <div className="text-[12px] leading-snug">
-                  <div className="font-semibold">WhatsApp · עכשיו</div>
-                  <div className="text-muted">דני כהן אישר וחתם על הצעה #1042 (767 ₪)</div>
-                </div>
-              </div>
+              <NotificationToast className="absolute -end-14 top-[14%] hidden sm:flex" />
             </div>
           </div>
         </div>

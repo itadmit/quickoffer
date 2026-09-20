@@ -10,11 +10,12 @@ import { decryptSecret, encryptSecret } from "./crypto";
 export const SETTING_KEYS = {
   "transcription.provider": { secret: false, env: null, default: "openai" },
   "transcription.model": { secret: false, env: null, default: "whisper-1" },
-  "transcription.api_key": { secret: true, env: "OPENAI_API_KEY", default: "" },
+  // key env fallback is provider-specific, resolved in lib/ai/index.ts (OPENAI_API_KEY / GROQ_API_KEY)
+  "transcription.api_key": { secret: true, env: null, default: "" },
   "transcription.base_url": { secret: false, env: null, default: "" },
   "llm.provider": { secret: false, env: null, default: "openai" },
   "llm.model": { secret: false, env: null, default: "gpt-4o-mini" },
-  "llm.api_key": { secret: true, env: "OPENAI_API_KEY", default: "" },
+  "llm.api_key": { secret: true, env: null, default: "" },
   "llm.base_url": { secret: false, env: null, default: "" },
   "ibot.token": { secret: true, env: "IBOT_TOKEN", default: "" },
   "ibot.instance_id": { secret: false, env: "IBOT_INSTANCE_ID", default: "" },
