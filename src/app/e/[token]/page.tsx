@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { publicLink } from "@/lib/quotes/links";
 import { contactPhone, getQuote } from "@/lib/quotes/service";
+import { getTemplateForUser } from "@/lib/quotes/templates";
 import { QuoteEditor } from "./quote-editor";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,7 @@ export default async function EditQuotePage({ params }: { params: Promise<{ toke
           vatStatus: user.vatStatus,
         },
         createdAt: q.createdAt.toISOString(),
+        template: await getTemplateForUser(user),
       }}
       initial={{
         customerName: q.customerName,

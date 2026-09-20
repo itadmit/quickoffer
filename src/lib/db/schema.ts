@@ -52,6 +52,29 @@ export const inboundTypeEnum = pgEnum("inbound_type", [
   "other",
 ]);
 
+export const quoteLayoutEnum = pgEnum("quote_layout", ["classic", "modern", "minimal"]);
+
+// Customer-facing quote designs. Rows are managed in /admin/templates; the
+// layout is a React component (components/quote-layouts), the rest is styling.
+export const quoteTemplates = pgTable("quote_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description"),
+  layout: quoteLayoutEnum("layout").notNull().default("classic"),
+  accent: text("accent").notNull().default("#0f766e"),
+  footerText: text("footer_text"),
+  enabled: boolean("enabled").notNull().default(true),
+  isDefault: boolean("is_default").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   // Logical PK / messaging address. WhatsApp: digits from the jid (972501234567).
@@ -75,6 +98,10 @@ export const users = pgTable("users", {
     .notNull()
     .default("name"),
   blocked: boolean("blocked").notNull().default(false),
+  // null = the default template
+  templateId: uuid("template_id").references(() => quoteTemplates.id, {
+    onDelete: "set null",
+  }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -240,6 +267,7 @@ export const processingRuns = pgTable(
 );
 
 export type User = typeof users.$inferSelect;
+export type QuoteTemplate = typeof quoteTemplates.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type QuoteItem = typeof quoteItems.$inferSelect;
 export type QuoteEvent = typeof quoteEvents.$inferSelect;

@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { QuoteDocument, type QuoteView } from "@/components/quote-document";
 import { recordView } from "@/lib/quotes/customer-actions";
 import { contactPhone, getQuoteByPublicId } from "@/lib/quotes/service";
+import { normalizeTemplateSpec, type QuoteTemplateSpec } from "@/lib/quotes/template-spec";
+import { getTemplateForUser } from "@/lib/quotes/templates";
 import { CustomerActions } from "./customer-actions";
 
 export const dynamic = "force-dynamic";
@@ -65,6 +67,7 @@ export default async function CustomerQuotePage({ params }: Props) {
           vatStatus: q.user.vatStatus,
         },
         approval: null,
+        template: await getTemplateForUser(q.user),
       };
 
   const showBadge = q.user.plan === "trial" || q.user.plan === "basic";
@@ -95,6 +98,7 @@ type Snapshot = {
   items: QuoteView["items"];
   business: QuoteView["business"];
   approval: NonNullable<QuoteView["approval"]>;
+  template?: QuoteTemplateSpec;
 };
 
 function snapshotToView(s: Snapshot): QuoteView {
@@ -116,5 +120,6 @@ function snapshotToView(s: Snapshot): QuoteView {
     notes: (qq.notes as string[]) ?? [],
     business: s.business,
     approval: s.approval,
+    template: normalizeTemplateSpec(s.template),
   };
 }

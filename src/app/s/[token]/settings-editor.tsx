@@ -1,7 +1,10 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { Check } from "lucide-react";
 import { formatPhone } from "@/components/quote-document";
+import { TemplateThumb } from "@/components/template-thumb";
+import type { QuoteTemplateSpec } from "@/lib/quotes/template-spec";
 import { removeLogoAction, saveSettingsAction, uploadLogoAction, type SettingsForm } from "./actions";
 
 type Props = {
@@ -9,6 +12,7 @@ type Props = {
   phone: string | null;
   plan: string;
   logoUrl: string | null;
+  templates: { id: string; name: string; description: string | null; isDefault: boolean; spec: QuoteTemplateSpec }[];
   initial: SettingsForm;
 };
 
@@ -19,7 +23,7 @@ const PLAN_LABEL: Record<string, string> = {
   unlimited: "Unlimited",
 };
 
-export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, initial }: Props) {
+export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, templates, initial }: Props) {
   const [form, setForm] = useState<SettingsForm>(initial);
   const [logoUrl, setLogoUrl] = useState(initialLogo);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -150,6 +154,39 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, initi
           </label>
         </div>
       </section>
+
+      {templates.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-bold">עיצוב ההצעה</h2>
+          <p className="text-sm text-muted -mt-2">כך הלקוח יראה את ההצעה. אפשר להחליף בכל רגע - הצעות שכבר נחתמו לא משתנות.</p>
+          <div className="grid grid-cols-2 gap-3">
+            {templates.map((t) => {
+              const selected = form.templateId === t.id || (form.templateId === null && t.isDefault);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => update("templateId", t.isDefault ? null : t.id)}
+                  className={`relative text-start rounded-2xl border-2 p-2 space-y-2 ${selected ? "border-brand bg-brand-soft/40" : "border-line bg-card"}`}
+                >
+                  {selected && (
+                    <span className="absolute top-3 end-3 z-10 grid place-items-center h-6 w-6 rounded-full bg-brand text-brand-ink">
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                  <div className="[&>div]:w-full">
+                    <TemplateThumb template={t.spec} width={200} height={170} />
+                  </div>
+                  <div className="px-1 pb-1">
+                    <div className="font-semibold text-sm">{t.name}</div>
+                    {t.description && <div className="text-xs text-muted leading-snug">{t.description}</div>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <div className="fixed bottom-0 inset-x-0 bg-card border-t border-line p-3">
         <div className="max-w-lg mx-auto flex items-center gap-3">

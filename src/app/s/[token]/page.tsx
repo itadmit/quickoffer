@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { verifyToken } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { listTemplates, specOf } from "@/lib/quotes/templates";
 import { SettingsEditor } from "./settings-editor";
 
 export const dynamic = "force-dynamic";
@@ -26,9 +27,18 @@ export default async function SettingsPage({ params }: { params: Promise<{ token
     );
   }
 
+  const templates = (await listTemplates({ enabledOnly: true })).map((t) => ({
+    id: t.id,
+    name: t.name,
+    description: t.description,
+    isDefault: t.isDefault,
+    spec: specOf(t),
+  }));
+
   return (
     <SettingsEditor
       token={token}
+      templates={templates}
       phone={user.channel === "whatsapp" ? user.phone : null}
       plan={user.plan}
       logoUrl={user.logoUrl}
@@ -42,6 +52,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ token
         defaultNotes: user.defaultNotes ?? [],
         defaultValidDays: user.defaultValidDays,
         nextQuoteNumber: user.nextQuoteNumber,
+        templateId: user.templateId,
       }}
     />
   );

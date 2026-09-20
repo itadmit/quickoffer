@@ -5,6 +5,7 @@ import { z } from "zod";
 import { verifyToken } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { getTemplate } from "@/lib/quotes/templates";
 import { storeFile } from "@/lib/storage";
 
 export const SettingsSchema = z.object({
@@ -17,6 +18,8 @@ export const SettingsSchema = z.object({
   defaultNotes: z.array(z.string().trim().max(300)).max(20),
   defaultValidDays: z.number().int().min(1).max(365),
   nextQuoteNumber: z.number().int().min(1).max(999_999),
+  // null = default template
+  templateId: z.string().uuid().nullable(),
 });
 export type SettingsForm = z.infer<typeof SettingsSchema>;
 
@@ -32,9 +35,13 @@ export async function saveSettingsAction(token: string, form: SettingsForm) {
   const parsed = SettingsSchema.safeParse(form);
   if (!parsed.success) return { ok: false as const, error: "invalid" };
   const f = parsed.data;
+  // only an existing, enabled template can be chosen
+  const template = f.templateId ? await getTemplate(f.templateId) : null;
+  const templateId = template?.enabled ? template.id : null;
   await db
     .update(users)
     .set({
+      templateId,
       businessName: f.businessName,
       businessPhone: f.businessPhone || null,
       address: f.address || null,

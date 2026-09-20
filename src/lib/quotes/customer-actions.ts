@@ -5,6 +5,7 @@ import { quotes } from "../db/schema";
 import { storeFile } from "../storage";
 import { sendText } from "../whatsapp";
 import { addEvent, getQuoteByPublicId, snapshotOf } from "./service";
+import { getTemplateForUser } from "./templates";
 
 /**
  * Customer-side events (PRODUCT.md §8.2, §6.6). Each one records a
@@ -66,7 +67,7 @@ export async function approveQuote(publicId: string, input: ApproveInput) {
   );
 
   const snapshot = {
-    ...snapshotOf(q),
+    ...snapshotOf(q, await getTemplateForUser(q.user)),
     approval: {
       signerName: input.signerName,
       signatureUrl,

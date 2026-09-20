@@ -1,5 +1,6 @@
 import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "../db";
+import type { QuoteTemplateSpec } from "./template-spec";
 import {
   quoteEvents,
   quoteItems,
@@ -261,9 +262,10 @@ export function contactPhone(user: Pick<User, "businessPhone" | "phone" | "chann
   return user.businessPhone ?? (user.channel === "whatsapp" ? user.phone : null);
 }
 
-/** Snapshot used by the public page after approval (§6.3, §8.2). */
-export function snapshotOf(q: QuoteWithItems & { user: User }) {
+/** Snapshot used by the public page after approval (§6.3, §8.2). Freezes data, business and design. */
+export function snapshotOf(q: QuoteWithItems & { user: User }, template: QuoteTemplateSpec) {
   return {
+    template,
     quote: { ...q, user: undefined, items: undefined },
     items: q.items,
     business: {

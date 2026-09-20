@@ -18,6 +18,7 @@ type Props = {
     transcript: string | null;
     business: QuoteView["business"];
     createdAt: string;
+    template: QuoteView["template"];
   };
   initial: QuoteForm;
 };
@@ -103,6 +104,7 @@ export function QuoteEditor({ token, quote, initial }: Props) {
     paymentTerms: form.paymentTerms,
     notes: form.notes.filter(Boolean),
     business: quote.business,
+    template: quote.template,
   };
 
   const copyLink = async () => {
