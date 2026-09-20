@@ -508,7 +508,11 @@ function ChatMockup() {
               </span>
               <div className="min-w-0 flex-1 leading-tight">
                 <div className="font-semibold text-[14px] truncate">QuickOffer</div>
-                <div className="text-[11px] text-muted">מקוון</div>
+                {/* status flips to "typing" while the bot prepares the quote (1.2s - 4s) */}
+                <div className="relative h-[14px] text-[11px] text-muted">
+                  <span className="anim-status-online absolute inset-0">מקוון</span>
+                  <span className="anim-status-typing absolute inset-0">מקליד...</span>
+                </div>
               </div>
               <Video className="h-5 w-5 text-[#007aff]" />
               <Phone className="h-[18px] w-[18px] text-[#007aff]" />
@@ -538,7 +542,20 @@ function ChatMockup() {
               </span>
             </Bubble>
 
-            <Bubble time="10:02" delay={750}>
+            {/* bot "heard, preparing" - shows between the voice note and the quote */}
+            <div className="anim-typing flex justify-start">
+              <div className="bg-white rounded-xl rounded-tr-sm px-3 py-2.5 shadow-[0_1px_0.5px_rgba(0,0,0,0.13)] inline-flex items-center gap-1">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="anim-typing-dot h-1.5 w-1.5 rounded-full bg-ink/50"
+                    style={{ animationDelay: `${i * 160}ms` }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <Bubble time="10:02" delay={4000}>
               <span className="inline-flex items-center gap-1 font-semibold">
                 <ClipboardList className="h-3.5 w-3.5" /> הצעה #1042 - דני כהן
               </span>
@@ -552,13 +569,13 @@ function ChatMockup() {
               </span>
             </Bubble>
 
-            <Bubble time="10:02" delay={1100}>
+            <Bubble time="10:02" delay={4450}>
               <span className="inline-flex items-center gap-1">
                 <Forward className="h-3.5 w-3.5" /> להעביר ללקוח - לחיצה ארוכה ← Forward
               </span>
             </Bubble>
 
-            <Bubble time="10:02" delay={1450}>
+            <Bubble time="10:02" delay={4900}>
               שלום דני, מצורפת הצעת מחיר מיוסי חשמל:
               <br />
               <span className="text-[#027eb5] underline">qo.app/q/a8Hd3kQ</span>
@@ -566,7 +583,7 @@ function ChatMockup() {
               ההצעה תקפה ל-14 יום. לאישור - לחץ על הקישור.
             </Bubble>
 
-            <Bubble time="10:47" delay={1800}>
+            <Bubble time="10:47" delay={7200}>
               <span className="inline-flex items-center gap-1">
                 <BadgeCheck className="h-4 w-4 text-ok" /> דני כהן אישר וחתם על הצעה #1042 (767 ₪)
               </span>

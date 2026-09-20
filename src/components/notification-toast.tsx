@@ -15,7 +15,8 @@ const ITEMS: { icon: LucideIcon; text: string }[] = [
   { icon: Wallet, text: "דני כהן שילם מקדמה של 384 ₪ על הצעה #1042" },
 ];
 
-const INITIAL_DELAY = 1600;
+// After the chat mockup has finished "typing" and sent the quote (see ChatMockup delays).
+const INITIAL_DELAY = 5400;
 const HOLD = 3600;
 const EXIT = 350;
 
