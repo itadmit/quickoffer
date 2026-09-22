@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/*
+ * Two palettes, same token names. Everything downstream reads the tokens, so a
+ * component never needs to know which one is active.
+ *
+ * Customers open these links from bed at 23:00 - a page that ignores the system
+ * theme is a page that flashes white in a dark room.
+ */
 :root {
   --surface: #f6f7f9;
   --card: #ffffff;
@@ -13,6 +20,30 @@
   --warn-ink: #92400e;
   --danger: #dc2626;
   --ok: #16a34a;
+  /* elevation, so shadows can stay subtle in light and invisible in dark */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -16px rgba(15, 23, 42, 0.18);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Not inverted greys: a warmer, slightly blue ink reads better in Hebrew,
+       and the brand lightens so it keeps AA contrast on a dark card. */
+    --surface: #0b1220;
+    --card: #131c2e;
+    --ink: #e8edf6;
+    --muted: #93a3ba;
+    --line: #26334a;
+    --brand: #2dd4bf;
+    --brand-ink: #04211f;
+    --brand-soft: #123b39;
+    --warn: #3a2f12;
+    --warn-ink: #fcd34d;
+    --danger: #f87171;
+    --ok: #4ade80;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -16px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
 }
 
 @theme inline {
@@ -30,11 +61,29 @@
   --color-ok: var(--ok);
   --font-sans: var(--font-ploni), system-ui, "Noto Sans Hebrew", "Arial Hebrew", sans-serif;
   --font-display: var(--font-ping), var(--font-ploni), system-ui, sans-serif;
+  --shadow-card: var(--shadow-card);
 }
 
 body {
   font-family: var(--font-sans);
+  /* tabular figures: prices in a column must line up digit for digit */
   font-feature-settings: "tnum";
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The quote itself is a document - keep it on paper even in dark mode, so what
+   the customer sees matches what they would print, and the accent colours the
+   professional picked stay true. */
+.doc-surface {
+  --card: #ffffff;
+  --surface: #f6f7f9;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --warn: #fef3c7;
+  --warn-ink: #92400e;
+  color-scheme: light;
+  color: var(--ink);
 }
 
 h1, h2, h3, h4, .font-display {
@@ -49,7 +98,27 @@ input, select, textarea {
 
 @media print {
   .no-print { display: none !important; }
-  body { background: white; }
+  /* Printing always uses the paper palette, whatever the screen is doing. */
+  :root {
+    --surface: #ffffff;
+    --card: #ffffff;
+    --ink: #0f172a;
+    --muted: #475569;
+    --line: #cbd5e1;
+    --warn: #ffffff;
+    --warn-ink: #92400e;
+    --shadow-card: none;
+    color-scheme: light;
+  }
+  body { background: #ffffff; }
+  article { box-shadow: none !important; border-color: var(--line) !important; }
+}
+
+/* One consistent focus ring. Keyboard users get it; pointer users never see it. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
 }
 
 /* ---- shared controls (kept in CSS so server + client components share them) */
@@ -115,6 +184,15 @@ input, select, textarea {
   50% { transform: translate(20px, -18px) scale(1.06); }
 }
 
+/* The approval stamp. One beat, then still - a signature is a serious moment,
+   not a party. */
+@keyframes seal {
+  0% { transform: scale(0.6); opacity: 0; }
+  55% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.anim-seal { animation: seal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 /* Chat mockup "bot is typing" sequence: pops in after the voice note, collapses right before the quote. */
 @keyframes typing-bubble {
   0% { opacity: 0; transform: translateY(8px) scale(0.96); max-height: 0; margin-bottom: 0; }
@@ -177,4 +255,7 @@ input, select, textarea {
   .anim-fade-up, .anim-pop { opacity: 1; }
   .anim-typing, .anim-status-typing { display: none; animation: none; }
   .anim-status-online { animation: none; opacity: 1; }
+  .anim-seal { animation: none; opacity: 1; }
+  .card-hover:hover { transform: none; }
+  html { scroll-behavior: auto !important; }
 }
