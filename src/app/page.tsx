@@ -252,11 +252,11 @@ export default async function LandingPage() {
         </Reveal>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
           <Plan name="ניסיון" price="0" per="5 הצעות" items={["כל היכולות", "בלי כרטיס אשראי"]} delay={0} />
-          <Plan name="Basic" price="49" per="20 הצעות בחודש" items={["לוגו על ההצעה", "אישור לקוח בקישור", "התראות ב-WhatsApp"]} highlight delay={100} />
+          <Plan name="Basic" price="29" oldPrice="49" badge="מחיר השקה" per="20 הצעות בחודש" items={["לוגו על ההצעה", "אישור לקוח בקישור", "התראות ב-WhatsApp"]} highlight delay={100} />
           <Plan name="Pro" price="99" per="100 הצעות בחודש" items={["הכול ב-Basic", "חתימה דיגיטלית", "בלי מיתוג QuickOffer", "תזכורות ללקוח"]} delay={200} />
           <Plan name="Unlimited" price="149" per="ללא הגבלה" items={["הכול ב-Pro", "שליחה מהמספר שלך", "סליקת מקדמות"]} delay={300} />
         </div>
-        <p className="text-center text-xs text-muted mt-6">המחירים בש״ח לחודש, לפני מע״מ. חלק מיכולות Pro/Unlimited בפיתוח.</p>
+        <p className="text-center text-xs text-muted mt-6">המחירים בש״ח לחודש, לפני מע״מ.</p>
       </section>
 
       {/* -------------------------------------------------------------------- FAQ */}
@@ -353,7 +353,7 @@ const FAQ = [
   },
   {
     q: "זה מוציא חשבוניות?",
-    a: "לא, ובכוונה. QuickOffer עושה דבר אחד: הצעות מחיר מהודעה קולית. חיבור לתוכנת החשבוניות שלך - בהמשך.",
+    a: "לא, ובכוונה. QuickOffer עושה דבר אחד: הצעות מחיר מהודעה קולית, והוא עושה אותו מהר. את החשבונית אתה מוציא איפה שאתה רגיל.",
   },
   {
     q: "אני לא ב-WhatsApp, יש טלגרם?",
@@ -361,7 +361,7 @@ const FAQ = [
   },
   {
     q: "כמה זה עולה להתחיל?",
-    a: "כלום. 5 ההצעות הראשונות חינם, בלי כרטיס אשראי. אחר כך 49 ₪ לחודש ל-20 הצעות.",
+    a: "כלום. 5 ההצעות הראשונות חינם, בלי כרטיס אשראי. אחר כך 29 ₪ לחודש ל-20 הצעות, במחיר השקה.",
   },
 ];
 
@@ -440,7 +440,7 @@ function Benefit({ icon: Icon, title, children, delay }: { icon: LucideIcon; tit
   );
 }
 
-function Plan({ name, price, per, items, highlight, delay }: { name: string; price: string; per: string; items: string[]; highlight?: boolean; delay: number }) {
+function Plan({ name, price, oldPrice, badge, per, items, highlight, delay }: { name: string; price: string; oldPrice?: string; badge?: string; per: string; items: string[]; highlight?: boolean; delay: number }) {
   return (
     <Reveal
       delay={delay}
@@ -449,9 +449,15 @@ function Plan({ name, price, per, items, highlight, delay }: { name: string; pri
       {highlight && (
         <span className="absolute -top-3 start-5 rounded-full bg-brand text-brand-ink text-xs font-semibold px-3 py-1 shadow">הכי פופולרי</span>
       )}
+      {badge && (
+        <span className="absolute -top-3 end-5 rounded-full bg-warn text-warn-ink text-xs font-semibold px-3 py-1 shadow">{badge}</span>
+      )}
       <div>
         <div className="font-bold">{name}</div>
         <div className="flex items-baseline gap-1 mt-1">
+          {oldPrice && (
+            <span className="text-xl font-semibold text-muted line-through">{oldPrice}</span>
+          )}
           <span className="text-3xl font-bold">{price}</span>
           <span className="text-muted text-sm">₪ / חודש</span>
         </div>
