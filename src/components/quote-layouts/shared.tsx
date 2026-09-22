@@ -1,4 +1,5 @@
 import { BadgeCheck, TriangleAlert } from "lucide-react";
+import { formatPhone } from "@/lib/phone";
 import { formatMoney, formatQty } from "@/lib/quotes/calc";
 import type { QuoteTemplateSpec } from "@/lib/quotes/template-spec";
 
@@ -51,12 +52,7 @@ export type LayoutProps = { q: QuoteView; t: QuoteTemplateSpec; showReviewFlags:
 export const dateFmt = new Intl.DateTimeFormat("he-IL", { day: "numeric", month: "long", year: "numeric" });
 const dateTimeFmt = new Intl.DateTimeFormat("he-IL", { dateStyle: "medium", timeStyle: "short" });
 
-export function formatPhone(p: string): string {
-  const d = p.replace(/\D/g, "");
-  if (d.startsWith("972") && d.length === 12) return `0${d.slice(3, 5)}-${d.slice(5, 8)}-${d.slice(8)}`;
-  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
-  return p;
-}
+export { formatPhone } from "@/lib/phone";
 
 export function Logo({ q, className = "h-14 w-14", style }: { q: QuoteView; className?: string; style?: React.CSSProperties }) {
   const b = q.business;

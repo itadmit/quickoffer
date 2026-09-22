@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import { Link2Off } from "lucide-react";
 import { eq } from "drizzle-orm";
+import { LinkExpired } from "@/components/link-expired";
 import { UNITS } from "@/lib/ai/types";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { publicLink, resolveLink } from "@/lib/quotes/links";
 import { contactPhone, getQuote } from "@/lib/quotes/service";
 import { getTemplateForUser } from "@/lib/quotes/templates";
-import { customerMessage } from "@/lib/conversation/messages";
 import { QuoteEditor } from "./quote-editor";
 
 export const dynamic = "force-dynamic";
@@ -19,17 +18,7 @@ export default async function EditQuotePage({ params }: { params: Promise<{ toke
   const q = subject ? await getQuote(subject) : null;
 
   if (!q) {
-    return (
-      <main className="flex-1 grid place-items-center p-6 text-center">
-        <div className="space-y-2">
-          <Link2Off className="h-10 w-10 mx-auto text-muted" />
-          <h1 className="text-xl font-bold">הקישור לא תקף</h1>
-          <p className="text-muted text-sm">
-            קישורי עריכה תקפים ל-7 ימים. שלח &quot;ערוך&quot; ב-WhatsApp לקבלת קישור חדש.
-          </p>
-        </div>
-      </main>
-    );
+    return <LinkExpired hint="קישורי עריכה תקפים ל-7 ימים. שלח “ערוך” ב-WhatsApp לקבלת קישור חדש." />;
   }
 
   const user = (await db.query.users.findFirst({ where: eq(users.id, q.userId) }))!;
@@ -41,7 +30,7 @@ export default async function EditQuotePage({ params }: { params: Promise<{ toke
         number: q.number,
         status: q.status,
         publicUrl: await publicLink(q.publicId),
-        customerMessage: customerMessage(q, user, await publicLink(q.publicId)),
+        defaultValidDays: user.defaultValidDays,
         vatRate: q.vatRate,
         transcript: q.transcript,
         business: {

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { resolveLink } from "@/lib/quotes/links";
-import { Link2Off } from "lucide-react";
 import { eq } from "drizzle-orm";
+import { LinkExpired } from "@/components/link-expired";
+import { upgradesFor } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { planAllows, PLAN_LABELS } from "@/lib/quotes/template-spec";
@@ -19,15 +20,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ token
   const user = subject ? await db.query.users.findFirst({ where: eq(users.id, subject) }) : null;
 
   if (!user) {
-    return (
-      <main className="flex-1 grid place-items-center p-6 text-center">
-        <div className="space-y-2">
-          <Link2Off className="h-10 w-10 mx-auto text-muted" />
-          <h1 className="text-xl font-bold">הקישור לא תקף</h1>
-          <p className="text-muted text-sm">שלח &quot;הגדרות&quot; ב-WhatsApp לקבלת קישור חדש.</p>
-        </div>
-      </main>
-    );
+    return <LinkExpired hint="שלח “הגדרות” ב-WhatsApp לקבלת קישור חדש." />;
   }
 
   const templates = (await listTemplates({ enabledOnly: true })).map((t) => ({
@@ -45,6 +38,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ token
     <SettingsEditor
       token={token}
       templates={templates}
+      canUpgrade={upgradesFor(user.plan).length > 0}
       quota={quota.limit === Infinity ? null : { used: quota.used, limit: quota.limit, monthly: user.plan !== "trial" }}
       phone={user.channel === "whatsapp" ? user.phone : null}
       plan={user.plan}

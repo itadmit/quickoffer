@@ -4,7 +4,9 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Link2, MessageCircle, Trash2, TriangleAlert } from "lucide-react";
 import { UNITS } from "@/lib/ai/types";
+import { formatPhone, isMobile, normalizePhone, waLink } from "@/lib/phone";
 import { calcTotals, formatMoney } from "@/lib/quotes/calc";
+import { customerMessageText, daysUntil } from "@/lib/quotes/customer-message";
 import { QuoteDocument, type QuoteView } from "@/components/quote-document";
 import { StatusBadge } from "@/components/status-badge";
 import { deleteQuoteAction, markSentAction, saveQuoteAction } from "./actions";
@@ -16,8 +18,8 @@ type Props = {
     number: number;
     status: "draft" | "sent" | "viewed" | "approved" | "rejected" | "expired";
     publicUrl: string;
-    /** the ready-to-forward customer message (§6.3), same text the bot sends */
-    customerMessage: string;
+    /** business default, used when the quote has no explicit validity date */
+    defaultValidDays: number;
     vatRate: number;
     transcript: string | null;
     business: QuoteView["business"];
@@ -116,18 +118,43 @@ export function QuoteEditor({ token, quote, initial }: Props) {
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
-  // Native share sheet on phones (WhatsApp is in it); wa.me composer elsewhere.
+
+  /**
+   * One tap to the customer. With a mobile number we open their chat directly;
+   * without one we fall back to the share sheet, then the wa.me composer.
+   * Either way the message leaves from the professional's own number.
+   *
+   * The text is rebuilt from the live form, not from what the server rendered,
+   * so a name or date fixed a second ago is the one the customer receives.
+   */
+  const directTo = isMobile(form.customerPhone) ? normalizePhone(form.customerPhone) : null;
+  const outgoingText = customerMessageText({
+    customerName: form.customerName,
+    businessName: quote.business.businessName,
+    publicUrl: quote.publicUrl,
+    validDays: daysUntil(form.validUntil, quote.defaultValidDays),
+  });
+
+  const markSentQuietly = () =>
+    void markSentAction(token).then((r) => {
+      if (r.ok) setStatus("sent");
+    });
+
   const share = async () => {
-    const text = quote.customerMessage;
+    if (directTo) {
+      window.open(waLink(directTo, outgoingText), "_blank", "noopener");
+      if (status === "draft") markSentQuietly();
+      return;
+    }
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
-        await navigator.share({ text });
+        await navigator.share({ text: outgoingText });
         return;
       } catch {
         /* cancelled - fall through */
       }
     }
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+    window.open(waLink(null, outgoingText), "_blank", "noopener");
   };
 
   return (
@@ -300,8 +327,13 @@ export function QuoteEditor({ token, quote, initial }: Props) {
       {/* bottom actions */}
       <div className="fixed bottom-0 inset-x-0 bg-card border-t border-line p-3">
         <div className="max-w-lg mx-auto flex gap-2">
-          <button onClick={share} className="btn-primary flex-1">
-            <MessageCircle className="h-5 w-5" /> שלח ללקוח ב-WhatsApp
+          <button onClick={share} className="btn-primary flex-1 min-w-0">
+            <MessageCircle className="h-5 w-5 shrink-0" />
+            <span className="truncate">
+              {directTo
+                ? `שלח ל${form.customerName || formatPhone(directTo)}`
+                : "שלח ללקוח ב-WhatsApp"}
+            </span>
           </button>
           <button onClick={copyLink} className="btn-secondary" aria-label="העתק קישור ללקוח" title="העתק קישור ללקוח">
             {copied ? <span className="text-ok text-sm">הועתק</span> : <Link2 className="h-5 w-5" />}
