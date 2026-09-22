@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { quotes } from "@/lib/db/schema";
+import { learnFromItems } from "@/lib/quotes/price-book-store";
 import { addEvent, deleteQuote, getQuote, markSent, replaceItemsAndRecalc } from "@/lib/quotes/service";
 import { QuoteFormSchema, type QuoteForm } from "./schema";
 
@@ -47,6 +48,8 @@ export async function saveQuoteAction(token: string, form: QuoteForm) {
     discountAmount: f.discountAmount,
   });
   await addEvent(q.id, "edited", { via: "web" });
+  // A price typed by hand is the strongest signal there is - remember it.
+  await learnFromItems(q.userId, f.items.map((it) => ({ ...it, unit: it.unit as string })));
   revalidatePath(`/q/${q.publicId}`);
   return { ok: true as const, totals };
 }

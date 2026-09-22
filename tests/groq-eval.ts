@@ -3,10 +3,11 @@
 import { config } from "dotenv";
 config({ path: [".env.local", ".env"] });
 import { openaiLLM } from "@/lib/ai/openai";
+import type { QuoteItemJSON, QuoteJSON } from "@/lib/ai/types";
 
-const profile = { businessName: "יוסי חשמל", vatStatus: "registered" as const, defaultPaymentTerms: null, defaultValidDays: 14, defaultNotes: [] };
+const profile = { businessName: "יוסי חשמל", vatStatus: "registered" as const, defaultPaymentTerms: null, defaultValidDays: 14, defaultNotes: [], catalog: [] };
 
-const CASES: { t: string; expect: (q: any) => string[] }[] = [
+const CASES: { t: string; expect: (q: QuoteJSON) => string[] }[] = [
   {
     t: "אה כן הצעת מחיר לדני כהן התקנת שלושה גופי תאורה מאה וחמישים שקל ליחידה ביקור מאתיים שקל המחיר לפני מעם חמישים אחוז מקדימה",
     expect: (q) => [
@@ -30,8 +31,8 @@ const CASES: { t: string; expect: (q: any) => string[] }[] = [
   {
     t: "צביעת דירה משפחת לוי שמונים מטר קירות ותקרה שלושים וחמש שקל למטר ושפכטל איפה שצריך אני עוד לא יודע כמה",
     expect: (q) => [
-      q.items.find((i: any) => i.unit === "מ״ר" && i.quantity === 80 && i.unitPrice === 35) ? "" : `paint=${JSON.stringify(q.items)}`,
-      q.items.find((i: any) => i.unitPrice === 0 && i.priceConfidence === "missing") ? "" : "missing-price item not flagged",
+      q.items.find((i: QuoteItemJSON) => i.unit === "מ״ר" && i.quantity === 80 && i.unitPrice === 35) ? "" : `paint=${JSON.stringify(q.items)}`,
+      q.items.find((i: QuoteItemJSON) => i.unitPrice === 0 && i.priceConfidence === "missing") ? "" : "missing-price item not flagged",
       q.needsReview.length >= 1 ? "" : "needsReview empty",
     ],
   },
@@ -48,8 +49,8 @@ const CASES: { t: string; expect: (q: any) => string[] }[] = [
     t: "היי מה קורה תשמע יש לי עבודה אצל אבי בהרצליה החלפת לוח חשמל אלפיים וחמש מאות ועוד נסיעה מאה חמישים בלי מעם ותוקף לשבוע",
     expect: (q) => [
       q.customerName === "אבי" ? "" : `name=${q.customerName}`,
-      q.items.find((i: any) => i.unitPrice === 2500) ? "" : "panel 2500 missing",
-      q.items.find((i: any) => i.unitPrice === 150) ? "" : "travel 150 missing",
+      q.items.find((i: QuoteItemJSON) => i.unitPrice === 2500) ? "" : "panel 2500 missing",
+      q.items.find((i: QuoteItemJSON) => i.unitPrice === 150) ? "" : "travel 150 missing",
       q.vatIncluded === false ? "" : `vat=${q.vatIncluded}`,
       q.validDays === 7 ? "" : `valid=${q.validDays}`,
     ],

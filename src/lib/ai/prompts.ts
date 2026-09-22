@@ -56,6 +56,20 @@ function profileBlock(p: BusinessProfile) {
   ].join("\n");
 }
 
+/**
+ * Work this professional has already priced. Only the wording is shared with
+ * the model - prices are filled deterministically in lib/quotes/price-book.ts,
+ * which keeps this block short (the Groq free tier is 8k tokens/minute).
+ */
+function catalogBlock(catalog: string[]): string {
+  if (!catalog.length) return "";
+  return `
+## עבודות שבעל המקצוע כבר תמחר בעבר
+${catalog.join(" · ")}
+אם העבודה שנאמרה היא אחת מאלה - נסח אותה **בדיוק** כמו ברשימה, כדי שהניסוח יישאר עקבי בין הצעות. עבודה שלא ברשימה - נסח חופשי לפי הכללים. אל תוסיף פריטים מהרשימה שלא נאמרו, ואל תשאב מהם מחירים.
+`.trim();
+}
+
 export const STRUCTURE_RULES = `
 ## הקשר
 הדובר: בעל מקצוע ישראלי (חשמל, אינסטלציה, מזגנים, שיפוצים, צבע, ריצוף, גבס, אלומיניום, גינון...) שמדבר חופשי לתוך WhatsApp. התמלול (Whisper) עלול להכיל: מספרים כמילים; "שח"/"שקל"/"שקלים" = ש״ח; טעויות פונטיות ("מעם"/"מאם" = מע״מ, "מקדימה" = מקדמה, "קומפלית" = קומפלט, "חשמן" = חשמל, "בי טי יו" = BTU); חזרות ותיקון עצמי (קח את הגרסה האחרונה); בלי פיסוק - חלק לפריטים לפי היגיון העבודה.
@@ -110,7 +124,9 @@ ${profileBlock(profile)}
 
 ${STRUCTURE_RULES}
 
-${STRUCTURE_EXAMPLES}`;
+${catalogBlock(profile.catalog)}
+
+${STRUCTURE_EXAMPLES}`.replace(/\n{3,}/g, "\n\n");
 }
 
 export function correctionSystemPrompt(profile: BusinessProfile) {

@@ -76,6 +76,12 @@ export type BusinessProfile = {
   defaultPaymentTerms: string | null;
   defaultValidDays: number;
   defaultNotes: string[];
+  /**
+   * Descriptions of work this professional has already priced, most-used
+   * first (lib/quotes/price-book.ts). Used to keep phrasing stable across
+   * quotes; the prices themselves are filled in code, not by the model.
+   */
+  catalog: string[];
 };
 
 export type Usage = {

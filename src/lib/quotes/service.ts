@@ -13,6 +13,8 @@ import {
 import { newPublicId } from "../ids";
 import type { QuoteJSON } from "../ai/types";
 import { calcTotals, lineTotal, VAT_RATE } from "./calc";
+import { applyPriceBook, type FilledFromBook } from "./price-book";
+import { learnFromItems, loadPriceBook } from "./price-book-store";
 
 export type QuoteWithItems = Quote & { items: QuoteItem[] };
 
@@ -145,12 +147,17 @@ function itemsFromJSON(json: QuoteJSON): ItemInput[] {
   }));
 }
 
-/** Create a quote from the LLM output (§6.3). Allocates the per-user number. */
+/**
+ * Create a quote from the LLM output (§6.3). Allocates the per-user number.
+ *
+ * Prices the voice note left out are filled from the professional's own price
+ * book; `filledFromBook` reports which ones so the chat summary can say so.
+ */
 export async function createQuoteFromJSON(
   user: User,
   json: QuoteJSON,
   source: { transcript: string | null; audioUrl: string | null },
-): Promise<QuoteWithItems> {
+): Promise<QuoteWithItems & { filledFromBook: FilledFromBook[] }> {
   const vatRate = user.vatStatus === "exempt" ? 0 : VAT_RATE;
   const vatIncluded = json.vatIncluded ?? false;
   const validDays = json.validDays ?? user.defaultValidDays;
@@ -182,13 +189,19 @@ export async function createQuoteFromJSON(
     })
     .returning();
 
-  await replaceItemsAndRecalc(q.id, itemsFromJSON(json), {
+  const { items, filled } = applyPriceBook(itemsFromJSON(json), await loadPriceBook(user.id));
+  await replaceItemsAndRecalc(q.id, items, {
     vatIncluded,
     vatRate,
     discountAmount: json.discount ?? 0,
   });
-  await addEvent(q.id, "created", { source: source.audioUrl ? "voice" : "text" });
-  return (await getQuote(q.id))!;
+  await addEvent(q.id, "created", {
+    source: source.audioUrl ? "voice" : "text",
+    filled_from_book: filled.map((f) => f.description),
+  });
+  // The one place a use is counted: one quote, one bump per item.
+  await learnFromItems(user.id, items, { bump: true });
+  return { ...(await getQuote(q.id))!, filledFromBook: filled };
 }
 
 /** Apply a corrected JSON to an existing draft (§6.4). */
@@ -196,7 +209,7 @@ export async function applyJSONToQuote(
   quote: QuoteWithItems,
   json: QuoteJSON,
   instruction: string,
-): Promise<QuoteWithItems> {
+): Promise<QuoteWithItems & { filledFromBook: FilledFromBook[] }> {
   const vatIncluded = json.vatIncluded ?? quote.vatIncluded;
   await db
     .update(quotes)
@@ -214,13 +227,18 @@ export async function applyJSONToQuote(
       updatedAt: new Date(),
     })
     .where(eq(quotes.id, quote.id));
-  await replaceItemsAndRecalc(quote.id, itemsFromJSON(json), {
+  const { items, filled } = applyPriceBook(
+    itemsFromJSON(json),
+    await loadPriceBook(quote.userId),
+  );
+  await replaceItemsAndRecalc(quote.id, items, {
     vatIncluded,
     vatRate: quote.vatRate,
     discountAmount: json.discount ?? 0,
   });
   await addEvent(quote.id, "edited", { via: "chat", instruction });
-  return (await getQuote(quote.id))!;
+  await learnFromItems(quote.userId, items);
+  return { ...(await getQuote(quote.id))!, filledFromBook: filled };
 }
 
 /** DB row → the JSON shape the LLM works with (for corrections). */

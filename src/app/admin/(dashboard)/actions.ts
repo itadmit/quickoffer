@@ -23,6 +23,7 @@ export async function saveSettingsAction(values: Record<string, string>) {
   revalidatePath("/admin/ai");
   revalidatePath("/admin/ibot");
   revalidatePath("/admin/telegram");
+  revalidatePath("/admin/billing");
   return { ok: true as const };
 }
 
@@ -76,7 +77,7 @@ export async function testLLMAction() {
     const llm = await getLLMProvider();
     const r = await llm.structureQuote(
       "הצעת מחיר לדני כהן, התקנת שלושה גופי תאורה 150 שקל ליחידה, ביקור 200 שקל, המחיר לפני מע״מ, 50 אחוז מקדמה",
-      { businessName: "יוסי חשמל", vatStatus: "registered", defaultPaymentTerms: null, defaultValidDays: 14, defaultNotes: [] },
+      { businessName: "יוסי חשמל", vatStatus: "registered", defaultPaymentTerms: null, defaultValidDays: 14, defaultNotes: [], catalog: [] },
     );
     return { ok: true as const, json: r.result, ms: Date.now() - started, usage: { ...r.usage, raw: undefined } };
   } catch (err) {

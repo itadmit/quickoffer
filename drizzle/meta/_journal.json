@@ -36,6 +36,13 @@
       "when": 1789909263601,
       "tag": "0004_magic_links",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790068019504,
+      "tag": "0005_amazing_medusa",
+      "breakpoints": true
     }
   ]
 }

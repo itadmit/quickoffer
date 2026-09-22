@@ -42,6 +42,8 @@ export const quoteEventTypeEnum = pgEnum("quote_event_type", [
   "question",
   "pdf",
   "expired",
+  // the bot nudged the professional that this quote went quiet
+  "reminded",
 ]);
 export const inboundTypeEnum = pgEnum("inbound_type", [
   "text",
@@ -149,6 +151,9 @@ export const quotes = pgTable(
     firstViewedAt: timestamp("first_viewed_at", { withTimezone: true }),
     approvedAt: timestamp("approved_at", { withTimezone: true }),
     rejectedAt: timestamp("rejected_at", { withTimezone: true }),
+    // Follow-up nudges (§6.6). Bounded by remindersSent so we never nag.
+    lastReminderAt: timestamp("last_reminder_at", { withTimezone: true }),
+    remindersSent: integer("reminders_sent").notNull().default(0),
   },
   (t) => [
     uniqueIndex("quotes_user_number_idx").on(t.userId, t.number),
@@ -268,6 +273,35 @@ export const processingRuns = pgTable(
   (t) => [index("processing_runs_quote_idx").on(t.quoteId)],
 );
 
+/**
+ * The professional's own price list, learned passively from the quotes they
+ * confirm. Never shown to customers; used to fill in a price the voice note
+ * left out, so "מחיר חסר" becomes "180 ₪ (כמו תמיד)".
+ *
+ * `key` is the normalized description (lib/quotes/price-book.ts) - the match
+ * unit. `description` keeps the last human phrasing for display.
+ */
+export const priceBook = pgTable(
+  "price_book",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    description: text("description").notNull(),
+    unit: text("unit").notNull().default("יח׳"),
+    unitPrice: money("unit_price").notNull(),
+    timesUsed: integer("times_used").notNull().default(1),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("price_book_user_key_idx").on(t.userId, t.key),
+    index("price_book_user_rank_idx").on(t.userId, t.timesUsed, t.lastUsedAt),
+  ],
+);
+
 /** Short codes behind /e/{code} and /s/{code}. 6 chars, no look-alikes, expiring. */
 export const magicLinks = pgTable(
   "magic_links",
@@ -283,6 +317,7 @@ export const magicLinks = pgTable(
 );
 
 export type User = typeof users.$inferSelect;
+export type PriceBookEntry = typeof priceBook.$inferSelect;
 export type QuoteTemplate = typeof quoteTemplates.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type QuoteItem = typeof quoteItems.$inferSelect;

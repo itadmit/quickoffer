@@ -27,7 +27,7 @@ async function main() {
   const t0 = Date.now();
   const r = await llm.structureQuote(
     "הצעת מחיר לדני כהן, התקנת שלושה גופי תאורה 150 שקל ליחידה, ביקור 200 שקל, המחיר לפני מע״מ, 50 אחוז מקדמה",
-    { businessName: "יוסי חשמל", vatStatus: "registered", defaultPaymentTerms: null, defaultValidDays: 14, defaultNotes: [] },
+    { businessName: "יוסי חשמל", vatStatus: "registered", defaultPaymentTerms: null, defaultValidDays: 14, defaultNotes: [], catalog: [] },
   );
   console.log(`\n[${llmModel}] ${Date.now() - t0}ms  ${r.usage.inputTokens}→${r.usage.outputTokens} tok`);
   console.log(JSON.stringify(r.result, null, 2));
