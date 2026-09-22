@@ -6,7 +6,8 @@ import { Link2, Trash2, TriangleAlert } from "lucide-react";
 import { UNITS } from "@/lib/ai/types";
 import { calcTotals, formatMoney } from "@/lib/quotes/calc";
 import { QuoteDocument, type QuoteView } from "@/components/quote-document";
-import { deleteQuoteAction, markSentAction, saveQuoteAction, type QuoteForm } from "./actions";
+import { deleteQuoteAction, markSentAction, saveQuoteAction } from "./actions";
+import type { QuoteForm } from "./schema";
 
 type Props = {
   token: string;

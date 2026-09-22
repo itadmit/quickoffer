@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { QuoteDocument } from "@/components/quote-document";
 import { sampleQuoteView } from "@/lib/quotes/sample";
 import { LAYOUT_LABELS, normalizeTemplateSpec, PLAN_LABELS, PLANS, QUOTE_LAYOUTS } from "@/lib/quotes/template-spec";
-import { deleteTemplateAction, saveTemplateAction, type TemplateForm } from "../actions";
+import { deleteTemplateAction, saveTemplateAction } from "../actions";
+import type { TemplateForm } from "../schema";
 
 const PRESET_COLORS = ["#0f766e", "#0f172a", "#1d4ed8", "#7c3aed", "#b91c1c", "#c2410c", "#15803d", "#0e7490"];
 

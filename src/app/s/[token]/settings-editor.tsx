@@ -5,7 +5,8 @@ import { Check, Lock } from "lucide-react";
 import { formatPhone } from "@/components/quote-document";
 import { TemplateThumb } from "@/components/template-thumb";
 import type { QuoteTemplateSpec } from "@/lib/quotes/template-spec";
-import { removeLogoAction, saveSettingsAction, uploadLogoAction, type SettingsForm } from "./actions";
+import { removeLogoAction, saveSettingsAction, uploadLogoAction } from "./actions";
+import type { SettingsForm } from "./schema";
 
 type Props = {
   token: string;

@@ -2,27 +2,13 @@
 import { resolveLink } from "@/lib/quotes/links";
 
 import { eq } from "drizzle-orm";
-import { z } from "zod";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { planAllows } from "@/lib/quotes/template-spec";
 import { getTemplate } from "@/lib/quotes/templates";
 import { storeFile } from "@/lib/storage";
+import { SettingsSchema, type SettingsForm } from "./schema";
 
-export const SettingsSchema = z.object({
-  businessName: z.string().trim().min(1).max(120),
-  businessPhone: z.string().trim().max(30).nullable(),
-  address: z.string().trim().max(200).nullable(),
-  taxId: z.string().trim().max(30).nullable(),
-  vatStatus: z.enum(["exempt", "registered"]),
-  defaultPaymentTerms: z.string().trim().max(500).nullable(),
-  defaultNotes: z.array(z.string().trim().max(300)).max(20),
-  defaultValidDays: z.number().int().min(1).max(365),
-  nextQuoteNumber: z.number().int().min(1).max(999_999),
-  // null = default template
-  templateId: z.string().uuid().nullable(),
-});
-export type SettingsForm = z.infer<typeof SettingsSchema>;
 
 async function authorize(token: string) {
   const subject = await resolveLink(token, "s");
