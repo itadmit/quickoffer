@@ -6,6 +6,7 @@ import { QuoteDocument, type QuoteView } from "@/components/quote-document";
 import { totalLabel } from "@/components/quote-layouts/shared";
 import { formatMoney } from "@/lib/quotes/calc";
 import { recordView } from "@/lib/quotes/customer-actions";
+import { appUrl } from "@/lib/quotes/links";
 import { contactPhone, getQuoteByPublicId } from "@/lib/quotes/service";
 import { normalizeTemplateSpec, type QuoteTemplateSpec } from "@/lib/quotes/template-spec";
 import { getTemplateForUser } from "@/lib/quotes/templates";
@@ -36,8 +37,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
+    // Absolute base for the sibling opengraph-image. Derived from app.url and
+    // not hardcoded, so moving to a new domain is one setting change and the
+    // WhatsApp preview card follows the links instead of lagging behind them
+    // on whatever VERCEL_URL the last deployment happened to get.
+    metadataBase: metadataBaseFrom(await appUrl()),
     openGraph: { title, description, type: "website", locale: "he_IL", siteName: business },
   };
+}
+
+/** Never let a malformed app.url break the page - the card is an enhancement. */
+function metadataBaseFrom(url: string): URL | undefined {
+  try {
+    return new URL(url);
+  } catch {
+    return undefined;
+  }
 }
 
 export default async function CustomerQuotePage({ params }: Props) {

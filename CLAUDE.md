@@ -183,6 +183,20 @@ QuickOffer מחובר ל-**Quick Commerce Billing Hub** (`~/Desktop/Projeccts/qu
 - **מה אומת חי מול ההאב:** ping חתום, יצירת לקוח, יצירת דף סליקה של Grow, יצירת מנוי עם `plan_code: pro`. בצד שלנו: דחיית webhook לא חתום ובעל חתימה שגויה, אידמפוטנטיות, past-due, recovered, cancelled. נתוני הבדיקה נמחקו מההאב.
 - **בלי חיבור** (`billing.api_key` ריק) כפתור השדרוג מוביל להודעת WhatsApp למספר הבוט - הפעלה ידנית, כמו קודם.
 
+## דומיין: quickoffer.co.il (נרכש 22.9.2026)
+
+הדומיין נרכש, ה-DNS הופנה ל-Vercel ושני ה-hosts נוספו לפרויקט. **נכון ל-22.9 ההאצלה ברישום `.il` עוד לא פורסמה** (שרת ה-TLD מחזיר SOA של `co.il` במקום NS), לכן Vercel מציג "Invalid Configuration" - זה מצב תקין בהמתנה, לא תקלה.
+
+**נעשה כבר:** `APP_URL` בפרודקשן ב-Vercel = `https://quickoffer.co.il` (היה מחרוזת ריקה - מוקש: fallback ל-`http://localhost:3000`) · redirect מ-`www` ל-apex ב-`next.config.ts` · `metadataBase` ב-`/q/[publicId]` נגזר מ-`app.url` בזמן ריצה.
+
+**כשהדומיין עולה עם תעודת TLS תקינה - בסדר הזה:**
+1. `/admin → iBot` → `app.url` = `https://quickoffer.co.il`. ⚠️ **לא לפני שהוא באמת עונה ב-HTTPS.** `appUrl()` ב-`lib/quotes/links.ts` נקרא בזמן ריצה, אז ההחלפה מיידית וטוטאלית על כל הקישורים - `/q`, `/e`, `/s`, `/w`. החלפה מוקדמת = כל הצעה שנשלחת ללקוח היא קישור מת. קישורים שכבר נשלחו ממשיכים לעבוד כי `quickoffer.vercel.app` נשאר חי.
+2. `/admin → טלגרם → הגדר webhook` (רשום כרגע על `quickoffer.vercel.app`).
+3. ה-pinger החיצוני של הקרון → `https://quickoffer.co.il/api/cron/tick?secret=`.
+4. iBot: כתובת ה-webhook **נגזרת לבד** מ-`app.url` ומוצגת ב-`/admin → iBot`.
+
+**נותר ידנית:** `APP_URL` ל-Preview - ה-CLI מסרב להוסיף אותו ללא prompt (`git_branch_required`), צריך קליק בדשבורד. לא חוסם: משפיע רק על preview deployments.
+
 ## מה הלאה (לפי סדר)
 1. **חיבור אמיתי:** Neon DB + Vercel deploy + מפתח OpenAI ב-`/admin` + webhook token ב-iBot → הודעה קולית אמיתית מהטלפון של המשתמש. לאמת ש-`X-Webhook-Token` באמת מגיע.
    ⚠️ מיגרציה `0005` (price_book + עמודות התזכורות) **טרם הורצה על Neon** - `vercel-build` מריץ `drizzle-kit migrate` אוטומטית בדיפלוי הבא. אומתה מקומית על `quickoffer_dev`.
