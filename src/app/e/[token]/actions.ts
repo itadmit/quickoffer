@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { quotes } from "@/lib/db/schema";
 import { learnFromItems } from "@/lib/quotes/price-book-store";
+import { saveJob } from "@/lib/quotes/saved-jobs-store";
 import { addEvent, deleteQuote, getQuote, markSent, replaceItemsAndRecalc } from "@/lib/quotes/service";
 import { QuoteFormSchema, type QuoteForm } from "./schema";
 
@@ -52,6 +53,20 @@ export async function saveQuoteAction(token: string, form: QuoteForm) {
   await learnFromItems(q.userId, f.items.map((it) => ({ ...it, unit: it.unit as string })));
   revalidatePath(`/q/${q.publicId}`);
   return { ok: true as const, totals };
+}
+
+/**
+ * §6.8 - promote this quote to a saved job. One tap here, or "תשמור את זה כ…"
+ * in the chat; both land in the same place. Re-saving an existing name updates
+ * it, which is how a price change propagates.
+ */
+export async function saveAsJobAction(token: string, name: string) {
+  const q = await authorize(token);
+  if (!q) return { ok: false as const, error: "unauthorized" };
+  if (!q.items.length) return { ok: false as const, error: "empty" };
+  const saved = await saveJob(q.userId, name, q.items);
+  if (!saved) return { ok: false as const, error: "invalid" };
+  return { ok: true as const, name: saved.job.name, replaced: saved.replaced };
 }
 
 export async function markSentAction(token: string) {

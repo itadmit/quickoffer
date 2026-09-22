@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, ilike, sql } from "drizzle-orm";
 import { db } from "../db";
 import type { QuoteTemplateSpec } from "./template-spec";
 import {
@@ -64,6 +64,38 @@ export async function getActiveDraft(userId: string): Promise<QuoteWithItems | n
 export async function getLatestQuote(userId: string): Promise<QuoteWithItems | null> {
   const q = await db.query.quotes.findFirst({
     where: eq(quotes.userId, userId),
+    orderBy: desc(quotes.createdAt),
+  });
+  return q ? getQuote(q.id) : null;
+}
+
+/**
+ * The quote the professional means by "כמו ההצעה של דני" / "כמו 1042" (§6.8
+ * layer 1). Matches a quote number, else a customer name, most recent first.
+ *
+ * Only their own quotes, and the reference is required: with no reference we
+ * would be guessing which job to repeat, and repeating the wrong one silently
+ * is worse than asking.
+ */
+export async function findQuoteToRepeat(
+  userId: string,
+  reference: string,
+): Promise<QuoteWithItems | null> {
+  const ref = reference.trim();
+  if (!ref) return null;
+
+  const digits = ref.match(/\d{2,}/u)?.[0];
+  if (digits) {
+    const q = await db.query.quotes.findFirst({
+      where: and(eq(quotes.userId, userId), eq(quotes.number, Number(digits))),
+    });
+    if (q) return getQuote(q.id);
+  }
+
+  const name = ref.replace(/^(ההצעה|הצעה|של)\s+/u, "").trim();
+  if (name.length < 2) return null;
+  const q = await db.query.quotes.findFirst({
+    where: and(eq(quotes.userId, userId), ilike(quotes.customerName, `%${name}%`)),
     orderBy: desc(quotes.createdAt),
   });
   return q ? getQuote(q.id) : null;

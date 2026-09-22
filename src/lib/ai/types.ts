@@ -46,6 +46,12 @@ export const COMMANDS = [
   "help",
   "edit",
   "template",
+  /** §6.8 layer 1 - repeat a previous quote ("כמו ההצעה של דני") */
+  "repeat",
+  /** §6.8 layer 2 */
+  "jobs",
+  "job_save",
+  "job_use",
 ] as const;
 export type Command = (typeof COMMANDS)[number];
 
@@ -54,6 +60,13 @@ export const IntentSchema = z.object({
   command: z.enum(COMMANDS).nullable(),
   /** for command=template: the template the user named ("מודרני"), null = show the list */
   templateName: z.string().nullable(),
+  /**
+   * §6.8. For `repeat`: the quote being pointed at ("דני כהן" / "1042").
+   * For `job_use` / `job_save`: the job name ("התקנת מזגן").
+   */
+  reference: z.string().nullable(),
+  /** §6.8. Customer named in the same breath ("התקנת מזגן **לדני כהן**"). */
+  customerName: z.string().nullable(),
 });
 export type Intent = z.infer<typeof IntentSchema>;
 
@@ -117,7 +130,12 @@ export interface LLMProvider {
   ): Promise<WithUsage<CorrectionResult>>;
   classifyMessage(
     text: string,
-    ctx: { hasActiveDraft: boolean; draftCustomer: string | null; templateNames: string[] },
+    ctx: {
+      hasActiveDraft: boolean;
+      draftCustomer: string | null;
+      templateNames: string[];
+      jobNames: string[];
+    },
   ): Promise<WithUsage<Intent>>;
   parseOnboardingAnswer(
     text: string,

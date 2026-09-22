@@ -178,6 +178,42 @@ export const templates = {
   none: () => `אין כרגע תבניות לבחירה.`,
 };
 
+/** §6.8 עבודות - repeat jobs. Distinct from `templates` above, which is design. */
+export const jobs = {
+  list: (items: { name: string; itemCount: number; total: number }[], settingsUrl: string) =>
+    [
+      `🔧 העבודות השמורות שלך:`,
+      ...items.map(
+        (j, i) => `${i + 1}. ${j.name} - ${j.itemCount} פריטים, ${formatMoney(j.total)}`,
+      ),
+      ``,
+      `לשימוש: "${items[0]?.name ?? "התקנת מזגן"} לדני כהן"`,
+      `לניהול ועדכון מחירים: ${settingsUrl}`,
+    ].join("\n"),
+  none: () =>
+    [
+      `עדיין אין עבודות שמורות.`,
+      `כשתהיה לך הצעה שחוזרת על עצמה, כתוב "תשמור את זה כהתקנת מזגן" - ובפעם הבאה "התקנת מזגן לדני כהן" יפתח אותה מוכנה.`,
+    ].join("\n"),
+  saved: (name: string, itemCount: number, total: number, replaced: boolean) =>
+    [
+      `✅ ${replaced ? `העבודה "${name}" עודכנה` : `נשמר כעבודה "${name}"`} - ${itemCount} פריטים, ${formatMoney(total)}.`,
+      `בפעם הבאה: "${name} לדני כהן".`,
+    ].join("\n"),
+  needDraft: () =>
+    `אין הצעה לשמור. שלח לי הודעה קולית עם ההצעה, ואז "תשמור את זה כ<שם העבודה>".`,
+  needName: () => `איך לקרוא לעבודה? למשל: "תשמור את זה כהתקנת מזגן".`,
+  notFound: (names: string[]) =>
+    names.length
+      ? `לא מצאתי עבודה כזו. העבודות שלך: ${names.join(" / ")}.`
+      : `אין לך עבודות שמורות עדיין. כתוב "עבודות" ואסביר איך שומרים.`,
+  /** The repeat path (§6.8 layer 1) has nothing to fall back on. */
+  repeatNotFound: (reference: string) =>
+    `לא מצאתי הצעה קודמת ל"${reference}". שלח "הצעות" לרשימה, או תגיד לי את מספר ההצעה.`,
+  repeatNeedReference: () =>
+    `כמו איזו הצעה? תגיד לי שם לקוח או מספר - למשל "כמו ההצעה של דני כהן".`,
+};
+
 export const commands = {
   markedSent: (q: Quote) => `👍 הצעה #${q.number} סומנה כנשלחה. אעדכן אותך כשהלקוח יפתח.`,
   nothingToSend: () => `אין טיוטה פעילה לסימון. שלח "הצעות" לרשימה.`,
@@ -208,6 +244,10 @@ export const commands = {
       `• חדש - להתחיל הצעה חדשה`,
       `• הגדרות - פרטי העסק והלוגו`,
       `• עיצוב - לבחור תבנית להצעה`,
+      `• עבודות - עבודות שמורות שחוזרות על עצמן`,
+      ``,
+      `עבודה שחוזרת? "תשמור את זה כהתקנת מזגן", ובפעם הבאה "התקנת מזגן לדני כהן".`,
+      `או פשוט: "כמו ההצעה של דני, אבל לשרון".`,
     ].join("\n"),
   unclearCorrectionOrNew: (customer: string | null) =>
     `לתקן את ההצעה${customer ? ` ל${customer}` : " הפעילה"}, או הצעה חדשה? (ענה "תקן" או "חדש")`,

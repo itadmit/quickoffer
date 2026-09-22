@@ -16,6 +16,7 @@ import {
   applyJSONToQuote,
   createQuoteFromJSON,
   deleteQuote,
+  findQuoteToRepeat,
   getActiveDraft,
   getLatestQuote,
   listRecentQuotes,
@@ -23,6 +24,18 @@ import {
   quoteToJSON,
   type QuoteWithItems,
 } from "../quotes/service";
+import {
+  jobToQuoteJSON,
+  JOB_NAMES_FOR_PROMPT,
+  looksLikeNewQuote,
+  normalizeJobName,
+} from "../quotes/saved-jobs";
+import {
+  findSavedJob,
+  listSavedJobs,
+  markJobUsed,
+  saveJob,
+} from "../quotes/saved-jobs-store";
 import { estimateAudioSeconds, fetchMedia, storeFile } from "../storage";
 import { sendText, type InboundMessage } from "../whatsapp";
 import type { FilledFromBook } from "../quotes/price-book";
@@ -32,6 +45,7 @@ import { checkQuota } from "./quota";
 import {
   commands as cmd,
   templates as tpl,
+  jobs as jobMsg,
   correctionSummary,
   customerMessage,
   errors,
@@ -286,20 +300,29 @@ async function handleReady(user: User, msg: InboundMessage, run: RunLog) {
   const exact = exactCommand(text);
   const exactTemplate = exactTemplateChoice(text);
   let intent: Awaited<ReturnType<typeof llm.classifyMessage>>["result"];
+  const blank = { templateName: null, reference: null, customerName: null };
   if (exact) {
-    intent = { intent: "command", command: exact, templateName: null };
+    intent = { intent: "command", command: exact, ...blank };
   } else if (exactTemplate) {
-    intent = { intent: "command", command: "template", templateName: exactTemplate };
+    intent = { intent: "command", command: "template", ...blank, templateName: exactTemplate };
   } else if (isGreeting(text)) {
-    intent = { intent: "greeting", command: null, templateName: null };
+    intent = { intent: "greeting", command: null, ...blank };
   } else {
+    const savedJobNames = (await listSavedJobs(user.id, JOB_NAMES_FOR_PROMPT)).map((j) => j.name);
     const r = await llm.classifyMessage(text, {
       hasActiveDraft: !!draft,
       draftCustomer: draft?.customerName ?? null,
       templateNames: (await listTemplates({ enabledOnly: true })).map((t) => t.name),
+      jobNames: savedJobNames,
     });
     run.llm(r.usage);
     intent = r.result;
+
+    // §6.8: a message carrying prices or quantities is a new quote even when it
+    // names a saved job - otherwise the numbers just said would be dropped.
+    if (intent.command === "job_use" && looksLikeNewQuote(text)) {
+      intent = { intent: "new_quote", command: null, ...blank };
+    }
   }
 
   switch (intent.intent) {
@@ -311,7 +334,7 @@ async function handleReady(user: User, msg: InboundMessage, run: RunLog) {
         await chooseTemplate(user, intent.templateName, draft);
         return;
       }
-      await runCommand(user, intent.command ?? "help", draft);
+      await runCommand(user, intent.command ?? "help", draft, intent, run);
       return;
     case "correction":
       if (draft) {
@@ -350,6 +373,9 @@ const EXACT: Record<string, Command> = {
   עיצוב: "template",
   תבנית: "template",
   תבניות: "template",
+  עבודות: "jobs",
+  "העבודות שלי": "jobs",
+  "עבודות שמורות": "jobs",
   "?": "help",
 };
 
@@ -531,8 +557,114 @@ async function chooseTemplate(user: User, templateName: string | null, draft: Qu
   await sendText(user.phone, tpl.chosen(chosen.name, draft ? await editLink(draft.id) : null));
 }
 
-async function runCommand(user: User, command: Command, draft: QuoteWithItems | null) {
+/**
+ * Start a quote from a JSON we built ourselves rather than from the LLM
+ * (§6.8 - repeat and saved jobs). Shares the one creation path so numbering,
+ * quota, the price book and events behave exactly as on the voice route.
+ */
+async function startQuoteFrom(
+  user: User,
+  json: QuoteJSON,
+  run: RunLog,
+  source: { transcript: string | null },
+): Promise<boolean> {
+  const quota = await checkQuota(user);
+  if (!quota.ok) {
+    await sendText(
+      user.phone,
+      errors.quotaExceeded(quota.planLabel, quota.limit, await upgradeLink(user.id)),
+    );
+    return false;
+  }
+  const quote = await createQuoteFromJSON(user, json, {
+    transcript: source.transcript,
+    audioUrl: null,
+  });
+  run.quoteId = quote.id;
+  await sendQuoteMessages(user, quote, quote.filledFromBook);
+  return true;
+}
+
+async function runCommand(
+  user: User,
+  command: Command,
+  draft: QuoteWithItems | null,
+  intent: { reference: string | null; customerName: string | null },
+  run: RunLog,
+) {
   switch (command) {
+    case "repeat": {
+      run.kind = "repeat";
+      if (!intent.reference) {
+        await sendText(user.phone, jobMsg.repeatNeedReference());
+        return;
+      }
+      const previous = await findQuoteToRepeat(user.id, intent.reference);
+      if (!previous) {
+        await sendText(user.phone, jobMsg.repeatNotFound(intent.reference));
+        return;
+      }
+      // Carry the work, not the customer - this quote is for someone else.
+      const json: QuoteJSON = {
+        ...quoteToJSON(previous),
+        customerName: intent.customerName,
+        customerPhone: null,
+      };
+      await startQuoteFrom(user, json, run, {
+        transcript: `כמו הצעה #${previous.number}`,
+      });
+      return;
+    }
+    case "jobs": {
+      const list = await listSavedJobs(user.id);
+      await sendText(
+        user.phone,
+        list.length
+          ? jobMsg.list(list, await settingsLink(user.id))
+          : jobMsg.none(),
+      );
+      return;
+    }
+    case "job_save": {
+      const target = draft ?? (await getLatestQuote(user.id));
+      if (!target || !target.items.length) {
+        await sendText(user.phone, jobMsg.needDraft());
+        return;
+      }
+      const name = normalizeJobName(intent.reference ?? "");
+      if (name.length < 2) {
+        await sendText(user.phone, jobMsg.needName());
+        return;
+      }
+      const saved = await saveJob(user.id, name, target.items);
+      if (!saved) {
+        await sendText(user.phone, jobMsg.needName());
+        return;
+      }
+      const total = saved.items.reduce((s, it) => s + it.quantity * it.unitPrice, 0);
+      await sendText(
+        user.phone,
+        jobMsg.saved(saved.job.name, saved.items.length, total, saved.replaced),
+      );
+      return;
+    }
+    case "job_use": {
+      run.kind = "job_use";
+      const job = intent.reference ? await findSavedJob(user.id, intent.reference) : null;
+      if (!job) {
+        const names = (await listSavedJobs(user.id)).map((j) => j.name);
+        await sendText(user.phone, jobMsg.notFound(names));
+        return;
+      }
+      const started = await startQuoteFrom(
+        user,
+        jobToQuoteJSON(job, intent.customerName),
+        run,
+        { transcript: `עבודה שמורה: ${job.name}` },
+      );
+      if (started) await markJobUsed(job.id);
+      return;
+    }
     case "list": {
       const list = await listRecentQuotes(user.id, 5);
       const links = await Promise.all(list.map((q) => editLink(q.id)));

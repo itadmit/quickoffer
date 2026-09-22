@@ -6,6 +6,7 @@ import { formatPhone } from "@/lib/phone";
 import { TemplateThumb } from "@/components/template-thumb";
 import type { QuoteTemplateSpec } from "@/lib/quotes/template-spec";
 import { removeLogoAction, saveSettingsAction, uploadLogoAction } from "./actions";
+import { JobsEditor, type Job } from "./jobs-editor";
 import type { SettingsForm } from "./schema";
 
 type Props = {
@@ -16,6 +17,8 @@ type Props = {
   quota: { used: number; limit: number; monthly: boolean } | null;
   /** lockedFor: the plan name required, when the user's plan cannot pick it */
   templates: { id: string; name: string; description: string | null; isDefault: boolean; lockedFor: string | null; spec: QuoteTemplateSpec }[];
+  /** §6.8 saved jobs - managed here, created in the chat */
+  jobs: Job[];
   /** false on the top plan - there is nothing to sell */
   canUpgrade: boolean;
   initial: SettingsForm;
@@ -28,7 +31,7 @@ const PLAN_LABEL: Record<string, string> = {
   unlimited: "Unlimited",
 };
 
-export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, quota, templates, canUpgrade, initial }: Props) {
+export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, quota, templates, jobs, canUpgrade, initial }: Props) {
   const [form, setForm] = useState<SettingsForm>(initial);
   const [logoUrl, setLogoUrl] = useState(initialLogo);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -246,6 +249,8 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, quota
           </div>
         </section>
       )}
+
+      <JobsEditor token={token} initial={jobs} />
 
       <div className="fixed bottom-0 inset-x-0 bg-card border-t border-line p-3">
         <div className="max-w-lg mx-auto flex items-center gap-3">

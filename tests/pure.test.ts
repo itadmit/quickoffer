@@ -10,6 +10,16 @@ import { customerMessageText, daysUntil } from "@/lib/quotes/customer-message";
 import { daysSince, isQuietHour } from "@/lib/quotes/follow-up";
 import { isPaidPlan, PLAN_OFFERS, priceOf, upgradesFor } from "@/lib/billing/plans";
 import { toVisual } from "@/lib/og-bidi";
+import {
+  isValidJobName,
+  itemsForJob,
+  jobKey,
+  jobToQuoteJSON,
+  jobTotal,
+  looksLikeNewQuote,
+  matchJob,
+  normalizeJobName,
+} from "@/lib/quotes/saved-jobs";
 
 // --- real capture from CLAUDE.md (audio)
 const audio = {
@@ -325,4 +335,75 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
     assert.equal(isPaidPlan(o.plan), o.price > 0, `${o.plan} paid/price mismatch`);
   }
   console.log("PLAN CODES OK");
+}
+
+// ---- §6.8 saved jobs: name handling, the new_quote guard, and matching
+{
+  // names come back from the LLM with the lead-in the professional said
+  assert.equal(normalizeJobName("בתור התקנת מזגן"), "התקנת מזגן");
+  assert.equal(normalizeJobName("כ התקנת מזגן"), "התקנת מזגן");
+  assert.equal(normalizeJobName('"התקנת מזגן"'), "התקנת מזגן");
+  assert.equal(normalizeJobName("התקנת מזגן."), "התקנת מזגן");
+  assert.equal(normalizeJobName("  התקנת מזגן  "), "התקנת מזגן");
+  assert(!isValidJobName("א"));
+  assert(isValidJobName("התקנת מזגן"));
+
+  // the definite article must not fork one job into two (shared with priceKey)
+  assert.equal(jobKey("התקנת מזגן"), jobKey("התקנת המזגן"));
+
+  // a message with a price or a quantity is a new quote, never job_use -
+  // otherwise the numbers the professional just said get dropped
+  assert(looksLikeNewQuote("התקנת מזגן לדני 2 יחידות 1200"));
+  assert(looksLikeNewQuote("התקנת מזגן שלוש יחידות"));
+  assert(!looksLikeNewQuote("התקנת מזגן לדני כהן"));
+  assert(!looksLikeNewQuote("התקנת מזגן"));
+
+  const book = [
+    { name: "התקנת מזגן", key: jobKey("התקנת מזגן") },
+    { name: "נקודת חשמל", key: jobKey("נקודת חשמל") },
+  ];
+  assert.equal(matchJob(book, "התקנת המזגן")?.name, "התקנת מזגן");
+  assert.equal(matchJob(book, "נקודת חשמל לדני")?.name, "נקודת חשמל");
+  assert.equal(matchJob(book, "צביעת קיר"), null);
+  // an ambiguous match must not start the wrong job
+  const ambiguous = [
+    { name: "מזגן", key: jobKey("מזגן") },
+    { name: "מזגן עילי", key: jobKey("מזגן עילי") },
+  ];
+  assert.equal(matchJob(ambiguous, "מזגן עילי גדול"), null);
+
+  // a saved job becomes the same QuoteJSON the LLM would have produced
+  const json = jobToQuoteJSON(
+    {
+      name: "התקנת מזגן",
+      items: [
+        { description: "מזגן", quantity: 1, unit: "יח׳", unitPrice: 1200 },
+        { description: "צנרת", quantity: 3, unit: "מ״א", unitPrice: 0 },
+      ],
+    },
+    "דני כהן",
+  );
+  assert.equal(json.customerName, "דני כהן");
+  assert.equal(json.title, "התקנת מזגן");
+  assert.equal(json.items[0].priceConfidence, "high");
+  // a zero price still has to be flagged, exactly as on the voice route
+  assert.equal(json.items[1].priceConfidence, "missing");
+  assert.deepEqual(json.needsReview, ["צנרת"]);
+  // an unknown unit must not break the enum the schema validates against
+  const odd = jobToQuoteJSON(
+    { name: "x", items: [{ description: "a", quantity: 1, unit: "בננות", unitPrice: 5 }] },
+    null,
+  );
+  assert.equal(odd.items[0].unit, "יח׳");
+
+  assert.equal(jobTotal([{ quantity: 3, unitPrice: 150 }, { quantity: 1, unitPrice: 200 }]), 650);
+  // items with no real description are dropped before saving
+  assert.equal(
+    itemsForJob([
+      { description: "מזגן", quantity: 1, unit: "יח׳", unitPrice: 1200 },
+      { description: " ", quantity: 1, unit: "יח׳", unitPrice: 50 },
+    ]).length,
+    1,
+  );
+  console.log("SAVED JOBS OK");
 }

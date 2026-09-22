@@ -2,14 +2,14 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Link2, MessageCircle, Trash2, TriangleAlert } from "lucide-react";
+import { Link2, MessageCircle, Trash2, TriangleAlert, Wrench } from "lucide-react";
 import { UNITS } from "@/lib/ai/types";
 import { formatPhone, isMobile, normalizePhone, waLink } from "@/lib/phone";
 import { calcTotals, formatMoney } from "@/lib/quotes/calc";
 import { customerMessageText, daysUntil } from "@/lib/quotes/customer-message";
 import { QuoteDocument, type QuoteView } from "@/components/quote-document";
 import { StatusBadge } from "@/components/status-badge";
-import { deleteQuoteAction, markSentAction, saveQuoteAction } from "./actions";
+import { deleteQuoteAction, markSentAction, saveAsJobAction, saveQuoteAction } from "./actions";
 import type { QuoteForm } from "./schema";
 
 type Props = {
@@ -41,6 +41,8 @@ export function QuoteEditor({ token, quote, initial }: Props) {
   const [pending, start] = useTransition();
   const [copied, setCopied] = useState(false);
   const [status, setStatus] = useState(quote.status);
+  /** §6.8 feedback after "שמור כעבודה" */
+  const [jobMsg, setJobMsg] = useState<string | null>(null);
   const router = useRouter();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -326,6 +328,11 @@ export function QuoteEditor({ token, quote, initial }: Props) {
 
       {/* bottom actions */}
       <div className="fixed bottom-0 inset-x-0 bg-card border-t border-line p-3">
+        {jobMsg && (
+          <p className="max-w-lg mx-auto text-sm text-muted pb-2" role="status">
+            {jobMsg}
+          </p>
+        )}
         <div className="max-w-lg mx-auto flex gap-2">
           <button onClick={share} className="btn-primary flex-1 min-w-0">
             <MessageCircle className="h-5 w-5 shrink-0" />
@@ -350,6 +357,29 @@ export function QuoteEditor({ token, quote, initial }: Props) {
               className="btn-secondary"
             >
               סמן כנשלחה
+            </button>
+          )}
+          {!locked && form.items.some((it) => it.description.trim()) && (
+            <button
+              disabled={pending}
+              onClick={() => {
+                const suggested = form.title?.trim() || form.items[0]?.description?.trim() || "";
+                const name = prompt("שם לעבודה השמורה (למשל: התקנת מזגן)", suggested);
+                if (!name?.trim()) return;
+                start(async () => {
+                  const r = await saveAsJobAction(token, name);
+                  setJobMsg(
+                    r.ok
+                      ? `${r.replaced ? "עודכן" : "נשמר"}: "${r.name}" ✓`
+                      : "לא הצלחתי לשמור - בדוק שיש שם ופריטים",
+                  );
+                  setTimeout(() => setJobMsg(null), 3000);
+                });
+              }}
+              className="btn-secondary"
+              title="שמור את הפריטים כעבודה חוזרת"
+            >
+              <Wrench className="h-4 w-4" /> שמור כעבודה
             </button>
           )}
           {!locked && (

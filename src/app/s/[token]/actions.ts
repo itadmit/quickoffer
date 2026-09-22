@@ -7,7 +7,12 @@ import { users } from "@/lib/db/schema";
 import { planAllows } from "@/lib/quotes/template-spec";
 import { getTemplate } from "@/lib/quotes/templates";
 import { storeFile } from "@/lib/storage";
-import { SettingsSchema, type SettingsForm } from "./schema";
+import {
+  deleteSavedJob,
+  renameSavedJob,
+  replaceJobItems,
+} from "@/lib/quotes/saved-jobs-store";
+import { JobFormSchema, SettingsSchema, type JobForm, type SettingsForm } from "./schema";
 
 
 async function authorize(token: string) {
@@ -66,6 +71,32 @@ export async function removeLogoAction(token: string) {
   const user = await authorize(token);
   if (!user) return { ok: false as const };
   await db.update(users).set({ logoUrl: null }).where(eq(users.id, user.id));
+  return { ok: true as const };
+}
+
+/**
+ * §6.8 saved jobs. This screen only *manages* jobs - renaming, fixing a price,
+ * deleting. Creating one happens in the chat, from a quote that already exists,
+ * so nobody has to come here to get value out of the feature.
+ */
+
+export async function saveJobAction(token: string, jobId: string, form: JobForm) {
+  const user = await authorize(token);
+  if (!user) return { ok: false as const, error: "unauthorized" };
+  const parsed = JobFormSchema.safeParse(form);
+  if (!parsed.success) return { ok: false as const, error: "invalid" };
+
+  const renamed = await renameSavedJob(user.id, jobId, parsed.data.name);
+  if (!renamed) return { ok: false as const, error: "name_taken" };
+  const saved = await replaceJobItems(user.id, jobId, parsed.data.items);
+  if (!saved) return { ok: false as const, error: "invalid" };
+  return { ok: true as const };
+}
+
+export async function deleteJobAction(token: string, jobId: string) {
+  const user = await authorize(token);
+  if (!user) return { ok: false as const, error: "unauthorized" };
+  await deleteSavedJob(user.id, jobId);
   return { ok: true as const };
 }
 

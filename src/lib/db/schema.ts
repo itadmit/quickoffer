@@ -379,7 +379,56 @@ export const magicLinks = pgTable(
   (t) => [index("magic_links_subject_idx").on(t.purpose, t.subject)],
 );
 
+/**
+ * A repeat job saved by name (PRODUCT.md §6.8) - the skeleton of a quote
+ * without a customer. Born from a real quote via "תשמור את זה כ…", never
+ * authored from scratch in a form.
+ *
+ * Distinct from `quote_templates`, which are *design* templates (layout,
+ * colour). Nothing here affects how a quote looks.
+ */
+export const savedJobs = pgTable(
+  "saved_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** normalized name, for matching what the professional says (price-book.ts priceKey) */
+    key: text("key").notNull(),
+    timesUsed: integer("times_used").notNull().default(0),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("saved_jobs_user_key_idx").on(t.userId, t.key),
+    index("saved_jobs_user_rank_idx").on(t.userId, t.timesUsed, t.lastUsedAt),
+  ],
+);
+
+export const savedJobItems = pgTable(
+  "saved_job_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => savedJobs.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    description: text("description").notNull(),
+    quantity: numeric("quantity", { precision: 10, scale: 2, mode: "number" })
+      .notNull()
+      .default(1),
+    unit: text("unit").notNull().default("יח׳"),
+    unitPrice: money("unit_price").notNull().default(0),
+  },
+  (t) => [index("saved_job_items_job_idx").on(t.jobId, t.position)],
+);
+
 export type User = typeof users.$inferSelect;
+export type SavedJob = typeof savedJobs.$inferSelect;
+export type SavedJobItem = typeof savedJobItems.$inferSelect;
 export type PriceBookEntry = typeof priceBook.$inferSelect;
 export type BillingCheckout = typeof billingCheckouts.$inferSelect;
 export type QuoteTemplate = typeof quoteTemplates.$inferSelect;
