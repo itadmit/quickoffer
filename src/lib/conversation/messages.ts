@@ -17,8 +17,23 @@ export const onboarding = {
     }`,
   askVat: () => `2️⃣ עוסק פטור או עוסק מורשה?\n(מורשה = ההצעות יכללו מע״מ 18%)`,
   askLogo: () => `מעולה. יש לוגו? שלח אותו כתמונה, או "דלג".`,
+  /**
+   * The activation message. Only two capabilities are named: correcting by
+   * voice (the first worry a new user has) and "עזרה" as the door to the rest.
+   * Anything that acts on an existing quote - templates, "שלחתי", designs -
+   * has nothing to refer to yet and reads as noise here (PRODUCT.md §6.2).
+   */
   done: (settingsUrl: string) =>
-    `✅ מוכן! עכשיו פשוט שלח לי הודעה קולית, למשל:\n🎤 "הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200"\nואני מחזיר הצעה מוכנה תוך דקה.\nפרטים נוספים (כתובת, ח.פ., תנאי תשלום קבועים) - כאן: ${settingsUrl}`,
+    [
+      `✅ הכול מוכן. שלח לי הודעה קולית, למשל:`,
+      `🎤 "הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200"`,
+      `ותוך דקה תחזור אליך הצעה מוכנה להעברה ללקוח.`,
+      ``,
+      `טעיתי במשהו? פשוט תגיד לי - "תשנה ביקור ל-250".`,
+      `"עזרה" - כל מה שאני יודע לעשות.`,
+      ``,
+      `פרטי העסק (כתובת, ח.פ., תנאי תשלום) - כאן: ${settingsUrl}`,
+    ].join("\n"),
   didntGetName: () => `לא הבנתי 🙂 איך קוראים לעסק? שלח את השם, או "כן" לאישור השם מ-WhatsApp.`,
   didntGetVat: () => `עוסק פטור או עוסק מורשה? (מורשה = ההצעות יכללו מע״מ 18%)`,
   logoSaved: () => `הלוגו נשמר 👌`,
