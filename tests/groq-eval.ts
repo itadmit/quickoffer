@@ -57,7 +57,20 @@ const CASES: { t: string; expect: (q: QuoteJSON) => string[] }[] = [
   },
 ];
 
-const CLASSIFY: { t: string; draft: boolean; want: string }[] = [
+/**
+ * `want` is the intent; `cmd` additionally pins the command, and `fields`
+ * checks what was extracted. The §6.8 cases are the ones worth running before
+ * any change to the classify prompt - they cover the two boundaries that are
+ * genuinely easy to get wrong: תבנית (content) vs עיצוב (look), and a saved
+ * template named in a message that also carries prices.
+ */
+const CLASSIFY: {
+  t: string;
+  draft: boolean;
+  want: string;
+  cmd?: string;
+  fields?: (r: { reference: string | null; customerName: string | null; designName: string | null }) => boolean;
+}[] = [
   { t: "היי", draft: false, want: "greeting" },
   { t: "תודה רבה אחי", draft: true, want: "greeting" },
   { t: "תשנה את הביקור ל-250", draft: true, want: "correction" },
@@ -68,6 +81,19 @@ const CLASSIFY: { t: string; draft: boolean; want: string }[] = [
   { t: "מה ההצעות שלי", draft: false, want: "command" },
   { t: "זה כולל מע״מ?", draft: true, want: "question" },
   { t: "300 שקל", draft: true, want: "unclear" },
+  // --- §6.8
+  { t: "עיצוב מודרני", draft: false, want: "command", cmd: "design",
+    fields: (r) => r.designName === "מודרני" },
+  { t: "התקנת מזגן לדני כהן", draft: false, want: "command", cmd: "job_use",
+    fields: (r) => !!r.reference?.includes("מזגן") && !!r.customerName?.includes("דני") },
+  // prices present -> a new quote, never job_use, or the numbers are lost
+  { t: "התקנת מזגן לדני 2 יחידות 1200", draft: false, want: "new_quote" },
+  { t: "תקח את ההצעה של דני ותשתמש באותה תבנית ליוסי", draft: false, want: "command", cmd: "repeat",
+    fields: (r) => !!r.reference?.includes("דני") && !!r.customerName?.includes("יוסי") },
+  { t: "כמו ההצעה של דני, אבל לשרון", draft: false, want: "command", cmd: "repeat",
+    fields: (r) => !!r.customerName?.includes("שרון") },
+  { t: "תשמור את זה כהתקנת מזגן", draft: true, want: "command", cmd: "job_save",
+    fields: (r) => !!r.reference?.includes("מזגן") },
 ];
 
 async function main() {
@@ -89,9 +115,17 @@ async function main() {
   for (const c of CLASSIFY) {
     await pace(Number(process.env.PACE_MS ?? 15000) / 3);
     const { result } = await llm.classifyMessage(c.t, { hasActiveDraft: c.draft, draftCustomer: c.draft ? "דני כהן" : null, designNames: ["קלאסי", "מודרני", "מינימלי"], jobNames: ["התקנת מזגן", "נקודת חשמל"] });
-    const ok = result.intent === c.want;
+    const badCmd = c.cmd && result.command !== c.cmd;
+    const badFields = c.fields && !c.fields(result);
+    const ok = result.intent === c.want && !badCmd && !badFields;
     if (!ok) fails++;
-    console.log(`${ok ? "✅" : "❌"} "${c.t}" [draft=${c.draft}] → ${result.intent}${result.command ? "/" + result.command : ""}${ok ? "" : `  (want ${c.want})`}`);
+    const got = `${result.intent}${result.command ? "/" + result.command : ""}`;
+    const why = badFields
+      ? `  ⚠️ ref=${result.reference} cust=${result.customerName} design=${result.designName}`
+      : ok
+        ? ""
+        : `  (want ${c.want}${c.cmd ? "/" + c.cmd : ""})`;
+    console.log(`${ok ? "✅" : "❌"} "${c.t}" [draft=${c.draft}] → ${got}${why}`);
   }
   console.log(fails ? `\n${fails} PROBLEMS` : "\nALL GOOD");
   process.exit(fails ? 1 : 0);
