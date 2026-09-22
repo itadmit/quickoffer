@@ -127,8 +127,9 @@ export default async function LandingPage() {
                 <span className="text-brand">סגור עסקה.</span>
               </h1>
               <p className="anim-fade-up [animation-delay:160ms] text-lg md:text-xl text-muted max-w-[34rem] leading-relaxed">
-                לבעלי מקצוע בשטח - חשמלאים, אינסטלטורים, מזגנים, שיפוצים. מדברים 20 שניות ב-{channels},
-                ותוך דקה יש הצעת מחיר מעוצבת עם הלוגו שלך, מוכנה להעברה ללקוח. הלקוח פותח, מאשר וחותם.
+                לבעלי מקצוע בשטח - חשמלאים, אינסטלטורים, מזגנים, שיפוצים. שולחים הודעה קולית של 20
+                שניות לעופר, הבוט של QuickOffer ב-{channels}, ותוך דקה יש הצעת מחיר מעוצבת עם הלוגו
+                שלך, מוכנה להעברה ללקוח. הלקוח פותח, מאשר וחותם.
               </p>
               <div className="anim-fade-up [animation-delay:240ms] space-y-3">
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -525,7 +526,7 @@ function ChatMockup() {
                 <Mic className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1 leading-tight">
-                <div className="font-semibold text-[14px] truncate">QuickOffer</div>
+                <div className="font-semibold text-[14px] truncate">עופר</div>
                 {/* status flips to "typing" while the bot prepares the quote (1.2s - 4s) */}
                 <div className="relative h-[14px] text-[11px] text-muted">
                   <span className="anim-status-online absolute inset-0">מקוון</span>
