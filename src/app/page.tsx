@@ -45,7 +45,8 @@ import {
 } from "lucide-react";
 import { Reveal } from "@/components/reveal";
 import { NotificationToast } from "@/components/notification-toast";
-import { formatPhone } from "@/components/quote-document";
+import { PLAN_OFFERS } from "@/lib/billing";
+import { formatPhone } from "@/lib/phone";
 import { getSetting } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -250,11 +251,22 @@ export default async function LandingPage() {
           <h2 className="text-3xl md:text-4xl font-bold">מתחילים חינם. משדרגים כשזה משתלם.</h2>
           <p className="text-muted mt-4 text-lg">הצעה אחת שנסגרת בזכות זה - וכבר החזיר את עצמו.</p>
         </Reveal>
+        {/* Same source of truth as /u and the quota messages (lib/billing.ts),
+            so the landing page can never quote a price the product doesn't. */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
-          <Plan name="ניסיון" price="0" per="5 הצעות" items={["כל היכולות", "בלי כרטיס אשראי"]} delay={0} />
-          <Plan name="Basic" price="29" oldPrice="49" badge="מחיר השקה" per="20 הצעות בחודש" items={["לוגו על ההצעה", "אישור לקוח בקישור", "התראות ב-WhatsApp"]} highlight delay={100} />
-          <Plan name="Pro" price="99" per="100 הצעות בחודש" items={["הכול ב-Basic", "חתימה דיגיטלית", "בלי מיתוג QuickOffer", "תזכורות ללקוח"]} delay={200} />
-          <Plan name="Unlimited" price="149" per="ללא הגבלה" items={["הכול ב-Pro", "שליחה מהמספר שלך", "סליקת מקדמות"]} delay={300} />
+          {PLAN_OFFERS.map((o, i) => (
+            <Plan
+              key={o.plan}
+              name={o.name}
+              price={String(o.price)}
+              oldPrice={o.listPrice ? String(o.listPrice) : undefined}
+              badge={o.badge}
+              per={o.quota}
+              items={o.features}
+              highlight={o.highlight}
+              delay={i * 100}
+            />
+          ))}
         </div>
         <p className="text-center text-xs text-muted mt-6">המחירים בש״ח לחודש, לפני מע״מ.</p>
       </section>

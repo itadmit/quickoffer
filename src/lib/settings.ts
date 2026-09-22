@@ -31,6 +31,11 @@ export const SETTING_KEYS = {
   "telegram.bot_username": { secret: false, env: "TELEGRAM_BOT_USERNAME", default: "" },
   // The bot's WhatsApp number (digits). Temporary: Quick Shop's number until QuickOffer gets its own.
   "bot.phone": { secret: false, env: "BOT_PHONE", default: "972552554432" },
+  // Checkout link per paid plan (§11). Empty = "talk to us on WhatsApp", which
+  // is what the manual-billing demo uses; a provider URL drops in without a deploy.
+  "billing.checkout_basic": { secret: false, env: null, default: "" },
+  "billing.checkout_pro": { secret: false, env: null, default: "" },
+  "billing.checkout_unlimited": { secret: false, env: null, default: "" },
 } as const;
 
 export type SettingKey = keyof typeof SETTING_KEYS;

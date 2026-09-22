@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Check, Lock } from "lucide-react";
-import { formatPhone } from "@/components/quote-document";
+import { Check, ChevronLeft, Lock, Sparkles } from "lucide-react";
+import { formatPhone } from "@/lib/phone";
 import { TemplateThumb } from "@/components/template-thumb";
 import type { QuoteTemplateSpec } from "@/lib/quotes/template-spec";
 import { removeLogoAction, saveSettingsAction, uploadLogoAction } from "./actions";
@@ -16,6 +16,8 @@ type Props = {
   quota: { used: number; limit: number; monthly: boolean } | null;
   /** lockedFor: the plan name required, when the user's plan cannot pick it */
   templates: { id: string; name: string; description: string | null; isDefault: boolean; lockedFor: string | null; spec: QuoteTemplateSpec }[];
+  /** false on the top plan - there is nothing to sell */
+  canUpgrade: boolean;
   initial: SettingsForm;
 };
 
@@ -26,7 +28,7 @@ const PLAN_LABEL: Record<string, string> = {
   unlimited: "Unlimited",
 };
 
-export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, quota, templates, initial }: Props) {
+export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, quota, templates, canUpgrade, initial }: Props) {
   const [form, setForm] = useState<SettingsForm>(initial);
   const [logoUrl, setLogoUrl] = useState(initialLogo);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -76,6 +78,32 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, quota
           </div>
         )}
       </header>
+
+      {canUpgrade && (
+        <a
+          href={`/u/${token}`}
+          className={`flex items-center gap-3 rounded-2xl border p-4 ${
+            quota && quota.used >= quota.limit
+              ? "border-danger/40 bg-danger/5"
+              : "border-brand/30 bg-brand-soft/40"
+          }`}
+        >
+          <span className="grid place-items-center h-10 w-10 rounded-xl bg-brand text-brand-ink shrink-0">
+            <Sparkles className="h-5 w-5" />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block font-semibold">
+              {quota && quota.used >= quota.limit ? "נגמרו ההצעות בחבילה" : "שדרוג חבילה"}
+            </span>
+            <span className="block text-xs text-muted">
+              {quota && quota.used >= quota.limit
+                ? "שדרוג פותח את ההצעות מיד"
+                : "יותר הצעות, כל התבניות, בלי מיתוג QuickOffer"}
+            </span>
+          </span>
+          <ChevronLeft className="h-5 w-5 text-muted shrink-0" />
+        </a>
+      )}
 
       {/* logo */}
       <section className="rounded-2xl border border-line bg-card p-4 flex items-center gap-4">
