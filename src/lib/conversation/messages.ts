@@ -222,6 +222,32 @@ export const commands = {
 ואני מחזיר הצעה מוכנה תוך דקה.`,
 };
 
+/**
+ * Billing. Money messages are the ones people screenshot, so they say the
+ * amount, the plan and what happens next - never just "יש בעיה".
+ */
+export const billing = {
+  upgraded: (plan: string, manageUrl: string) =>
+    [
+      `✅ החבילה שודרגה ל-${plan}.`,
+      `המכסה נפתחה עכשיו, והחשבונית נשלחה לאימייל שנתת.`,
+      `לניהול החבילה: ${manageUrl}`,
+    ].join("\n"),
+  chargeFailed: (plan: string, updateUrl: string) =>
+    [
+      `⚠️ החיוב החודשי לחבילת ${plan} לא עבר.`,
+      `החבילה ממשיכה לפעול ואנחנו ננסה שוב בימים הקרובים.`,
+      `כדי לא לאבד אותה - עדכן אמצעי תשלום: ${updateUrl}`,
+    ].join("\n"),
+  chargeRecovered: (plan: string) => `👍 החיוב עבר. חבילת ${plan} ממשיכה כרגיל.`,
+  cancelled: (plan: string, upgradeUrl: string) =>
+    [
+      `חבילת ${plan} הסתיימה, וחזרת לחבילת הניסיון.`,
+      `ההצעות שכבר שלחת ממשיכות לעבוד כרגיל.`,
+      `לחידוש: ${upgradeUrl}`,
+    ].join("\n"),
+};
+
 /** §6.7 */
 export const errors = {
   transcriptionFailed: () =>

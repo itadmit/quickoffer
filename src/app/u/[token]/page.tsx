@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import { eq } from "drizzle-orm";
-import { ArrowLeft, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, TriangleAlert } from "lucide-react";
 import { LinkExpired } from "@/components/link-expired";
-import { checkoutUrls, isPaidPlan, planName, upgradesFor, type PlanOffer } from "@/lib/billing";
+import { isBillingConfigured } from "@/lib/billing/hub";
+import { manualUpgradeLink, planName, upgradesFor } from "@/lib/billing/plans";
 import { checkQuota } from "@/lib/conversation/quota";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { resolveLink } from "@/lib/quotes/links";
+import { getSetting } from "@/lib/settings";
+import { UpgradePicker } from "./upgrade-picker";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "שדרוג חבילה - QuickOffer" };
@@ -17,6 +20,10 @@ export const metadata: Metadata = { title: "שדרוג חבילה - QuickOffer" 
  * Reached from the quota message, the locked-template message and the settings
  * screen. Uses the settings magic link, so there is nothing new to hand out and
  * nothing new to expire.
+ *
+ * Nothing here changes a plan. It collects what an invoice needs, records the
+ * card-storage consent, and hands off to the billing hub's hosted page; the
+ * plan moves when the hub says the money moved.
  */
 export default async function UpgradePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -25,9 +32,20 @@ export default async function UpgradePage({ params }: { params: Promise<{ token:
 
   if (!user) return <LinkExpired hint="שלח “הגדרות” לבוט ב-WhatsApp לקבלת קישור חדש." />;
 
-  const [quota, urls] = await Promise.all([checkQuota(user), checkoutUrls()]);
+  const [quota, configured, botPhone] = await Promise.all([
+    checkQuota(user),
+    isBillingConfigured(),
+    getSetting("bot.phone"),
+  ]);
   const offers = upgradesFor(user.plan);
   const atLimit = !quota.ok;
+  const pastDue = !!user.billingPastDueAt;
+
+  // Until the hub is wired up, every card links to a WhatsApp message to us -
+  // manual, but a path to paying rather than a dead end.
+  const manualLinks = configured
+    ? null
+    : Object.fromEntries(offers.map((o) => [o.plan, manualUpgradeLink(botPhone, o.plan)]));
 
   return (
     <main className="flex-1 w-full max-w-lg mx-auto p-4 pb-12 space-y-6">
@@ -35,15 +53,22 @@ export default async function UpgradePage({ params }: { params: Promise<{ token:
         <a href={`/s/${token}`} className="inline-flex items-center gap-1 text-sm text-muted">
           <ArrowLeft className="h-4 w-4 rotate-180" /> חזרה להגדרות
         </a>
-        <h1 className="text-2xl font-bold">
-          {atLimit ? "נגמרו ההצעות בחבילה" : "שדרוג חבילה"}
-        </h1>
+        <h1 className="text-2xl font-bold">{atLimit ? "נגמרו ההצעות בחבילה" : "שדרוג חבילה"}</h1>
         <p className="text-muted text-sm leading-relaxed">
           {atLimit
             ? `השתמשת ב-${quota.used} מתוך ${quota.limit} ההצעות של חבילת ${quota.planLabel}. שדרוג פותח אותן מיד.`
             : `אתה בחבילת ${planName(user.plan)}. הצעה אחת שנסגרת בזכות זה מחזירה את העלות.`}
         </p>
       </header>
+
+      {pastDue && (
+        <div className="rounded-2xl border border-danger/40 bg-danger/5 p-4 flex gap-3 text-sm">
+          <TriangleAlert className="h-5 w-5 text-danger shrink-0" />
+          <p className="leading-relaxed">
+            החיוב האחרון לא עבר. בחר חבילה והזן אמצעי תשלום מעודכן - החבילה תמשיך בלי הפסקה.
+          </p>
+        </div>
+      )}
 
       {offers.length === 0 ? (
         <div className="rounded-2xl border border-line bg-card p-5 text-center space-y-1">
@@ -52,67 +77,19 @@ export default async function UpgradePage({ params }: { params: Promise<{ token:
           <p className="text-sm text-muted">הצעות ללא הגבלה. אין מה לשדרג.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {offers.map((offer) => (
-            <PlanCard
-              key={offer.plan}
-              offer={offer}
-              href={isPaidPlan(offer.plan) ? urls[offer.plan] : "#"}
-            />
-          ))}
-        </div>
+        <UpgradePicker
+          token={token}
+          offers={offers}
+          email={user.billingEmail}
+          vatNumber={user.taxId}
+          manualLinks={manualLinks}
+        />
       )}
 
       <p className="text-xs text-muted text-center leading-relaxed">
-        המחירים בש״ח לחודש, לפני מע״מ. אפשר לבטל בכל עת - ההצעות שכבר נשלחו נשארות פעילות.
+        המחירים בש״ח לחודש, לפני מע״מ. החיוב חוזר כל חודש וניתן לבטל בכל עת - ההצעות שכבר נשלחו
+        נשארות פעילות.
       </p>
     </main>
-  );
-}
-
-function PlanCard({ offer, href }: { offer: PlanOffer; href: string }) {
-  return (
-    <section
-      className={`relative rounded-2xl border p-5 space-y-4 ${
-        offer.highlight ? "border-brand bg-card ring-1 ring-brand/30" : "border-line bg-card"
-      }`}
-    >
-      {offer.badge && (
-        <span className="absolute -top-2.5 start-5 rounded-full bg-warn text-warn-ink text-xs font-semibold px-2.5 py-0.5">
-          {offer.badge}
-        </span>
-      )}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="font-bold text-lg">{offer.name}</div>
-          <div className="text-sm text-muted">{offer.quota}</div>
-        </div>
-        <div className="flex items-baseline gap-1.5 shrink-0">
-          {offer.listPrice && (
-            <span className="text-base font-semibold text-muted line-through">{offer.listPrice}</span>
-          )}
-          <span className="text-3xl font-bold">{offer.price}</span>
-          <span className="text-muted text-sm">₪ / חודש</span>
-        </div>
-      </div>
-
-      <ul className="text-sm space-y-1.5">
-        {offer.features.map((f) => (
-          <li key={f} className="flex gap-2 items-start">
-            <Check className="h-4 w-4 mt-0.5 shrink-0 text-brand" />
-            {f}
-          </li>
-        ))}
-      </ul>
-
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener"
-        className={offer.highlight ? "btn-primary w-full" : "btn-secondary w-full"}
-      >
-        שדרג ל-{offer.name}
-      </a>
-    </section>
   );
 }

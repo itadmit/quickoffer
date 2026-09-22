@@ -1,13 +1,12 @@
-import { getSetting, getSettings } from "./settings";
-import { PLANS, type Plan } from "./quotes/template-spec";
+import { PLANS, type Plan } from "../quotes/template-spec";
 
 /**
- * Plans and how one is bought (PRODUCT.md §11).
+ * The plan catalogue (PRODUCT.md §11) - the single source of truth for prices
+ * and features. The landing page, the upgrade screen, the quota messages and
+ * the plans seeded into the billing hub all read from here, so they cannot
+ * drift into quoting three different numbers.
  *
- * The checkout URL per plan is configured in /admin, not hard-coded: the demo
- * takes payment by hand, a provider gets wired later, and neither should need a
- * deploy. When a plan has no URL we fall back to a WhatsApp message to the bot
- * number, which is still a path to paying - unlike the dead end we had.
+ * `plan` doubles as the hub's `plan_code`.
  */
 
 export type PlanOffer = {
@@ -57,16 +56,11 @@ export const PLAN_OFFERS: PlanOffer[] = [
   },
 ];
 
-const CHECKOUT_KEYS = {
-  basic: "billing.checkout_basic",
-  pro: "billing.checkout_pro",
-  unlimited: "billing.checkout_unlimited",
-} as const;
-
-export type PaidPlan = keyof typeof CHECKOUT_KEYS;
+const PAID_PLANS = ["basic", "pro", "unlimited"] as const;
+export type PaidPlan = (typeof PAID_PLANS)[number];
 
 export function isPaidPlan(p: Plan): p is PaidPlan {
-  return p !== "trial";
+  return (PAID_PLANS as readonly string[]).includes(p);
 }
 
 /** Higher-tier plans only: nobody upgrades sideways or down from a page. */
@@ -75,24 +69,18 @@ export function upgradesFor(current: Plan): PlanOffer[] {
   return PLAN_OFFERS.filter((o) => PLANS.indexOf(o.plan) > rank);
 }
 
-/**
- * Where "שדרג" goes for each plan. Falls back to a prefilled WhatsApp message
- * to the bot number so the professional can always reach a human.
- */
-export async function checkoutUrls(): Promise<Record<PaidPlan, string>> {
-  const [s, phone] = await Promise.all([
-    getSettings([CHECKOUT_KEYS.basic, CHECKOUT_KEYS.pro, CHECKOUT_KEYS.unlimited]),
-    getSetting("bot.phone"),
-  ]);
-  const digits = phone.replace(/\D/g, "");
-  const ask = (plan: PaidPlan) =>
-    `https://wa.me/${digits}?text=${encodeURIComponent(`היי, אני רוצה לשדרג לחבילת ${planName(plan)}`)}`;
+export function priceOf(plan: Plan): number {
+  return PLAN_OFFERS.find((o) => o.plan === plan)?.price ?? 0;
+}
 
-  return {
-    basic: s[CHECKOUT_KEYS.basic] || ask("basic"),
-    pro: s[CHECKOUT_KEYS.pro] || ask("pro"),
-    unlimited: s[CHECKOUT_KEYS.unlimited] || ask("unlimited"),
-  };
+/**
+ * Where "שדרג" goes when the billing hub is not configured: a WhatsApp message
+ * to us. Manual, but a path - which beats the dead end this replaced.
+ */
+export function manualUpgradeLink(botPhone: string, plan: Plan): string {
+  const digits = botPhone.replace(/\D/g, "");
+  const text = `היי, אני רוצה לשדרג לחבילת ${planName(plan)}`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }
 
 export function planName(plan: Plan): string {

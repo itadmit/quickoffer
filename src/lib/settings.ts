@@ -31,11 +31,15 @@ export const SETTING_KEYS = {
   "telegram.bot_username": { secret: false, env: "TELEGRAM_BOT_USERNAME", default: "" },
   // The bot's WhatsApp number (digits). Temporary: Quick Shop's number until QuickOffer gets its own.
   "bot.phone": { secret: false, env: "BOT_PHONE", default: "972552554432" },
-  // Checkout link per paid plan (§11). Empty = "talk to us on WhatsApp", which
-  // is what the manual-billing demo uses; a provider URL drops in without a deploy.
-  "billing.checkout_basic": { secret: false, env: null, default: "" },
-  "billing.checkout_pro": { secret: false, env: null, default: "" },
-  "billing.checkout_unlimited": { secret: false, env: null, default: "" },
+  // Billing Hub (quick-billing) - the hub owns cards, invoices and dunning.
+  // Unset = no upgrade path; the UI falls back to a WhatsApp message to us.
+  "billing.hub_url": { secret: false, env: "BILLING_HUB_URL", default: "https://billing.my-quickshop.com" },
+  "billing.product_id": { secret: false, env: null, default: "quickoffer" },
+  "billing.api_key": { secret: true, env: "BILLING_API_KEY", default: "" },
+  /** signs the requests we send (products.webhook_secret in the hub) */
+  "billing.api_secret": { secret: true, env: "BILLING_API_SECRET", default: "" },
+  /** verifies the events they send (webhook_endpoints.secret in the hub) */
+  "billing.endpoint_secret": { secret: true, env: "BILLING_ENDPOINT_SECRET", default: "" },
 } as const;
 
 export type SettingKey = keyof typeof SETTING_KEYS;

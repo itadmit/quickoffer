@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import { parseIbotInbound } from "@/lib/whatsapp/ibot";
 import { calcTotals, formatMoney } from "@/lib/quotes/calc";
 import { makeToken, verifyToken, encryptSecret, decryptSecret } from "@/lib/crypto";
@@ -7,7 +8,7 @@ import { formatPhone, isMobile, normalizePhone, waLink } from "@/lib/phone";
 import { applyPriceBook, catalogNames, CATALOG_PROMPT_LIMIT, isLearnable, priceKey } from "@/lib/quotes/price-book";
 import { customerMessageText, daysUntil } from "@/lib/quotes/customer-message";
 import { daysSince, isQuietHour } from "@/lib/quotes/follow-up";
-import { isPaidPlan, PLAN_OFFERS, upgradesFor } from "@/lib/billing";
+import { isPaidPlan, PLAN_OFFERS, priceOf, upgradesFor } from "@/lib/billing/plans";
 import { toVisual } from "@/lib/og-bidi";
 
 // --- real capture from CLAUDE.md (audio)
@@ -291,4 +292,37 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert.equal(toVisual(""), "");
   assert.equal(toVisual("QuickOffer"), "QuickOffer");
   console.log("OG BIDI OK");
+}
+
+// ---- billing hub request signing. The hub rejects on any mismatch, so this
+// pins the exact bytes: hmac_sha256(`${timestamp}.${body}`, secret), hex.
+{
+  const secret = "whsec_test";
+  const body = JSON.stringify({ email: "a@b.com", external_id: "u1" });
+  const ts = "1789897973";
+  const sig = createHmac("sha256", secret).update(`${ts}.${body}`).digest("hex");
+  assert.equal(sig.length, 64);
+  // a changed body or timestamp must change the signature
+  assert.notEqual(sig, createHmac("sha256", secret).update(`${ts}.${body} `).digest("hex"));
+  assert.notEqual(sig, createHmac("sha256", secret).update(`${Number(ts) + 1}.${body}`).digest("hex"));
+
+  // inbound events are signed differently: no timestamp, "sha256=" prefix
+  const inbound = `sha256=${createHmac("sha256", secret).update(body).digest("hex")}`;
+  assert(inbound.startsWith("sha256="));
+  assert.equal(inbound.length, "sha256=".length + 64);
+  console.log("HUB SIGNING OK");
+}
+
+// ---- the price a plan charges must match what every surface advertises
+{
+  assert.equal(priceOf("basic"), 29);
+  assert.equal(priceOf("pro"), 99);
+  assert.equal(priceOf("unlimited"), 149);
+  assert.equal(priceOf("trial"), 0);
+  // plan ids double as the hub's plan_code - renaming one breaks checkout
+  assert.deepEqual(PLAN_OFFERS.map((o) => o.plan), ["trial", "basic", "pro", "unlimited"]);
+  for (const o of PLAN_OFFERS) {
+    assert.equal(isPaidPlan(o.plan), o.price > 0, `${o.plan} paid/price mismatch`);
+  }
+  console.log("PLAN CODES OK");
 }

@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { Reveal } from "@/components/reveal";
 import { NotificationToast } from "@/components/notification-toast";
-import { PLAN_OFFERS } from "@/lib/billing";
+import { PLAN_OFFERS } from "@/lib/billing/plans";
 import { formatPhone } from "@/lib/phone";
 import { getSetting } from "@/lib/settings";
 

@@ -119,7 +119,11 @@
 | `lib/ai/` | `types.ts` (Zod schemas), `prompts.ts` (4 system prompts), `openai.ts` (Whisper + `chat.completions.parse`; משמש גם Groq/custom דרך baseURL), `index.ts` (factory מהגדרות) |
 | `lib/quotes/` | `calc.ts` (מע״מ, עיגול), `service.ts` (CRUD, טיוטה פעילה, snapshot), `links.ts`, `customer-actions.ts` (צפייה/אישור/דחייה/שאלה + התראות), `template-spec.ts` (טיפוס תבנית, pure), `templates.ts` (DB: `getTemplateForUser`), `sample.ts` (הצעת הדוגמה), `price-book.ts` (**קטלוג מחירים - pure**: `priceKey`, `applyPriceBook`, `catalogNames`), `price-book-store.ts` (DB: `loadPriceBook`, `learnFromItems`), `customer-message.ts` (ההודעה ללקוח - pure, כדי שמסך העריכה יבנה אותה מחדש חי), `follow-up.ts` (תזכורות על הצעות שנתקעו) |
 | `lib/phone.ts` | `normalizePhone` / `formatPhone` / `isMobile` / `waLink` - מקור אמת אחד למספרים. `formatPhone` מיוצא מחדש מ-`quote-layouts/shared` לתאימות |
-| `lib/billing.ts` | `PLAN_OFFERS` (מקור האמת לתמחור - דף הנחיתה, `/u` והודעות המכסה קוראים ממנו), `upgradesFor`, `checkoutUrls` (מ-`app_settings`, fallback להודעת WhatsApp) |
+| `lib/billing/plans.ts` | `PLAN_OFFERS` - **מקור האמת לתמחור**. דף הנחיתה, `/u`, הודעות המכסה והתוכניות שנרשמו בהאב קוראים ממנו. מזהה התוכנית = `plan_code` בהאב |
+| `lib/billing/hub.ts` | קליינט ל-Billing Hub: Bearer + HMAC על `${timestamp}.${body}` + idempotency. **שני סודות נפרדים** - `api_secret` חותם את מה שאנחנו שולחים, `endpoint_secret` מאמת את מה שמגיע |
+| `lib/billing/subscription.ts` | מה שאירועי ההאב אומרים על המכסה: `completeCheckout`, `markPastDue`, `clearPastDue`, `downgradeToTrial`. הכול בטוח להרצה כפולה |
+| `app/u/[token]` | בחירת חבילה → אימייל + ח.פ. + צ׳קבוקס הסכמה → דף סליקה מתארח. `done/` = דף החזרה. **לא משנה תוכנית** - רק ה-webhook עושה את זה |
+| `app/api/webhooks/billing` | אירועי ההאב. מאמת חתימה, תופס את ה-delivery id (אידמפוטנטיות), ומחזיר 500 בכישלון אמיתי כדי שההאב ינסה שוב |
 | `lib/og-bidi.ts` | `toVisual` - סידור לוגי→ויזואלי ל-OG image. **Satori לא מיישם bidi** ומהפך עברית; מאומת מול הרנדרר האמיתי, לא מהדוקומנטציה |
 | `lib/conversation/` | `handler.ts` (מכונת המצבים §6 — `handleInbound`), `messages.ts` (כל הודעות הבוט מילה-במילה), `quota.ts` (§11) |
 | `app/api/webhooks/ibot` | הקליטה. `app/api/cron/tick` — תקועים + פקיעה |
@@ -164,6 +168,20 @@
 **קרפט:** מצב כהה מלא (ההצעה עצמה נשארת על "נייר" דרך `.doc-surface` - מסמך, והצבע של בעל המקצוע נשאר נאמן); Ploni הומר ל-woff2 (576KB → 233KB); פס החלטה דביק בדף הלקוח שנושא את הסכום (התשובה ל"כמה זה עולה" בלי לגלול); חתימה עם עובי דיו משתנה + undo; favicon/apple-icon/manifest; focus ring אחיד; הדפסה תמיד בפלטת נייר.
 
 **לא נעשה (מכוון):** אינטגרציית סליקה אמיתית - צריכה חשבון ומפתחות של ספק. התשתית מוכנה: להדביק URL ב-`/admin → תשלומים`.
+
+## סליקה - חיבור ל-Billing Hub (22.9.2026)
+
+QuickOffer מחובר ל-**Quick Commerce Billing Hub** (`~/Desktop/Projeccts/quick-payments-billing`), אותה מערכת שמשרתת את QuickShop. ההאב מחזיק כרטיסים, חשבוניות, מע״מ ו-dunning; QuickOffer מחזיק רק את המכסה.
+
+- **כתובת ההאב: `https://billing.my-quickshop.com`.** ⚠️ `quick-billing.vercel.app` הוא אפליקציית Express אחרת לגמרי שמחזירה 200 על כל נתיב - לא לבלבל. הפרויקט ב-Vercel נקרא `quickbilling`.
+- **רשום כ-product `quickoffer`** (קידומת חשבונית `QO`, `default_trial_days: 0`), עם 3 תוכניות שקודיהן `basic` / `pro` / `unlimited` - **זהים למזהי התוכנית אצלנו**, כי זה מה שנשלח כ-`plan_code`. שינוי שם של אחד מהם שובר סליקה; יש על זה טסט.
+- **שני סודות נפרדים** (כך זה בסכימת ההאב): `products.webhook_secret` חותם את הבקשות שאנחנו שולחים, `webhook_endpoints.secret` מאמת את האירועים שמגיעים. שמורים מוצפנים ב-`app_settings` (`billing.api_secret`, `billing.endpoint_secret`).
+- **הזרימה:** `/u` אוסף אימייל (חובה לחשבונית ולהאב) + ח.פ. + הסכמה לשמירת כרטיס (דרישה רגולטורית של Grow, נשלחת כ-`accept: true`) → `POST /v1/customers` → `POST /v1/payment-methods/setup` עם `amount` = מחיר החבילה, מה שגם מחייב בפעם הראשונה → דף Grow מתארח → ההאב שולח `payment_method.created` → **רק אז** אנחנו יוצרים מנוי ומשדרגים.
+- **התוכנית משתנה רק ב-webhook, אף פעם לא ב-redirect.** דף החזרה שמראה "מאשרים" ולא "שודרגת" הוא בכוונה - redirect הוא לא הוכחת תשלום.
+- **כישלון חיוב לא מוריד תוכנית.** ההאב מריץ dunning (1, 3, 7 ימים), אנחנו מסמנים `billing_past_due_at` ושולחים הודעה אחת. הורדה ל-trial קורית רק ב-`subscription.cancelled`.
+- **אידמפוטנטיות:** `billing_events` עם `X-Quickcommerce-Delivery-Id` כ-PK. ההאב מנסה 5 פעמים עם backoff, אז ה-handler מחזיר 500 בכישלון אמיתי (כדי שינסה שוב) ו-200 עם `duplicate` על חזרה.
+- **מה אומת חי מול ההאב:** ping חתום, יצירת לקוח, יצירת דף סליקה של Grow, יצירת מנוי עם `plan_code: pro`. בצד שלנו: דחיית webhook לא חתום ובעל חתימה שגויה, אידמפוטנטיות, past-due, recovered, cancelled. נתוני הבדיקה נמחקו מההאב.
+- **בלי חיבור** (`billing.api_key` ריק) כפתור השדרוג מוביל להודעת WhatsApp למספר הבוט - הפעלה ידנית, כמו קודם.
 
 ## מה הלאה (לפי סדר)
 1. **חיבור אמיתי:** Neon DB + Vercel deploy + מפתח OpenAI ב-`/admin` + webhook token ב-iBot → הודעה קולית אמיתית מהטלפון של המשתמש. לאמת ש-`X-Webhook-Token` באמת מגיע.

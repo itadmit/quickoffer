@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { resolveLink } from "@/lib/quotes/links";
 import { eq } from "drizzle-orm";
 import { LinkExpired } from "@/components/link-expired";
-import { upgradesFor } from "@/lib/billing";
+import { upgradesFor } from "@/lib/billing/plans";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { planAllows, PLAN_LABELS } from "@/lib/quotes/template-spec";

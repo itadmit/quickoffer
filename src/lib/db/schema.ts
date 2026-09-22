@@ -98,6 +98,14 @@ export const users = pgTable("users", {
   nextQuoteNumber: integer("next_quote_number").notNull().default(1001),
   plan: planEnum("plan").notNull().default("trial"),
   planExpiresAt: timestamp("plan_expires_at", { withTimezone: true }),
+  // Billing Hub (quick-billing). The hub owns the money; we only mirror
+  // enough to know which plan is in force and who to talk to about it.
+  billingCustomerId: text("billing_customer_id"),
+  billingSubscriptionId: text("billing_subscription_id"),
+  /** Required by the hub and by an Israeli invoice; collected at checkout. */
+  billingEmail: text("billing_email"),
+  /** Set when a charge fails, cleared when it recovers - drives the chat nudge. */
+  billingPastDueAt: timestamp("billing_past_due_at", { withTimezone: true }),
   onboardingState: onboardingStateEnum("onboarding_state")
     .notNull()
     .default("name"),
@@ -302,6 +310,61 @@ export const priceBook = pgTable(
   ],
 );
 
+export const checkoutStatusEnum = pgEnum("checkout_status", [
+  "pending",
+  "completed",
+  "failed",
+  "expired",
+]);
+
+/**
+ * One attempt to start paying. Created before we send the professional to the
+ * hosted card page, completed by the hub's `payment_method.created` webhook.
+ *
+ * It exists because the webhook tells us a card was stored, not which plan the
+ * professional picked - `hub_session_id` is the thread back to that intent.
+ */
+export const billingCheckouts = pgTable(
+  "billing_checkouts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    plan: planEnum("plan").notNull(),
+    /** Price we quoted, in ILS before VAT - what the hosted page charges. */
+    amount: money("amount").notNull(),
+    hubCustomerId: text("hub_customer_id").notNull(),
+    hubSessionId: text("hub_session_id").notNull().unique(),
+    status: checkoutStatusEnum("status").notNull().default("pending"),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (t) => [index("billing_checkouts_user_idx").on(t.userId, t.createdAt)],
+);
+
+/**
+ * Every webhook the hub delivered, keyed by its delivery id.
+ *
+ * The hub retries up to five times with backoff, so the same event will arrive
+ * again after any failure on our side - this is what keeps a retry from
+ * charging a plan change twice.
+ */
+export const billingEvents = pgTable(
+  "billing_events",
+  {
+    /** X-Quickcommerce-Delivery-Id */
+    id: text("id").primaryKey(),
+    eventType: text("event_type").notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    payload: jsonb("payload"),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    error: text("error"),
+  },
+  (t) => [index("billing_events_user_at_idx").on(t.userId, t.at)],
+);
+
 /** Short codes behind /e/{code} and /s/{code}. 6 chars, no look-alikes, expiring. */
 export const magicLinks = pgTable(
   "magic_links",
@@ -318,6 +381,7 @@ export const magicLinks = pgTable(
 
 export type User = typeof users.$inferSelect;
 export type PriceBookEntry = typeof priceBook.$inferSelect;
+export type BillingCheckout = typeof billingCheckouts.$inferSelect;
 export type QuoteTemplate = typeof quoteTemplates.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type QuoteItem = typeof quoteItems.$inferSelect;

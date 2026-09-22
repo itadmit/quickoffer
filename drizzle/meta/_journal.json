@@ -43,6 +43,13 @@
       "when": 1790068019504,
       "tag": "0005_amazing_medusa",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790071978638,
+      "tag": "0006_foamy_vermin",
+      "breakpoints": true
     }
   ]
 }
