@@ -3,6 +3,8 @@ import { after } from "next/server";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { QuoteDocument, type QuoteView } from "@/components/quote-document";
+import { totalLabel } from "@/components/quote-layouts/shared";
+import { formatMoney } from "@/lib/quotes/calc";
 import { recordView } from "@/lib/quotes/customer-actions";
 import { contactPhone, getQuoteByPublicId } from "@/lib/quotes/service";
 import { normalizeTemplateSpec, type QuoteTemplateSpec } from "@/lib/quotes/template-spec";
@@ -13,13 +15,28 @@ export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ publicId: string }> };
 
+/**
+ * What WhatsApp renders in the forwarded message. The og:image comes from the
+ * sibling opengraph-image.tsx; this supplies the text around it.
+ *
+ * Deliberately no index/follow: a quote is a private document between two
+ * people (the root layout's robots directive carries down).
+ */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { publicId } = await params;
   const q = await getQuoteByPublicId(publicId);
   if (!q) return { title: "הצעת מחיר" };
+
+  const business = q.user.businessName ?? "QuickOffer";
+  const title = `הצעת מחיר #${q.number}${q.customerName ? ` ל${q.customerName}` : ""} - ${business}`;
+  const description = [q.title, `סה״כ ${formatMoney(q.total)}`, "לצפייה ולאישור"]
+    .filter(Boolean)
+    .join(" · ");
+
   return {
-    title: `הצעת מחיר #${q.number}${q.customerName ? ` ל${q.customerName}` : ""} - ${q.user.businessName ?? "QuickOffer"}`,
-    description: q.title ?? undefined,
+    title,
+    description,
+    openGraph: { title, description, type: "website", locale: "he_IL", siteName: business },
   };
 }
 
@@ -71,9 +88,12 @@ export default async function CustomerQuotePage({ params }: Props) {
       };
 
   const showBadge = q.user.plan === "trial" || q.user.plan === "basic";
+  const open = !frozen && q.status !== "rejected" && !expired;
+  const label = totalLabel(view);
 
   return (
-    <main className="flex-1 w-full max-w-lg mx-auto p-4 pb-10 space-y-4">
+    // Bottom padding clears the sticky decision bar while it is on screen.
+    <main className={`flex-1 w-full max-w-lg mx-auto p-4 space-y-4 ${open ? "pb-44" : "pb-10"}`}>
       <QuoteDocument q={view} />
 
       <CustomerActions
@@ -82,6 +102,8 @@ export default async function CustomerQuotePage({ params }: Props) {
         expired={expired}
         businessName={view.business.businessName}
         businessPhone={view.business.businessPhone}
+        totalLabel={formatMoney(view.total)}
+        totalNote={label.note ?? label.label}
       />
 
       {showBadge && (
