@@ -3,6 +3,12 @@ import { parseIbotInbound } from "@/lib/whatsapp/ibot";
 import { calcTotals, formatMoney } from "@/lib/quotes/calc";
 import { makeToken, verifyToken, encryptSecret, decryptSecret } from "@/lib/crypto";
 import { matchTemplateName, planAllows } from "@/lib/quotes/template-spec";
+import { formatPhone, isMobile, normalizePhone, waLink } from "@/lib/phone";
+import { applyPriceBook, catalogNames, CATALOG_PROMPT_LIMIT, isLearnable, priceKey } from "@/lib/quotes/price-book";
+import { customerMessageText, daysUntil } from "@/lib/quotes/customer-message";
+import { daysSince, isQuietHour } from "@/lib/quotes/follow-up";
+import { isPaidPlan, PLAN_OFFERS, upgradesFor } from "@/lib/billing";
+import { toVisual } from "@/lib/og-bidi";
 
 // --- real capture from CLAUDE.md (audio)
 const audio = {
@@ -132,4 +138,157 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert(!planAllows("trial", "pro"));
   assert(planAllows("unlimited", "pro"));
   console.log("TEMPLATE MATCH OK");
+}
+
+// ---- phone normalization and the one-tap send link
+{
+  assert.equal(normalizePhone("050-123-4567"), "972501234567");
+  assert.equal(normalizePhone("0501234567"), "972501234567");
+  assert.equal(normalizePhone("+972 50-123-4567"), "972501234567");
+  assert.equal(normalizePhone("501234567"), "972501234567");
+  assert.equal(normalizePhone(""), null);
+  assert.equal(normalizePhone(null), null);
+  assert.equal(formatPhone("972501234567"), "050-123-4567");
+
+  // only Israeli mobiles are safe to deep-link: a landline opens an empty chat
+  assert(isMobile("0501234567"));
+  assert(isMobile("+972-52-228-4283"));
+  assert(!isMobile("036123456")); // landline
+  assert(!isMobile("05012345")); // truncated
+  assert(!isMobile(null));
+
+  assert(waLink("050-123-4567", "שלום").startsWith("https://wa.me/972501234567?text="));
+  // unknown number → contact picker, text still prefilled
+  assert(waLink(null, "שלום").startsWith("https://wa.me/?text="));
+  assert(waLink("036123456", "שלום").startsWith("https://wa.me/?text="));
+  assert(waLink(null, "a b&c").includes(encodeURIComponent("a b&c")));
+  console.log("PHONE OK");
+}
+
+// ---- price book: keys must merge phrasings, never merge different jobs
+{
+  assert.equal(priceKey("נקודת חשמל"), priceKey("נקודת חשמל "));
+  assert.equal(priceKey("התקנת גוף תאורה"), priceKey("התקנת גוף תאורה."));
+  assert.equal(priceKey("מ״ר ריצוף"), priceKey("מ׳׳ר ריצוף"));
+  assert.equal(priceKey("הביקור"), priceKey("ביקור"));
+  // different work must not collide
+  assert.notEqual(priceKey("התקנת מזגן"), priceKey("פירוק מזגן"));
+  assert.notEqual(priceKey("נקודת חשמל"), priceKey("נקודת תקשורת"));
+  assert.equal(priceKey("   "), "");
+
+  const book = [
+    { key: priceKey("נקודת חשמל"), description: "נקודת חשמל", unit: "נקודה", unitPrice: 180, timesUsed: 12 },
+    { key: priceKey("ביקור"), description: "ביקור", unit: "יח׳", unitPrice: 200, timesUsed: 30 },
+  ];
+  const items = [
+    { description: "נקודת חשמל", quantity: 3, unit: "נקודה", unitPrice: 0, needsReview: true },
+    { description: "ביקור", quantity: 1, unit: "יח׳", unitPrice: 250, needsReview: false },
+    { description: "עבודה מיוחדת", quantity: 1, unit: "קומפלט", unitPrice: 0, needsReview: true },
+  ];
+  const { items: filledItems, filled } = applyPriceBook(items, book);
+
+  // missing price filled from the book, and no longer flagged - it is his own price
+  assert.equal(filledItems[0].unitPrice, 180);
+  assert.equal(filledItems[0].needsReview, false);
+  // a price he actually said is never overwritten
+  assert.equal(filledItems[1].unitPrice, 250);
+  // nothing in the book → stays 0 and stays flagged. Never a guess.
+  assert.equal(filledItems[2].unitPrice, 0);
+  assert.equal(filledItems[2].needsReview, true);
+  assert.deepEqual(filled.map((f) => f.description), ["נקודת חשמל"]);
+
+  // an empty book is a no-op that returns the same array
+  const untouched = applyPriceBook(items, []);
+  assert.equal(untouched.items, items);
+  assert.equal(untouched.filled.length, 0);
+
+  // only real, priced, confirmed lines are worth remembering
+  assert(isLearnable({ description: "ביקור", unitPrice: 200 }));
+  assert(!isLearnable({ description: "ביקור", unitPrice: 0 }));
+  assert(!isLearnable({ description: "א", unitPrice: 200 }));
+  assert(!isLearnable({ description: "ביקור", unitPrice: NaN }));
+
+  assert.equal(catalogNames(book).length, 2);
+  assert.equal(catalogNames(Array(50).fill(book[0])).length, CATALOG_PROMPT_LIMIT);
+  console.log("PRICE BOOK OK");
+}
+
+// ---- the customer-facing message, rebuilt live in the edit screen
+{
+  const text = customerMessageText({
+    customerName: "דני כהן",
+    businessName: "יוסי חשמל",
+    publicUrl: "https://qo.app/q/a8Hd3k",
+    validDays: 14,
+  });
+  assert(text.startsWith("שלום דני כהן, מצורפת הצעת מחיר מיוסי חשמל:"));
+  assert(text.includes("https://qo.app/q/a8Hd3k"));
+  assert(text.includes("תקפה ל-14 יום"));
+  // no name → still a polite greeting, never "שלום null"
+  assert(customerMessageText({ customerName: null, businessName: null, publicUrl: "u", validDays: 7 }).startsWith("שלום, מצורפת הצעת מחיר מהעסק:"));
+
+  // never tell a customer "0 ימים"
+  assert.equal(daysUntil(null, 14), 14);
+  assert.equal(daysUntil(new Date(Date.now() - 86_400_000), 14), 1);
+  assert.equal(daysUntil(new Date(Date.now() + 3 * 86_400_000), 14), 3);
+  assert.equal(daysUntil("not-a-date", 9), 9);
+  console.log("CUSTOMER MESSAGE OK");
+}
+
+// ---- follow-up pacing
+{
+  const at = (h: number) => new Date(`2026-06-15T${String(h).padStart(2, "0")}:30:00+03:00`);
+  assert(isQuietHour(at(3)));
+  assert(isQuietHour(at(7)));
+  assert(!isQuietHour(at(8)));
+  assert(!isQuietHour(at(20)));
+  assert(isQuietHour(at(21)));
+  assert(isQuietHour(at(23)));
+
+  const now = new Date("2026-06-15T12:00:00Z");
+  assert.equal(daysSince(new Date("2026-06-12T12:00:00Z"), now), 3);
+  // a few hours is still reported as a day, never "0 ימים"
+  assert.equal(daysSince(new Date("2026-06-15T09:00:00Z"), now), 1);
+  console.log("FOLLOW-UP OK");
+}
+
+// ---- plans offered on the upgrade screen: only upwards
+{
+  assert.deepEqual(upgradesFor("trial").map((o) => o.plan), ["basic", "pro", "unlimited"]);
+  assert.deepEqual(upgradesFor("basic").map((o) => o.plan), ["pro", "unlimited"]);
+  assert.deepEqual(upgradesFor("unlimited"), []);
+  assert(isPaidPlan("basic"));
+  assert(!isPaidPlan("trial"));
+  // the landing page and the quota messages read the same numbers
+  assert.equal(PLAN_OFFERS.find((o) => o.plan === "basic")?.price, 29);
+  console.log("BILLING OK");
+}
+
+// ---- logical → visual reordering for the OG card (Satori has no bidi).
+// Expected values verified against the real renderer, see lib/og-bidi.ts.
+{
+  const rev = (s: string) => [...s].reverse().join("");
+
+  // pure Hebrew: the whole string flips
+  assert.equal(toVisual("יוסי חשמל ותאורה"), rev("יוסי חשמל ותאורה"));
+  assert.equal(toVisual("לכבוד דני כהן"), rev("לכבוד דני כהן"));
+
+  // digits keep their own order - "1,191.80" must never become "08.191,1"
+  assert(toVisual("סה״כ 1,191.80 ₪").includes("1,191.80"));
+  assert(toVisual("3 סעיפים").includes("3"));
+  assert(toVisual("A.B. מזגנים").includes("A.B"));
+
+  // the money string: number rightmost, shekel to its left
+  const money = toVisual("1,191.80 ₪");
+  assert(money.indexOf("₪") < money.indexOf("1,191.80"));
+
+  // round trip: reversing a pure-Hebrew visual string gives the logical one back
+  assert.equal(toVisual(toVisual("הצעת מחיר")), "הצעת מחיר");
+
+  // brackets are mirrored when a run flips, or they would point the wrong way
+  assert(toVisual("(הערה)").startsWith("("));
+
+  assert.equal(toVisual(""), "");
+  assert.equal(toVisual("QuickOffer"), "QuickOffer");
+  console.log("OG BIDI OK");
 }

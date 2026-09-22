@@ -114,18 +114,25 @@
 | `lib/db/index.ts` | `db` — Neon HTTP בפרודקשן, `pg` כשה-host הוא localhost |
 | `lib/settings.ts` | `app_settings` — `getSetting/setSetting`, cache 60ש׳, env fallback, סודות `enc:` |
 | `lib/crypto.ts` | AES-256-GCM לסודות; HMAC tokens - היום רק ל-cookie של האדמין (`p: a`) ולתאימות אחורה של קישורים ישנים |
-| `lib/quotes/links.ts` | **קישורים קצרים (20.9.2026):** `/e/{code}`, `/s/{code}` = קוד 6 תווים בטבלת `magic_links` (purpose, subject, expires_at). `editLink()` משתמש שוב באותו קוד כל עוד נשארו >24 שעות. `resolveLink(code, purpose)`; קוד עם "." = טוקן HMAC ישן. cron מוחק פגי תוקף. `public_id` גם 6 תווים (היה 10) |
+| `lib/quotes/links.ts` | **קישורים קצרים (20.9.2026):** `/e/{code}`, `/s/{code}`, `/w/{code}` = קוד 6 תווים בטבלת `magic_links` (purpose, subject, expires_at). `/u/{code}` משתמש בקוד של `s`. `editLink()` משתמש שוב באותו קוד כל עוד נשארו >24 שעות. `resolveLink(code, purpose)`; קוד עם "." = טוקן HMAC ישן. cron מוחק פגי תוקף. `public_id` גם 6 תווים (היה 10) |
 | `lib/whatsapp/` | `types.ts` (ממשק), `ibot.ts` (פרסר + send-*), `telegram.ts` (Bot API, כתובות `tg:<chatId>`, מדיה `tg-file:<id>` שנפתרת רק בזמן הורדה), `index.ts` (`gatewayFor(address)` בוחר ערוץ; תור סדרתי 400ms, retry ×3, לוג `outbound_messages`, פיצול >3900 תווים) |
 | `lib/ai/` | `types.ts` (Zod schemas), `prompts.ts` (4 system prompts), `openai.ts` (Whisper + `chat.completions.parse`; משמש גם Groq/custom דרך baseURL), `index.ts` (factory מהגדרות) |
-| `lib/quotes/` | `calc.ts` (מע״מ, עיגול), `service.ts` (CRUD, טיוטה פעילה, snapshot), `links.ts`, `customer-actions.ts` (צפייה/אישור/דחייה/שאלה + התראות), `template-spec.ts` (טיפוס תבנית, pure), `templates.ts` (DB: `getTemplateForUser` - בחירת המשתמש אם פעילה, אחרת ברירת המחדל), `sample.ts` (הצעת הדוגמה לתצוגות מקדימות) |
+| `lib/quotes/` | `calc.ts` (מע״מ, עיגול), `service.ts` (CRUD, טיוטה פעילה, snapshot), `links.ts`, `customer-actions.ts` (צפייה/אישור/דחייה/שאלה + התראות), `template-spec.ts` (טיפוס תבנית, pure), `templates.ts` (DB: `getTemplateForUser`), `sample.ts` (הצעת הדוגמה), `price-book.ts` (**קטלוג מחירים - pure**: `priceKey`, `applyPriceBook`, `catalogNames`), `price-book-store.ts` (DB: `loadPriceBook`, `learnFromItems`), `customer-message.ts` (ההודעה ללקוח - pure, כדי שמסך העריכה יבנה אותה מחדש חי), `follow-up.ts` (תזכורות על הצעות שנתקעו) |
+| `lib/phone.ts` | `normalizePhone` / `formatPhone` / `isMobile` / `waLink` - מקור אמת אחד למספרים. `formatPhone` מיוצא מחדש מ-`quote-layouts/shared` לתאימות |
+| `lib/billing.ts` | `PLAN_OFFERS` (מקור האמת לתמחור - דף הנחיתה, `/u` והודעות המכסה קוראים ממנו), `upgradesFor`, `checkoutUrls` (מ-`app_settings`, fallback להודעת WhatsApp) |
+| `lib/og-bidi.ts` | `toVisual` - סידור לוגי→ויזואלי ל-OG image. **Satori לא מיישם bidi** ומהפך עברית; מאומת מול הרנדרר האמיתי, לא מהדוקומנטציה |
 | `lib/conversation/` | `handler.ts` (מכונת המצבים §6 — `handleInbound`), `messages.ts` (כל הודעות הבוט מילה-במילה), `quota.ts` (§11) |
 | `app/api/webhooks/ibot` | הקליטה. `app/api/cron/tick` — תקועים + פקיעה |
 | `app/q/[publicId]` · `app/e/[token]` · `app/s/[token]` | דף לקוח · עריכה · הגדרות (server actions ב-`actions.ts` לצד כל דף) |
+| `app/q/[publicId]/opengraph-image.tsx` | כרטיס התצוגה המקדימה ב-WhatsApp: לוגו + שם העסק + סכום. פונטים מסובסתים ב-`src/assets/og/` (13KB; ImageResponse מוגבל ל-500KB ומקבל רק ttf/otf/woff) |
+| `app/w/[code]` | שליחה בלחיצה אחת: redirect ל-`wa.me` עם הצ׳אט של הלקוח וההודעה מוכנה. ההודעה נבנית מחדש בכל לחיצה, ומסמן `sent` |
+| `app/u/[token]` | מסך השדרוג. `app/admin/(dashboard)/billing` - קישורי הסליקה + מי בכל חבילה |
+| `components/signature-pad.tsx` | חתימה עם עובי דיו לפי מהירות/לחץ, undo, שמירת נקודות (לא פיקסלים) כדי לצייר מחדש אחרי סיבוב מסך |
 | `app/admin/(dashboard)` | סופר-אדמין; `login/` מחוץ ל-route group. `lib/admin/auth.ts` — cookie `qo_admin` |
 | `components/quote-document.tsx` | רינדור ההצעה - משותף לדף לקוח, תצוגה מקדימה ואדמין. בוחר layout לפי `q.template` |
 | `components/quote-layouts/` | `shared.tsx` (QuoteView + אבני בניין), `classic.tsx`, `modern.tsx`, `minimal.tsx`. `template-thumb.tsx` = תמונה ממוזערת (scale) |
 | `app/admin/(dashboard)/templates` | CRUD תבניות (`quote_templates`: layout + צבע + טקסט תחתית + פעילה/ברירת מחדל + `min_plan`) עם preview חי. המשתמש בוחר ב-`/s` או בצ'אט ("עיצוב" / "תבנית מודרני" - פקודת `template`, `templateName` ב-IntentSchema); `users.template_id` null = ברירת מחדל. תבנית מעל התוכנית = 🔒. ה-snapshot באישור מקפיא גם את התבנית |
-| `tests/` | `pure.test.ts` (ללא DB), `mock-server.mjs`, `seed-local.ts`, `send.sh`, `sent.py`, `approve-flow.ts` |
+| `tests/` | `pure.test.ts` (ללא DB - כולל טלפונים, קטלוג מחירים, ההודעה ללקוח, קצב התזכורות, חבילות, bidi), `mock-server.mjs`, `seed-local.ts`, `send.sh`, `sent.py`, `approve-flow.ts` |
 
 ## החלטות שנלקחו תוך כדי בנייה (20.9.2026)
 
@@ -144,11 +151,27 @@
 - אין OPENAI_API_KEY בסביבת המשתמש — מפתחות יוזנו דרך `/admin`.
 - **דף הבית = דף נחיתה** עם CTA ל-`wa.me/<bot.phone>?text=היי`. המספר ב-`app_settings["bot.phone"]` (עריכה ב-`/admin → iBot`). **זמני:** המספר של Quick Shop, 972552554432, עד שיהיה מספר ייעודי ל-QuickOffer.
 
+## סבב "מספר אחד בתחום" (22.9.2026)
+
+חמישה פערים שסגרנו, לפי סדר החשיבות שנקבע בסקירה:
+
+1. **שליחה בלחיצה אחת.** `customerPhone` חולץ ע"י ה-LLM ונשמר בסכימה מההתחלה, ואף אחד לא השתמש בו. עכשיו: `/w/{code}` → redirect ל-`wa.me/<לקוח>?text=<ההודעה>`. הקישור **קצר** (redirect, לא URL באורך 300 תווים בבועת צ׳אט) וההודעה **נבנית מחדש בכל לחיצה**, כך שתיקון אחרי שליחת הקישור עדיין שולח את הגרסה המתוקנת. ההודעה יוצאת מהמספר של בעל המקצוע - §15 החלטה 7 נשמרת. בלי מספר: רמז ה-Forward + בקשה למספר. הלחיצה מסמנת `sent`.
+2. **קטלוג מחירים (`price_book`).** היה "שלב 2" ב-PRODUCT.md §12; זו ההגנה היחידה של המוצר. נלמד פסיבית מהצעות שנוצרו ומכל שמירה במסך העריכה (מחיר שהוקלד ביד = האות החזק ביותר). מחיר שלא נאמר מתמלא **בקוד** (`applyPriceBook`, דטרמיניסטי וניתן לבדיקה), ולא ע"י ה-LLM - כי מגבלת Groq היא 8k tokens/דקה. לפרומפט נכנסים **רק התיאורים** (עד 25), כדי שהניסוח יישאר עקבי והמפתחות יתאימו. פריט שאין בקטלוג נשאר 0 + `needsReview` - **לעולם לא ניחוש**. הצ׳אט תמיד מדווח מה הושלם.
+3. **תזכורות על הצעות שנתקעו** (`lib/quotes/follow-up.ts`, מה-cron). `sent`/`viewed` שלא זזו 3 ימים → הודעה לבעל המקצוע עם קישור תזכורת מוכן; תזכורת שנייה אחרי 4 ימים; **אין שלישית**. רק בין 08:00–21:00 שעון ישראל. `reminders_sent` + `last_reminder_at` הופכים את זה לאידמפוטנטי. **לעולם לא שולחים ללקוח** - רק לבעל המקצוע.
+4. **כרטיס תצוגה מקדימה ב-WhatsApp** (`opengraph-image.tsx`). זה מה שהלקוח רואה **לפני** הלחיצה. ⚠️ **Satori לא מיישם bidi** - עברית יוצאת הפוכה. `lib/og-bidi.ts` מסדר לוגי→ויזואלי (רצפי ספרות נשארים במקומם). אומת מול הרנדרר האמיתי, לא מהדוקומנטציה.
+5. **מסלול שדרוג.** קודם `settingsLink` שימש כ"קישור לשדרוג" והוביל לדף בלי כפתור קנייה. עכשיו `/u/{code}` (משתמש בקוד של `s`), וקישורי הסליקה לכל חבילה ב-`app_settings` דרך `/admin → תשלומים`. שדה ריק = הודעת WhatsApp למספר הבוט (המצב הידני של §11) - עדיין מסלול, לא קיר.
+
+**קרפט:** מצב כהה מלא (ההצעה עצמה נשארת על "נייר" דרך `.doc-surface` - מסמך, והצבע של בעל המקצוע נשאר נאמן); Ploni הומר ל-woff2 (576KB → 233KB); פס החלטה דביק בדף הלקוח שנושא את הסכום (התשובה ל"כמה זה עולה" בלי לגלול); חתימה עם עובי דיו משתנה + undo; favicon/apple-icon/manifest; focus ring אחיד; הדפסה תמיד בפלטת נייר.
+
+**לא נעשה (מכוון):** אינטגרציית סליקה אמיתית - צריכה חשבון ומפתחות של ספק. התשתית מוכנה: להדביק URL ב-`/admin → תשלומים`.
+
 ## מה הלאה (לפי סדר)
 1. **חיבור אמיתי:** Neon DB + Vercel deploy + מפתח OpenAI ב-`/admin` + webhook token ב-iBot → הודעה קולית אמיתית מהטלפון של המשתמש. לאמת ש-`X-Webhook-Token` באמת מגיע.
+   ⚠️ מיגרציה `0005` (price_book + עמודות התזכורות) **טרם הורצה על Neon** - `vercel-build` מריץ `drizzle-kit migrate` אוטומטית בדיפלוי הבא. אומתה מקומית על `quickoffer_dev`.
 2. eval של 20–30 הקלטות אמיתיות (PRODUCT.md §7.5) — לבחור מנוע תמלול, לכוונן `STRUCTURE_RULES`.
 3. Vercel Blob (`BLOB_READ_WRITE_TOKEN`) — בלעדיו לוגו/חתימה/אודיו לא נשמרים (הקוד מחזיר null ולא נופל).
-4. PDF (§8.3), התראות שלב 2, קטלוג אישי.
+4. סליקה אמיתית: חשבון Grow/PayPlus → URL לכל חבילה ב-`/admin → תשלומים`.
+5. תמונת ההצעה בצ׳אט (`send-image`) - בעל המקצוע עדיין לא רואה את המסמך שלו. PDF (§8.3).
 
 ## החלטות פתוחות (PRODUCT.md §15)
 - דומיין קצר לקישורים (טרם נבחר; בדוגמאות `qv.app`)
