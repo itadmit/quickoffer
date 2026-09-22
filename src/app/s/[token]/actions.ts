@@ -33,7 +33,7 @@ export async function saveSettingsAction(token: string, form: SettingsForm) {
     .set({
       templateId,
       businessName: f.businessName,
-      businessPhone: f.businessPhone || null,
+      businessPhone: normalizePhone(f.businessPhone),
       address: f.address || null,
       taxId: f.taxId || null,
       vatStatus: f.vatStatus,
@@ -67,4 +67,13 @@ export async function removeLogoAction(token: string) {
   if (!user) return { ok: false as const };
   await db.update(users).set({ logoUrl: null }).where(eq(users.id, user.id));
   return { ok: true as const };
+}
+
+/** "050-123-4567" / "+972 50..." → "972501234567"; anything unparseable is kept as typed. */
+function normalizePhone(v: string | null): string | null {
+  if (!v) return null;
+  const d = v.replace(/\D/g, "");
+  if (d.length === 10 && d.startsWith("0")) return `972${d.slice(1)}`;
+  if (d.length === 9 && !d.startsWith("0")) return `972${d}`;
+  return d || null;
 }

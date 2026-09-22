@@ -72,7 +72,10 @@ function Status({ ok, unknown, title, children }: { ok: boolean; unknown?: boole
   const cls = unknown ? "border-line" : ok ? "border-ok/40 bg-ok/5" : "border-danger/40 bg-danger/5";
   return (
     <div className={`rounded-2xl border p-4 ${cls}`}>
-      <div className="font-semibold">{unknown ? "⚪" : ok ? "🟢" : "🔴"} {title}</div>
+      <div className="font-semibold flex items-center gap-2">
+        <span className={`inline-block h-2.5 w-2.5 rounded-full ${unknown ? "bg-muted" : ok ? "bg-ok" : "bg-danger"}`} />
+        {title}
+      </div>
       <div className="text-sm text-muted mt-1">{children}</div>
     </div>
   );

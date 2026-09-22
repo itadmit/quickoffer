@@ -1,6 +1,7 @@
-import { desc, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { quotes, users } from "@/lib/db/schema";
+import { quoteTemplates, users } from "@/lib/db/schema";
+import { settingsLink } from "@/lib/quotes/links";
 import { UserRow } from "./user-row";
 
 export default async function AdminUsers() {
@@ -10,11 +11,16 @@ export default async function AdminUsers() {
   const rows = await db
     .select({
       user: users,
-      monthQuotes: sql<number>`(select count(*)::int from ${quotes} where ${quotes.userId} = ${users.id} and ${quotes.createdAt} >= ${startOfMonth})`,
-      totalQuotes: sql<number>`(select count(*)::int from ${quotes} where ${quotes.userId} = ${users.id})`,
+      templateName: quoteTemplates.name,
+      // written with explicit aliases: drizzle renders unqualified column names inside sql`` subqueries,
+      // so `quotes.user_id = users.id` would come out as `"user_id" = "id"` (always the quote's own id)
+      monthQuotes: sql<number>`(select count(*)::int from quotes q where q.user_id = users.id and q.created_at >= ${startOfMonth})`,
+      totalQuotes: sql<number>`(select count(*)::int from quotes q where q.user_id = users.id)`,
     })
     .from(users)
+    .leftJoin(quoteTemplates, eq(quoteTemplates.id, users.templateId))
     .orderBy(desc(users.lastActiveAt));
+  const settingsLinks = await Promise.all(rows.map((r) => settingsLink(r.user.id)));
 
   return (
     <div className="space-y-4">
@@ -28,6 +34,7 @@ export default async function AdminUsers() {
               <th className="p-2 text-start">מע״מ</th>
               <th className="p-2 text-start">אונבורדינג</th>
               <th className="p-2 text-start">חבילה</th>
+              <th className="p-2 text-start">תבנית</th>
               <th className="p-2 text-start">הצעות חודש / סה״כ</th>
               <th className="p-2 text-start">הצטרף</th>
               <th className="p-2 text-start">פעיל לאחרונה</th>
@@ -35,8 +42,10 @@ export default async function AdminUsers() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => <UserRow key={r.user.id} user={r.user} monthQuotes={r.monthQuotes} totalQuotes={r.totalQuotes} />)}
-            {!rows.length && <tr><td colSpan={9} className="p-4 text-muted">עדיין אין משתמשים - שלח הודעה לבוט</td></tr>}
+            {rows.map((r, i) => (
+              <UserRow key={r.user.id} user={r.user} templateName={r.templateName} monthQuotes={r.monthQuotes} totalQuotes={r.totalQuotes} settingsUrl={settingsLinks[i]} />
+            ))}
+            {!rows.length && <tr><td colSpan={10} className="p-4 text-muted">עדיין אין משתמשים - שלח הודעה לבוט</td></tr>}
           </tbody>
         </table>
       </div>

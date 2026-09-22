@@ -102,6 +102,8 @@
 - **סודות** (מפתחות API, iBot token) — ב-`app_settings` מוצפנים AES-256-GCM, env כ-fallback. לא בלוגים, לא ללקוח.
 - כשפרטי הפיילוד של iBot חשובים — לאמת מול capture אמיתי, לא מול דף ה-docs (שהוא שליחה בלבד).
 - **Next.js 16:** `params`/`searchParams` הם Promise; `proxy.ts` במקום middleware; `after()` מ-`next/server`. הדוקומנטציה ב-`node_modules/next/dist/docs/`.
+- **קובץ `"use server"` מייצא רק פונקציות async.** סכמות Zod וקבועים - ב-`schema.ts` לצד ה-`actions.ts` (ייצוא של אובייקט מפיל את כל ה-actions בקובץ ב-500, וזה נראה כמו "שמירה לא עובדת"). `export type` מותר.
+- **`sql\`\`` של Drizzle לא מכשיר שמות עמודות בתת-שאילתה** - `${quotes.userId} = ${users.id}` הופך ל-`"user_id" = "id"`. בתת-שאילתות מתואמות לכתוב SQL גולמי עם aliases.
 - לפני סיום: `npm run typecheck && npx eslint . && npm test`. לבדיקת זרימה מלאה: README → "בדיקה מקומית".
 
 ## מפת הקוד (`src/`)

@@ -13,6 +13,7 @@ type Props = {
   phone: string | null;
   plan: string;
   logoUrl: string | null;
+  quota: { used: number; limit: number; monthly: boolean } | null;
   /** lockedFor: the plan name required, when the user's plan cannot pick it */
   templates: { id: string; name: string; description: string | null; isDefault: boolean; lockedFor: string | null; spec: QuoteTemplateSpec }[];
   initial: SettingsForm;
@@ -25,7 +26,7 @@ const PLAN_LABEL: Record<string, string> = {
   unlimited: "Unlimited",
 };
 
-export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, templates, initial }: Props) {
+export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, quota, templates, initial }: Props) {
   const [form, setForm] = useState<SettingsForm>(initial);
   const [logoUrl, setLogoUrl] = useState(initialLogo);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -63,6 +64,17 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, templ
         <p className="text-sm text-muted" dir="ltr">
           {phone ? `${formatPhone(phone)} · ` : ""}<span dir="rtl">{PLAN_LABEL[plan] ?? plan}</span>
         </p>
+        {quota && (
+          <div className="mt-2">
+            <div className="flex justify-between text-xs text-muted">
+              <span>{quota.monthly ? "הצעות החודש" : "הצעות בניסיון"}</span>
+              <span>{quota.used} / {quota.limit}</span>
+            </div>
+            <div className="mt-1 h-1.5 rounded-full bg-line overflow-hidden">
+              <div className={`h-full rounded-full ${quota.used >= quota.limit ? "bg-danger" : "bg-brand"}`} style={{ width: `${Math.min(100, (quota.used / quota.limit) * 100)}%` }} />
+            </div>
+          </div>
+        )}
       </header>
 
       {/* logo */}
@@ -105,6 +117,7 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, templ
           <label>
             <span className="label">טלפון להצעות</span>
             <input className="input" dir="ltr" inputMode="tel" value={form.businessPhone ?? ""} onChange={(e) => update("businessPhone", e.target.value)} placeholder={phone ? formatPhone(phone) : "050-0000000"} />
+            <span className="block text-xs text-muted mt-1">ריק = המספר של ה-WhatsApp שלך</span>
           </label>
           <label>
             <span className="label">ח.פ. / ע.מ.</span>

@@ -7,6 +7,7 @@ import { users } from "@/lib/db/schema";
 import { publicLink, resolveLink } from "@/lib/quotes/links";
 import { contactPhone, getQuote } from "@/lib/quotes/service";
 import { getTemplateForUser } from "@/lib/quotes/templates";
+import { customerMessage } from "@/lib/conversation/messages";
 import { QuoteEditor } from "./quote-editor";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +41,7 @@ export default async function EditQuotePage({ params }: { params: Promise<{ toke
         number: q.number,
         status: q.status,
         publicUrl: await publicLink(q.publicId),
+        customerMessage: customerMessage(q, user, await publicLink(q.publicId)),
         vatRate: q.vatRate,
         transcript: q.transcript,
         business: {

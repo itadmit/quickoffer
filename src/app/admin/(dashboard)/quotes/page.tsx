@@ -1,16 +1,25 @@
 import Link from "next/link";
-import { desc, eq, ilike, or } from "drizzle-orm";
+import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { quotes, users } from "@/lib/db/schema";
 import { formatMoney } from "@/lib/quotes/calc";
+import { STATUS_LABELS, StatusBadge } from "@/components/status-badge";
 
-export default async function AdminQuotes({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q = "" } = await searchParams;
+const STATUSES = Object.keys(STATUS_LABELS) as (keyof typeof STATUS_LABELS)[];
+
+export default async function AdminQuotes({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
+  const { q = "", status = "" } = await searchParams;
+  const statusFilter = (STATUSES as string[]).includes(status) ? (status as (typeof STATUSES)[number]) : null;
   const rows = await db
     .select({ quote: quotes, business: users.businessName, phone: users.phone })
     .from(quotes)
     .innerJoin(users, eq(users.id, quotes.userId))
-    .where(q ? or(ilike(quotes.customerName, `%${q}%`), ilike(users.businessName, `%${q}%`), ilike(users.phone, `%${q}%`)) : undefined)
+    .where(
+      and(
+        q ? or(ilike(quotes.customerName, `%${q}%`), ilike(users.businessName, `%${q}%`), ilike(users.phone, `%${q}%`)) : undefined,
+        statusFilter ? eq(quotes.status, statusFilter) : undefined,
+      ),
+    )
     .orderBy(desc(quotes.createdAt))
     .limit(50);
 
@@ -18,7 +27,14 @@ export default async function AdminQuotes({ searchParams }: { searchParams: Prom
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-bold">הצעות</h1>
-        <form className="ms-auto"><input name="q" defaultValue={q} className="input py-1.5" placeholder="חיפוש לקוח / עסק / טלפון" /></form>
+        <form className="ms-auto flex gap-2">
+          <select name="status" defaultValue={status} className="input py-1.5 w-auto">
+            <option value="">כל הסטטוסים</option>
+            {STATUSES.map((st) => <option key={st} value={st}>{STATUS_LABELS[st][0]}</option>)}
+          </select>
+          <input name="q" defaultValue={q} className="input py-1.5" placeholder="חיפוש לקוח / עסק / טלפון" />
+          <button className="btn-secondary py-1.5">סנן</button>
+        </form>
       </div>
       <div className="rounded-2xl border border-line bg-card overflow-x-auto">
         <table className="w-full text-sm">
@@ -30,10 +46,10 @@ export default async function AdminQuotes({ searchParams }: { searchParams: Prom
             {rows.map(({ quote: r, business, phone }) => (
               <tr key={r.id} className="border-t border-line">
                 <td className="p-2">{r.number}</td>
-                <td className="p-2">{business ?? phone}</td>
+                <td className="p-2"><Link href={`/admin/quotes?q=${encodeURIComponent(phone)}`} className="hover:underline">{business ?? phone}</Link></td>
                 <td className="p-2">{r.customerName ?? <span className="text-muted">-</span>}</td>
                 <td className="p-2 whitespace-nowrap">{formatMoney(r.total)}</td>
-                <td className="p-2">{r.status}</td>
+                <td className="p-2"><StatusBadge status={r.status} /></td>
                 <td className="p-2 whitespace-nowrap">{r.createdAt.toLocaleString("he-IL")}</td>
                 <td className="p-2 whitespace-nowrap">
                   <Link href={`/admin/quotes/${r.id}`} className="underline">דיבוג</Link>

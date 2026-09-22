@@ -2,10 +2,11 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Link2, Trash2, TriangleAlert } from "lucide-react";
+import { Link2, MessageCircle, Trash2, TriangleAlert } from "lucide-react";
 import { UNITS } from "@/lib/ai/types";
 import { calcTotals, formatMoney } from "@/lib/quotes/calc";
 import { QuoteDocument, type QuoteView } from "@/components/quote-document";
+import { StatusBadge } from "@/components/status-badge";
 import { deleteQuoteAction, markSentAction, saveQuoteAction } from "./actions";
 import type { QuoteForm } from "./schema";
 
@@ -15,6 +16,8 @@ type Props = {
     number: number;
     status: "draft" | "sent" | "viewed" | "approved" | "rejected" | "expired";
     publicUrl: string;
+    /** the ready-to-forward customer message (§6.3), same text the bot sends */
+    customerMessage: string;
     vatRate: number;
     transcript: string | null;
     business: QuoteView["business"];
@@ -112,6 +115,19 @@ export function QuoteEditor({ token, quote, initial }: Props) {
     await navigator.clipboard.writeText(quote.publicUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+  // Native share sheet on phones (WhatsApp is in it); wa.me composer elsewhere.
+  const share = async () => {
+    const text = quote.customerMessage;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch {
+        /* cancelled - fall through */
+      }
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
   };
 
   return (
@@ -284,8 +300,11 @@ export function QuoteEditor({ token, quote, initial }: Props) {
       {/* bottom actions */}
       <div className="fixed bottom-0 inset-x-0 bg-card border-t border-line p-3">
         <div className="max-w-lg mx-auto flex gap-2">
-          <button onClick={copyLink} className="btn-primary flex-1">
-            {copied ? "✓ הועתק" : <><Link2 className="h-5 w-5" /> העתק קישור ללקוח</>}
+          <button onClick={share} className="btn-primary flex-1">
+            <MessageCircle className="h-5 w-5" /> שלח ללקוח ב-WhatsApp
+          </button>
+          <button onClick={copyLink} className="btn-secondary" aria-label="העתק קישור ללקוח" title="העתק קישור ללקוח">
+            {copied ? <span className="text-ok text-sm">הועתק</span> : <Link2 className="h-5 w-5" />}
           </button>
           {!locked && status === "draft" && (
             <button
@@ -347,17 +366,4 @@ function NumberInput({ value, onChange }: { value: number; onChange: (v: number)
       onBlur={() => setText(String(value))}
     />
   );
-}
-
-export function StatusBadge({ status }: { status: Props["quote"]["status"] }) {
-  const map: Record<Props["quote"]["status"], [string, string]> = {
-    draft: ["טיוטה", "bg-line text-ink"],
-    sent: ["נשלחה", "bg-brand-soft text-brand"],
-    viewed: ["נצפתה", "bg-brand-soft text-brand"],
-    approved: ["אושרה ✓", "bg-ok/15 text-ok"],
-    rejected: ["נדחתה", "bg-danger/10 text-danger"],
-    expired: ["פג תוקף", "bg-warn text-warn-ink"],
-  };
-  const [label, cls] = map[status];
-  return <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${cls}`}>{label}</span>;
 }

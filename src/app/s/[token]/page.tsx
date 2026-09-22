@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { planAllows, PLAN_LABELS } from "@/lib/quotes/template-spec";
 import { listTemplates, specOf } from "@/lib/quotes/templates";
+import { checkQuota } from "@/lib/conversation/quota";
+import { formatPhone } from "@/components/quote-document";
 import { SettingsEditor } from "./settings-editor";
 
 export const dynamic = "force-dynamic";
@@ -37,16 +39,19 @@ export default async function SettingsPage({ params }: { params: Promise<{ token
     spec: specOf(t),
   }));
 
+  const quota = await checkQuota(user);
+
   return (
     <SettingsEditor
       token={token}
       templates={templates}
+      quota={quota.limit === Infinity ? null : { used: quota.used, limit: quota.limit, monthly: user.plan !== "trial" }}
       phone={user.channel === "whatsapp" ? user.phone : null}
       plan={user.plan}
       logoUrl={user.logoUrl}
       initial={{
         businessName: user.businessName ?? user.displayName ?? "",
-        businessPhone: user.businessPhone,
+        businessPhone: user.businessPhone ? formatPhone(user.businessPhone) : null,
         address: user.address,
         taxId: user.taxId,
         vatStatus: user.vatStatus,
