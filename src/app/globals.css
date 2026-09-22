@@ -96,6 +96,18 @@ input, select, textarea {
   font: inherit;
 }
 
+/* Tokens, URLs, webhook addresses and raw JSON have no spaces to break on. Left
+   alone they set the min-content width of whatever holds them and push the whole
+   page into horizontal scroll on a phone. `anywhere` (not `break-word`) is the
+   one that also shrinks min-content, which is what a grid/flex item measures. */
+code, pre {
+  overflow-wrap: anywhere;
+}
+
+body {
+  overflow-wrap: break-word;
+}
+
 @media print {
   .no-print { display: none !important; }
   /* Printing always uses the paper palette, whatever the screen is doing. */

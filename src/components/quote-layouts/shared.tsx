@@ -89,10 +89,13 @@ export function ItemsTable({ q, showReviewFlags, headless = false }: { q: QuoteV
     <table className="w-full text-sm">
       <thead className={headless ? "sr-only" : undefined}>
         <tr className="text-muted text-xs border-b border-line">
+          {/* The fixed column widths are a desktop nicety - on a phone they leave
+              the description a sliver and it breaks one word per line, so there
+              the numbers just take what they need. */}
           <th className="text-start py-2 font-medium">פירוט</th>
-          <th className="text-center py-2 font-medium w-16">כמות</th>
-          <th className="text-end py-2 font-medium w-24">מחיר</th>
-          <th className="text-end py-2 font-medium w-24">סה״כ</th>
+          <th className="text-center py-2 ps-3 font-medium sm:w-16">כמות</th>
+          <th className="text-end py-2 ps-3 font-medium sm:w-24">מחיר</th>
+          <th className="text-end py-2 ps-3 font-medium sm:w-24">סה״כ</th>
         </tr>
       </thead>
       <tbody>
@@ -102,11 +105,11 @@ export function ItemsTable({ q, showReviewFlags, headless = false }: { q: QuoteV
               {it.description}
               {showReviewFlags && it.needsReview && <TriangleAlert className="inline h-3.5 w-3.5 ms-1 text-warn-ink" />}
             </td>
-            <td className="py-2.5 text-center text-muted whitespace-nowrap">
+            <td className="py-2.5 ps-3 text-center text-muted whitespace-nowrap">
               {formatQty(it.quantity)} {it.unit}
             </td>
-            <td className="py-2.5 text-end whitespace-nowrap">{formatMoney(it.unitPrice)}</td>
-            <td className="py-2.5 text-end font-medium whitespace-nowrap">{formatMoney(it.lineTotal)}</td>
+            <td className="py-2.5 ps-3 text-end whitespace-nowrap">{formatMoney(it.unitPrice)}</td>
+            <td className="py-2.5 ps-3 text-end font-medium whitespace-nowrap">{formatMoney(it.lineTotal)}</td>
           </tr>
         ))}
       </tbody>

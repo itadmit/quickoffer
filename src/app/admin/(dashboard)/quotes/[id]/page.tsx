@@ -67,7 +67,9 @@ export default async function AdminQuoteDebug({ params }: { params: Promise<{ id
 }
 
 function Box({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="rounded-2xl border border-line bg-card p-4 space-y-2"><h2 className="font-bold">{title}</h2>{children}</section>;
+  // min-w-0: a grid item is sized by its min-content by default, so a wide
+  // <pre> of raw JSON would stretch the whole page instead of scrolling itself.
+  return <section className="min-w-0 rounded-2xl border border-line bg-card p-4 space-y-2"><h2 className="font-bold">{title}</h2>{children}</section>;
 }
 function Pre({ data }: { data: unknown }) {
   return <pre dir="ltr" className="text-xs bg-surface rounded-xl p-3 overflow-auto max-h-80 whitespace-pre-wrap">{JSON.stringify(data, null, 2)}</pre>;
