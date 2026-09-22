@@ -9,7 +9,9 @@ import {
 } from "../ai";
 import { db } from "../db";
 import { inboundMessages, processingRuns, quotes, users, type User } from "../db/schema";
-import { editLink, publicLink, settingsLink } from "../quotes/links";
+import { editLink, publicLink, sendLink, settingsLink, upgradeLink } from "../quotes/links";
+import { catalogNames } from "../quotes/price-book";
+import { loadPriceBook } from "../quotes/price-book-store";
 import {
   applyJSONToQuote,
   createQuoteFromJSON,
@@ -23,6 +25,7 @@ import {
 } from "../quotes/service";
 import { estimateAudioSeconds, fetchMedia, storeFile } from "../storage";
 import { sendText, type InboundMessage } from "../whatsapp";
+import type { FilledFromBook } from "../quotes/price-book";
 import { matchTemplateName, planAllows, PLAN_LABELS } from "../quotes/template-spec";
 import { listTemplates } from "../quotes/templates";
 import { checkQuota } from "./quota";
@@ -32,10 +35,10 @@ import {
   correctionSummary,
   customerMessage,
   errors,
-  forwardHint,
   onboarding as ob,
   quoteSummary,
   quotesList,
+  sendHint,
 } from "./messages";
 
 const MAX_AUDIO_SECONDS = 180;
@@ -104,14 +107,25 @@ async function getOrCreateUser(
   return { user, isNew: false };
 }
 
-function profileOf(user: User): BusinessProfile {
+function profileOf(user: User, catalog: string[] = []): BusinessProfile {
   return {
     businessName: user.businessName,
     vatStatus: user.vatStatus,
     defaultPaymentTerms: user.defaultPaymentTerms,
     defaultValidDays: user.defaultValidDays,
     defaultNotes: user.defaultNotes ?? [],
+    catalog,
   };
+}
+
+/** The professional's own wording for work they've priced before (§7.2). */
+async function catalogOf(userId: string): Promise<string[]> {
+  try {
+    return catalogNames(await loadPriceBook(userId));
+  } catch (err) {
+    console.error("[price-book] load failed", err);
+    return [];
+  }
 }
 
 // ------------------------------------------------------------- onboarding
@@ -419,9 +433,12 @@ async function transcribeInbound(
 
 async function newQuote(user: User, text: string, audioUrl: string | null, run: RunLog) {
   run.kind = "new_quote";
-  const quota = await checkQuota(user);
-  const llm = await getLLMProvider();
-  const { result: json, usage } = await llm.structureQuote(text, profileOf(user));
+  const [quota, llm, catalog] = await Promise.all([
+    checkQuota(user),
+    getLLMProvider(),
+    catalogOf(user.id),
+  ]);
+  const { result: json, usage } = await llm.structureQuote(text, profileOf(user, catalog));
   run.llm(usage);
 
   if (!json.items.length) {
@@ -433,30 +450,46 @@ async function newQuote(user: User, text: string, audioUrl: string | null, run: 
     // Still show the summary, but don't create a link (§11)
     await sendText(
       user.phone,
-      errors.quotaExceeded(quota.planLabel, quota.limit, await settingsLink(user.id)),
+      errors.quotaExceeded(quota.planLabel, quota.limit, await upgradeLink(user.id)),
     );
     return;
   }
 
   const quote = await createQuoteFromJSON(user, json, { transcript: text, audioUrl });
   run.quoteId = quote.id;
-  await sendQuoteMessages(user, quote);
+  await sendQuoteMessages(user, quote, quote.filledFromBook);
 }
 
 async function correctDraft(user: User, draft: QuoteWithItems, text: string, run: RunLog) {
   run.kind = "correction";
   run.quoteId = draft.id;
-  const llm = await getLLMProvider();
-  const { result, usage } = await llm.applyCorrection(quoteToJSON(draft), text, profileOf(user));
+  const [llm, catalog] = await Promise.all([getLLMProvider(), catalogOf(user.id)]);
+  const { result, usage } = await llm.applyCorrection(
+    quoteToJSON(draft),
+    text,
+    profileOf(user, catalog),
+  );
   run.llm(usage);
   const updated = await applyJSONToQuote(draft, result.quote as QuoteJSON, text);
-  await sendText(user.phone, correctionSummary(updated, result.changes));
+  // A correction that added the phone number unlocks one-tap send - offer it.
+  const gainedPhone = !draft.customerPhone && !!updated.customerPhone;
+  await sendText(
+    user.phone,
+    correctionSummary(updated, result.changes, {
+      filled: updated.filledFromBook,
+      sendUrl: gainedPhone ? await sendLink(updated.id) : null,
+    }),
+  );
 }
 
-/** §6.3 - three messages: summary, forward hint, clean customer message. */
-async function sendQuoteMessages(user: User, quote: QuoteWithItems) {
-  await sendText(user.phone, quoteSummary(quote, await editLink(quote.id)));
-  await sendText(user.phone, forwardHint());
+/** §6.3 - three messages: summary, how to send, and the clean customer message. */
+async function sendQuoteMessages(
+  user: User,
+  quote: QuoteWithItems,
+  filled: FilledFromBook[] = [],
+) {
+  await sendText(user.phone, quoteSummary(quote, await editLink(quote.id), filled));
+  await sendText(user.phone, sendHint(quote, await sendLink(quote.id)));
   await sendText(user.phone, customerMessage(quote, user, await publicLink(quote.publicId)));
 }
 
@@ -491,7 +524,7 @@ async function chooseTemplate(user: User, templateName: string | null, draft: Qu
     return;
   }
   if (!planAllows(user.plan, chosen.minPlan)) {
-    await sendText(user.phone, tpl.locked(chosen.name, PLAN_LABELS[chosen.minPlan], await settingsLink(user.id)));
+    await sendText(user.phone, tpl.locked(chosen.name, PLAN_LABELS[chosen.minPlan], await upgradeLink(user.id)));
     return;
   }
   await db.update(users).set({ templateId: chosen.isDefault ? null : chosen.id }).where(eq(users.id, user.id));
@@ -546,7 +579,10 @@ async function runCommand(user: User, command: Command, draft: QuoteWithItems | 
         await sendText(user.phone, cmd.noQuotes());
         return;
       }
-      await sendText(user.phone, cmd.editLink(target, await editLink(target.id)));
+      await sendText(
+        user.phone,
+        cmd.editLink(target, await editLink(target.id), await sendLink(target.id)),
+      );
       return;
     }
     case "pdf":

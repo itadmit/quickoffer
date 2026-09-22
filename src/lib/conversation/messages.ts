@@ -1,5 +1,8 @@
 import type { Quote, QuoteItem, User } from "../db/schema";
+import { formatPhone, isMobile } from "../phone";
 import { formatMoney, formatQty } from "../quotes/calc";
+import { customerMessageText, daysUntil } from "../quotes/customer-message";
+import type { FilledFromBook } from "../quotes/price-book";
 import type { QuoteWithItems } from "../quotes/service";
 
 /**
@@ -41,14 +44,32 @@ function totalsLines(q: Quote): string[] {
   return lines;
 }
 
+/**
+ * Prices we filled from the professional's own price book. Always reported:
+ * it is their number, not a guess, but they must be able to catch a stale one.
+ */
+function priceBookLines(filled: FilledFromBook[]): string[] {
+  if (!filled.length) return [];
+  return [
+    `🧠 השלמתי מחירים שאתה תמיד גובה: ${filled
+      .map((f) => `${f.description} ${formatMoney(f.unitPrice)}`)
+      .join(", ")} - תגיד לי אם השתנה.`,
+  ];
+}
+
 /** §6.3 message 1 - summary + edit link */
-export function quoteSummary(q: QuoteWithItems, editUrl: string): string {
+export function quoteSummary(
+  q: QuoteWithItems,
+  editUrl: string,
+  filled: FilledFromBook[] = [],
+): string {
   const lines: string[] = [
     `📋 הצעה #${q.number}${q.customerName ? ` - ${q.customerName}` : ""}`,
     ...q.items.map(itemLine),
     ...totalsLines(q),
   ];
   if (q.paymentTerms) lines.push(`תשלום: ${q.paymentTerms}`);
+  lines.push(...priceBookLines(filled));
   const missing = q.items.filter((it) => it.needsReview && it.unitPrice === 0);
   if (missing.length) {
     lines.push(
@@ -60,21 +81,61 @@ export function quoteSummary(q: QuoteWithItems, editUrl: string): string {
   return lines.join("\n");
 }
 
-/** §6.3 message 2 */
-export const forwardHint = () => `👇 להעביר ללקוח - לחץ לחיצה ארוכה על ההודעה הבאה ← העבר`;
+/**
+ * §6.3 message 2 - how the quote reaches the customer.
+ *
+ * With a mobile number we hand over a single tap: the link opens the customer's
+ * chat with the message ready, sent from the professional's own number. Without
+ * one we fall back to the forward hint and ask for the number, because the tap
+ * is worth the one question.
+ */
+export function sendHint(q: Quote, sendUrl: string): string {
+  if (isMobile(q.customerPhone)) {
+    const who = q.customerName ?? "הלקוח";
+    return [
+      `📲 לשלוח ל${who} (${formatPhone(q.customerPhone!)}) - לחץ כאן:`,
+      sendUrl,
+      `נפתח הצ׳אט עם ההודעה מוכנה. רק ללחוץ שלח.`,
+    ].join("\n");
+  }
+  return [
+    `👇 להעביר ללקוח - לחץ לחיצה ארוכה על ההודעה הבאה ← העבר`,
+    `(או תגיד לי את המספר שלו - "הטלפון של ${q.customerName ?? "הלקוח"} 050..." - ואשלח לך קישור בלחיצה אחת)`,
+  ].join("\n");
+}
 
 /** §6.3 message 3 - the clean, forwardable message */
 export function customerMessage(q: Quote, user: User, publicUrl: string): string {
-  const greeting = q.customerName ? `שלום ${q.customerName}, ` : "שלום, ";
-  const days = q.validUntil
-    ? Math.max(1, Math.round((q.validUntil.getTime() - Date.now()) / 86_400_000))
-    : user.defaultValidDays;
-  return `${greeting}מצורפת הצעת מחיר מ${user.businessName ?? "העסק"}:\n${publicUrl}\nההצעה תקפה ל-${days} יום. לאישור - לחץ על הקישור.`;
+  return customerMessageText({
+    customerName: q.customerName,
+    businessName: user.businessName,
+    publicUrl,
+    validDays: daysUntil(q.validUntil, user.defaultValidDays),
+  });
 }
 
-/** §6.4 */
-export function correctionSummary(q: QuoteWithItems, changes: string[]): string {
-  const lines = [`✅ עודכן:`, ...changes.map((c) => `• ${c}`), ...totalsLines(q)];
+/**
+ * §6.4 - correction applied. When the correction was the customer's phone
+ * number, the one-tap send link is the natural next step, so offer it here.
+ */
+export function correctionSummary(
+  q: QuoteWithItems,
+  changes: string[],
+  opts: { filled?: FilledFromBook[]; sendUrl?: string | null } = {},
+): string {
+  const lines = [
+    `✅ עודכן:`,
+    ...changes.map((c) => `• ${c}`),
+    ...totalsLines(q),
+    ...priceBookLines(opts.filled ?? []),
+  ];
+  if (opts.sendUrl && isMobile(q.customerPhone)) {
+    lines.push(
+      "",
+      `📲 לשלוח ל${q.customerName ?? "לקוח"} (${formatPhone(q.customerPhone!)}):`,
+      opts.sendUrl,
+    );
+  }
   return lines.join("\n");
 }
 
@@ -124,7 +185,13 @@ export const commands = {
   nothingToCancel: () => `אין טיוטה פעילה לביטול.`,
   newContext: () => `👌 שלח הודעה קולית להצעה חדשה.`,
   settings: (url: string) => `⚙️ הגדרות העסק: ${url}`,
-  editLink: (q: Quote, url: string) => `🖊️ עריכת הצעה #${q.number}: ${url}`,
+  editLink: (q: Quote, url: string, sendUrl: string | null) =>
+    [
+      `🖊️ עריכת הצעה #${q.number}: ${url}`,
+      ...(sendUrl && isMobile(q.customerPhone)
+        ? [`📲 לשלוח ל${q.customerName ?? "לקוח"} (${formatPhone(q.customerPhone!)}): ${sendUrl}`]
+        : []),
+    ].join("\n"),
   noQuotes: () => `עדיין אין הצעות. שלח לי הודעה קולית ונתחיל 🎤`,
   pdfNotYet: () =>
     `הקישור ללקוח הוא ההצעה - תמיד מעודכן, ומאפשר אישור וחתימה. בדף עצמו יש כפתור "הדפס / שמור כ-PDF" אם צריך קובץ.`,
@@ -164,7 +231,11 @@ export const errors = {
   mediaUnavailable: () => `יש תקלה זמנית, נסה שוב בעוד דקה.`,
   tooLong: () => `ההקלטה ארוכה מדי - עד 3 דקות.`,
   quotaExceeded: (plan: string, limit: number, upgradeUrl: string) =>
-    `השתמשת ב-${limit} ההצעות של חבילת ${plan} החודש. לשדרוג: ${upgradeUrl}`,
+    [
+      `הגעת ל-${limit} ההצעות של חבילת ${plan}.`,
+      `ההצעה למעלה מוכנה - רק הקישור ללקוח נעול עד השדרוג.`,
+      `👉 ${upgradeUrl}`,
+    ].join("\n"),
   generic: () => `משהו השתבש אצלי 😕 נסה שוב בעוד רגע.`,
 };
 
@@ -177,4 +248,20 @@ export const notifications = {
     `❌ ${q.customerName ?? "הלקוח"} דחה את הצעה #${q.number}.${reason ? ` סיבה: "${reason}"` : ""}`,
   question: (q: Quote, text: string) =>
     `💬 ${q.customerName ?? "הלקוח"} שאל על #${q.number}: "${text}" - ענה לו ישירות ב-WhatsApp`,
+
+  /**
+   * The quote went quiet. Sent at most twice per quote (lib/quotes/follow-up.ts):
+   * a nudge that closes deals, not a drip campaign.
+   */
+  followUp: (q: Quote, days: number, sendUrl: string | null) => {
+    const who = q.customerName ?? "הלקוח";
+    const what =
+      q.status === "viewed"
+        ? `👀 ${who} פתח את הצעה #${q.number} (${formatMoney(q.total)}) לפני ${days} ימים ולא חזר אליך.`
+        : `⏳ הצעה #${q.number} ל${who} (${formatMoney(q.total)}) נשלחה לפני ${days} ימים ועוד לא נפתחה.`;
+    const nudge = sendUrl
+      ? `רוצה לשלוח תזכורת? לחץ כאן ותקבל הודעה מוכנה:\n${sendUrl}`
+      : `שווה טלפון או הודעה - הצעה שנסגרת ביום השלישי שווה יותר מהצעה שנשכחת.`;
+    return `${what}\n${nudge}`;
+  },
 };

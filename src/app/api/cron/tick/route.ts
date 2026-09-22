@@ -4,6 +4,7 @@ import { handleInbound } from "@/lib/conversation/handler";
 import { safeEqual } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { inboundMessages, quotes } from "@/lib/db/schema";
+import { sendFollowUps } from "@/lib/quotes/follow-up";
 import { purgeExpiredLinks } from "@/lib/quotes/links";
 import { getSetting } from "@/lib/settings";
 import { gatewayFor, type InboundMessage } from "@/lib/whatsapp";
@@ -16,6 +17,7 @@ export const maxDuration = 60;
  * (cron-job.org) for the demo; Vercel Cron in production (PRODUCT.md §16).
  *  - re-runs inbound messages stuck without processed_at for > 2 min (max 3 attempts)
  *  - expires quotes past valid_until
+ *  - nudges the professional about quotes that went quiet (§6.6)
  *  - reports instance health as last known (§5.5)
  */
 export async function GET(req: NextRequest) {
@@ -64,6 +66,12 @@ export async function GET(req: NextRequest) {
     )
     .returning({ id: quotes.id });
 
+  // 3. nudge the professional about quotes that went quiet
+  const reminded = await sendFollowUps().catch((e) => {
+    console.error("[cron] follow-ups", e);
+    return 0;
+  });
+
   const purgedLinks = await purgeExpiredLinks();
 
   const instanceStatus = await getSetting("ibot.instance_status");
@@ -73,6 +81,7 @@ export async function GET(req: NextRequest) {
     ok: true,
     reprocessed,
     expired: expired.length,
+    reminded,
     purgedLinks,
     instanceStatus,
     lastWebhookAt,
