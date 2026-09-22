@@ -62,15 +62,19 @@ export function JobsEditor({ token, initial }: { token: string; initial: Job[] }
   if (!jobs.length) {
     return (
       <section className="space-y-3">
-        <h2 className="font-bold">עבודות שמורות</h2>
+        <h2 className="font-bold">תבניות עבודה</h2>
         <div className="rounded-2xl border border-line bg-card p-5 text-sm text-muted space-y-2">
           <p className="flex items-center gap-2 text-ink font-medium">
-            <Wrench className="h-4 w-4 text-brand" /> עדיין אין עבודות שמורות
+            <Wrench className="h-4 w-4 text-brand" /> עדיין אין תבניות
           </p>
           <p>
             עבודה שחוזרת על עצמה? כשיש לך הצעה מוכנה, כתוב לעופר{" "}
             <span className="text-ink">״תשמור את זה כהתקנת מזגן״</span> - ובפעם הבאה{" "}
             <span className="text-ink">״התקנת מזגן לדני כהן״</span> יפתח אותה מוכנה.
+          </p>
+          <p className="text-xs">
+            תבנית = הפריטים והמחירים. איך ההצעה <span className="text-ink">נראית</span> נקבע
+            למעלה, ב״עיצוב ההצעה״.
           </p>
         </div>
       </section>
@@ -79,7 +83,7 @@ export function JobsEditor({ token, initial }: { token: string; initial: Job[] }
 
   return (
     <section className="space-y-3">
-      <h2 className="font-bold">עבודות שמורות</h2>
+      <h2 className="font-bold">תבניות עבודה</h2>
       <p className="text-sm text-muted -mt-2">
         עבודות שחוזרות על עצמן. בצ׳ט: ״{jobs[0].name} לדני כהן״. כאן מעדכנים מחיר או שם.
       </p>

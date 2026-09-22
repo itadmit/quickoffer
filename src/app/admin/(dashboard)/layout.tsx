@@ -12,7 +12,7 @@ const NAV = [
   ["/admin/telegram", "טלגרם"],
   ["/admin/users", "משתמשים"],
   ["/admin/quotes", "הצעות"],
-  ["/admin/templates", "תבניות"],
+  ["/admin/templates", "עיצובים"],
   ["/admin/billing", "תשלומים"],
   ["/admin/messages", "לוג הודעות"],
 ] as const;

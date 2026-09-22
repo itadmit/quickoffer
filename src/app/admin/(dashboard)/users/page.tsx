@@ -34,7 +34,7 @@ export default async function AdminUsers() {
               <th className="p-2 text-start">מע״מ</th>
               <th className="p-2 text-start">אונבורדינג</th>
               <th className="p-2 text-start">חבילה</th>
-              <th className="p-2 text-start">תבנית</th>
+              <th className="p-2 text-start">עיצוב</th>
               <th className="p-2 text-start">הצעות חודש / סה״כ</th>
               <th className="p-2 text-start">הצטרף</th>
               <th className="p-2 text-start">פעיל לאחרונה</th>

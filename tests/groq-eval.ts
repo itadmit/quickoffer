@@ -88,7 +88,7 @@ async function main() {
   console.log("--- classify");
   for (const c of CLASSIFY) {
     await pace(Number(process.env.PACE_MS ?? 15000) / 3);
-    const { result } = await llm.classifyMessage(c.t, { hasActiveDraft: c.draft, draftCustomer: c.draft ? "דני כהן" : null, templateNames: ["קלאסי", "מודרני", "מינימלי"], jobNames: ["התקנת מזגן", "נקודת חשמל"] });
+    const { result } = await llm.classifyMessage(c.t, { hasActiveDraft: c.draft, draftCustomer: c.draft ? "דני כהן" : null, designNames: ["קלאסי", "מודרני", "מינימלי"], jobNames: ["התקנת מזגן", "נקודת חשמל"] });
     const ok = result.intent === c.want;
     if (!ok) fails++;
     console.log(`${ok ? "✅" : "❌"} "${c.t}" [draft=${c.draft}] → ${result.intent}${result.command ? "/" + result.command : ""}${ok ? "" : `  (want ${c.want})`}`);

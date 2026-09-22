@@ -45,7 +45,13 @@ export const COMMANDS = [
   "settings",
   "help",
   "edit",
-  "template",
+  /**
+   * The *look* of the quote (layout, colour) - `quote_templates` in the DB.
+   * Called `design` and not `template` on purpose: to the professional
+   * "תבנית" now means a saved job (§6.8), so a command named `template`
+   * sitting next to Hebrew "תבנית" strings would invite exactly the wrong fix.
+   */
+  "design",
   /** §6.8 layer 1 - repeat a previous quote ("כמו ההצעה של דני") */
   "repeat",
   /** §6.8 layer 2 */
@@ -58,8 +64,8 @@ export type Command = (typeof COMMANDS)[number];
 export const IntentSchema = z.object({
   intent: z.enum(["greeting", "correction", "new_quote", "command", "question", "unclear"]),
   command: z.enum(COMMANDS).nullable(),
-  /** for command=template: the template the user named ("מודרני"), null = show the list */
-  templateName: z.string().nullable(),
+  /** for command=design: the design the user named ("מודרני"), null = show the list */
+  designName: z.string().nullable(),
   /**
    * §6.8. For `repeat`: the quote being pointed at ("דני כהן" / "1042").
    * For `job_use` / `job_save`: the job name ("התקנת מזגן").
@@ -133,7 +139,7 @@ export interface LLMProvider {
     ctx: {
       hasActiveDraft: boolean;
       draftCustomer: string | null;
-      templateNames: string[];
+      designNames: string[];
       jobNames: string[];
     },
   ): Promise<WithUsage<Intent>>;

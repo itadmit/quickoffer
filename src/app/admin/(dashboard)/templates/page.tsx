@@ -18,17 +18,17 @@ export default async function AdminTemplates() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
-        <h1 className="text-2xl font-bold">תבניות הצעה</h1>
+        <h1 className="text-2xl font-bold">עיצובי הצעה</h1>
         <p className="text-sm text-muted">
-          העיצוב שהלקוח רואה. בעל המקצוע בוחר תבנית במסך ההגדרות; מי שלא בחר מקבל את ברירת המחדל ({usersOnDefault} משתמשים).
+          העיצוב שהלקוח רואה. בעל המקצוע בוחר עיצוב במסך ההגדרות; מי שלא בחר מקבל את ברירת המחדל ({usersOnDefault} משתמשים).
         </p>
         <Link href="/admin/templates/new" className="btn-primary ms-auto text-sm py-2">
-          <Plus className="h-4 w-4" /> תבנית חדשה
+          <Plus className="h-4 w-4" /> עיצוב חדש
         </Link>
       </div>
 
       {templates.length === 0 && (
-        <p className="text-sm text-muted">אין תבניות. הרץ את המיגרציה (db:migrate) או צור תבנית חדשה.</p>
+        <p className="text-sm text-muted">אין עיצובים. הרץ את המיגרציה (db:migrate) או צור עיצוב חדש.</p>
       )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -168,21 +168,24 @@ export const templates = {
           `${i + 1}. ${t.name}${t.current ? " ✓ (נוכחי)" : ""}${t.lockedFor ? ` 🔒 ${t.lockedFor}` : ""}${t.description ? ` - ${t.description}` : ""}`,
       ),
       ``,
-      `להחלפה כתוב למשל "תבנית ${items.find((t) => !t.current && !t.lockedFor)?.name ?? items[0]?.name ?? "מודרני"}".`,
-      `לראות איך כל תבנית נראית: ${settingsUrl}`,
+      `להחלפה כתוב למשל "עיצוב ${items.find((t) => !t.current && !t.lockedFor)?.name ?? items[0]?.name ?? "מודרני"}".`,
+      `לראות איך כל עיצוב נראה: ${settingsUrl}`,
     ].join("\n"),
   chosen: (name: string, previewUrl: string | null) =>
     `✅ מעכשיו ההצעות שלך בעיצוב "${name}". הצעות שכבר נחתמו לא משתנות.${previewUrl ? `\nלתצוגה מקדימה של הטיוטה: ${previewUrl}` : ""}`,
-  notFound: (names: string[]) => `לא מצאתי תבנית כזו. התבניות: ${names.join(" / ")}. כתוב למשל "תבנית ${names[0] ?? "מודרני"}".`,
-  locked: (name: string, plan: string, upgradeUrl: string) => `🔒 התבנית "${name}" זמינה בתוכנית ${plan} ומעלה. לשדרוג: ${upgradeUrl}`,
-  none: () => `אין כרגע תבניות לבחירה.`,
+  notFound: (names: string[]) => `לא מצאתי עיצוב כזה. העיצובים: ${names.join(" / ")}. כתוב למשל "עיצוב ${names[0] ?? "מודרני"}".`,
+  locked: (name: string, plan: string, upgradeUrl: string) => `🔒 העיצוב "${name}" זמין בתוכנית ${plan} ומעלה. לשדרוג: ${upgradeUrl}`,
+  none: () => `אין כרגע עיצובים לבחירה.`,
 };
 
-/** §6.8 עבודות - repeat jobs. Distinct from `templates` above, which is design. */
+/**
+ * §6.8 - the professional's own saved jobs. To them this is "תבנית"; the
+ * `templates` group above is the *look* of the quote, which they call "עיצוב".
+ */
 export const jobs = {
   list: (items: { name: string; itemCount: number; total: number }[], settingsUrl: string) =>
     [
-      `🔧 העבודות השמורות שלך:`,
+      `🔧 התבניות השמורות שלך:`,
       ...items.map(
         (j, i) => `${i + 1}. ${j.name} - ${j.itemCount} פריטים, ${formatMoney(j.total)}`,
       ),
@@ -192,21 +195,21 @@ export const jobs = {
     ].join("\n"),
   none: () =>
     [
-      `עדיין אין עבודות שמורות.`,
+      `עדיין אין תבניות שמורות.`,
       `כשתהיה לך הצעה שחוזרת על עצמה, כתוב "תשמור את זה כהתקנת מזגן" - ובפעם הבאה "התקנת מזגן לדני כהן" יפתח אותה מוכנה.`,
     ].join("\n"),
   saved: (name: string, itemCount: number, total: number, replaced: boolean) =>
     [
-      `✅ ${replaced ? `העבודה "${name}" עודכנה` : `נשמר כעבודה "${name}"`} - ${itemCount} פריטים, ${formatMoney(total)}.`,
+      `✅ ${replaced ? `התבנית "${name}" עודכנה` : `נשמר כתבנית "${name}"`} - ${itemCount} פריטים, ${formatMoney(total)}.`,
       `בפעם הבאה: "${name} לדני כהן".`,
     ].join("\n"),
   needDraft: () =>
-    `אין הצעה לשמור. שלח לי הודעה קולית עם ההצעה, ואז "תשמור את זה כ<שם העבודה>".`,
-  needName: () => `איך לקרוא לעבודה? למשל: "תשמור את זה כהתקנת מזגן".`,
+    `אין הצעה לשמור. שלח לי הודעה קולית עם ההצעה, ואז "תשמור את זה כ<שם התבנית>".`,
+  needName: () => `איך לקרוא לתבנית? למשל: "תשמור את זה כהתקנת מזגן".`,
   notFound: (names: string[]) =>
     names.length
-      ? `לא מצאתי עבודה כזו. העבודות שלך: ${names.join(" / ")}.`
-      : `אין לך עבודות שמורות עדיין. כתוב "עבודות" ואסביר איך שומרים.`,
+      ? `לא מצאתי תבנית כזו. התבניות שלך: ${names.join(" / ")}.`
+      : `אין לך תבניות שמורות עדיין. כתוב "תבניות" ואסביר איך שומרים.`,
   /** The repeat path (§6.8 layer 1) has nothing to fall back on. */
   repeatNotFound: (reference: string) =>
     `לא מצאתי הצעה קודמת ל"${reference}". שלח "הצעות" לרשימה, או תגיד לי את מספר ההצעה.`,
@@ -243,8 +246,8 @@ export const commands = {
       `• בטל - למחוק את הטיוטה`,
       `• חדש - להתחיל הצעה חדשה`,
       `• הגדרות - פרטי העסק והלוגו`,
-      `• עיצוב - לבחור תבנית להצעה`,
-      `• עבודות - עבודות שמורות שחוזרות על עצמן`,
+      `• עיצוב - איך ההצעה נראית`,
+      `• תבניות - עבודות שמורות שחוזרות על עצמן`,
       ``,
       `עבודה שחוזרת? "תשמור את זה כהתקנת מזגן", ובפעם הבאה "התקנת מזגן לדני כהן".`,
       `או פשוט: "כמו ההצעה של דני, אבל לשרון".`,

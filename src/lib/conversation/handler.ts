@@ -298,13 +298,20 @@ async function handleReady(user: User, msg: InboundMessage, run: RunLog) {
 
   // Cheap exact-match fallback for commands/greetings before spending an LLM call
   const exact = exactCommand(text);
-  const exactTemplate = exactTemplateChoice(text);
+  const prefixed = exactPrefixChoice(text);
   let intent: Awaited<ReturnType<typeof llm.classifyMessage>>["result"];
-  const blank = { templateName: null, reference: null, customerName: null };
+  const blank = { designName: null, reference: null, customerName: null };
   if (exact) {
     intent = { intent: "command", command: exact, ...blank };
-  } else if (exactTemplate) {
-    intent = { intent: "command", command: "template", ...blank, templateName: exactTemplate };
+  } else if (prefixed) {
+    // "תבנית <x>": a saved job of theirs wins over a stock design name.
+    const asJob =
+      prefixed.kind === "either" && !looksLikeNewQuote(prefixed.name)
+        ? await findSavedJob(user.id, prefixed.name)
+        : null;
+    intent = asJob
+      ? { intent: "command", command: "job_use", ...blank, reference: asJob.name }
+      : { intent: "command", command: "design", ...blank, designName: prefixed.name };
   } else if (isGreeting(text)) {
     intent = { intent: "greeting", command: null, ...blank };
   } else {
@@ -312,7 +319,7 @@ async function handleReady(user: User, msg: InboundMessage, run: RunLog) {
     const r = await llm.classifyMessage(text, {
       hasActiveDraft: !!draft,
       draftCustomer: draft?.customerName ?? null,
-      templateNames: (await listTemplates({ enabledOnly: true })).map((t) => t.name),
+      designNames: (await listTemplates({ enabledOnly: true })).map((t) => t.name),
       jobNames: savedJobNames,
     });
     run.llm(r.usage);
@@ -330,8 +337,8 @@ async function handleReady(user: User, msg: InboundMessage, run: RunLog) {
       await sendText(user.phone, cmd.greeting(!!draft));
       return;
     case "command":
-      if (intent.command === "template") {
-        await chooseTemplate(user, intent.templateName, draft);
+      if (intent.command === "design") {
+        await chooseDesign(user, intent.designName, draft);
         return;
       }
       await runCommand(user, intent.command ?? "help", draft, intent, run);
@@ -370,12 +377,14 @@ const EXACT: Record<string, Command> = {
   עזרה: "help",
   ערוך: "edit",
   עריכה: "edit",
-  עיצוב: "template",
-  תבנית: "template",
-  תבניות: "template",
+  // "תבנית" is content (§6.8); the look of the quote is "עיצוב".
+  עיצוב: "design",
+  עיצובים: "design",
+  תבנית: "jobs",
+  תבניות: "jobs",
+  "התבניות שלי": "jobs",
   עבודות: "jobs",
   "העבודות שלי": "jobs",
-  "עבודות שמורות": "jobs",
   "?": "help",
 };
 
@@ -392,10 +401,18 @@ function exactCommand(text: string): Command | null {
   return EXACT[text.trim().toLowerCase().replace(/[.!]+$/, "")] ?? null;
 }
 
-/** "תבנית מודרני" / "עיצוב מינימלי" → "מודרני" / "מינימלי" (the bot's own suggested phrasing). */
-function exactTemplateChoice(text: string): string | null {
-  const m = /^(?:תבנית|עיצוב)\s+(.{2,40})$/u.exec(text.trim().replace(/[.!]+$/, ""));
-  return m ? m[1].trim() : null;
+/**
+ * "עיצוב מינימלי" → a design, for sure. "תבנית התקנת מזגן" → ambiguous: since
+ * §6.8 "תבנית" means a saved job, but the bot's own older phrasing for designs
+ * was "תבנית מודרני" and a design name may still follow it.
+ *
+ * `kind: "either"` is resolved by the caller, saved job first - a job the
+ * professional created themselves beats a stock design name.
+ */
+function exactPrefixChoice(text: string): { kind: "design" | "either"; name: string } | null {
+  const m = /^(תבנית|עיצוב)\s+(.{2,40})$/u.exec(text.trim().replace(/[.!]+$/, ""));
+  if (!m) return null;
+  return { kind: m[1] === "עיצוב" ? "design" : "either", name: m[2].trim() };
 }
 
 async function transcribeInbound(
@@ -521,15 +538,18 @@ async function sendQuoteMessages(
 
 // --------------------------------------------------------------- commands
 
-/** "עיצוב" → list of templates; "תבנית מודרני" → switch (plan permitting). */
-async function chooseTemplate(user: User, templateName: string | null, draft: QuoteWithItems | null) {
+/**
+ * "עיצוב" → list the looks; "עיצוב מודרני" → switch (plan permitting).
+ * This is `quote_templates`; the professional's own saved jobs are "תבנית".
+ */
+async function chooseDesign(user: User, designName: string | null, draft: QuoteWithItems | null) {
   const all = await listTemplates({ enabledOnly: true });
   if (all.length === 0) {
     await sendText(user.phone, tpl.none());
     return;
   }
   const currentId = user.templateId ?? all.find((t) => t.isDefault)?.id ?? all[0].id;
-  if (!templateName) {
+  if (!designName) {
     await sendText(
       user.phone,
       tpl.list(
@@ -544,7 +564,7 @@ async function chooseTemplate(user: User, templateName: string | null, draft: Qu
     );
     return;
   }
-  const chosen = matchTemplateName(all, templateName);
+  const chosen = matchTemplateName(all, designName);
   if (!chosen) {
     await sendText(user.phone, tpl.notFound(all.map((t) => t.name)));
     return;

@@ -41,7 +41,7 @@ export function QuoteEditor({ token, quote, initial }: Props) {
   const [pending, start] = useTransition();
   const [copied, setCopied] = useState(false);
   const [status, setStatus] = useState(quote.status);
-  /** §6.8 feedback after "שמור כעבודה" */
+  /** §6.8 feedback after "שמור כתבנית" */
   const [jobMsg, setJobMsg] = useState<string | null>(null);
   const router = useRouter();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -364,7 +364,7 @@ export function QuoteEditor({ token, quote, initial }: Props) {
               disabled={pending}
               onClick={() => {
                 const suggested = form.title?.trim() || form.items[0]?.description?.trim() || "";
-                const name = prompt("שם לעבודה השמורה (למשל: התקנת מזגן)", suggested);
+                const name = prompt("שם לתבנית (למשל: התקנת מזגן)", suggested);
                 if (!name?.trim()) return;
                 start(async () => {
                   const r = await saveAsJobAction(token, name);
@@ -377,9 +377,9 @@ export function QuoteEditor({ token, quote, initial }: Props) {
                 });
               }}
               className="btn-secondary"
-              title="שמור את הפריטים כעבודה חוזרת"
+              title="שמור את הפריטים כתבנית לעבודה חוזרת"
             >
-              <Wrench className="h-4 w-4" /> שמור כעבודה
+              <Wrench className="h-4 w-4" /> שמור כתבנית
             </button>
           )}
           {!locked && (
