@@ -1,7 +1,8 @@
 import { db } from "../db";
 import { outboundMessages } from "../db/schema";
-import { setSetting } from "../settings";
+import { setSetting, touchSetting } from "../settings";
 import { ibot } from "./ibot";
+import { createQueue } from "./queue";
 import { isTelegramAddress, telegram } from "./telegram";
 import type { SendResult, WhatsAppGateway } from "./types";
 
@@ -15,30 +16,22 @@ export function gatewayFor(address: string): WhatsAppGateway {
   return isTelegramAddress(address) ? telegram : gateway;
 }
 
-const GAP_MS = 400;
 const MAX_ATTEMPTS = 3;
 const MAX_LEN = 3900;
 
-// Serial outbound queue: iBot asks for no parallel calls. Per-instance only -
-// good enough while a single webhook invocation sends a handful of messages.
-let chain: Promise<unknown> = Promise.resolve();
-let lastSentAt = 0;
-
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function enqueue<T>(job: () => Promise<T>): Promise<T> {
-  const run = chain.then(async () => {
-    const wait = lastSentAt + GAP_MS - Date.now();
-    if (wait > 0) await sleep(wait);
-    try {
-      return await job();
-    } finally {
-      lastSentAt = Date.now();
-    }
-  });
-  chain = run.catch(() => undefined);
-  return run;
-}
+/**
+ * Ordered per recipient, paced globally (queue.ts).
+ *
+ * These are the numbers the old single chain produced, kept deliberately:
+ * CLAUDE.md records "one message at a time, 300-500ms apart" as a decision
+ * about what the iBot connection tolerates. `maxConcurrent: 2` or `3` is what
+ * removes cross-recipient latency once a single instance is handling several
+ * conversations at once - worth doing, but only with the WhatsApp account's
+ * tolerance in mind.
+ */
+const queue = createQueue({ gapMs: 400, maxConcurrent: 1 });
 
 async function withRetry(fn: () => Promise<SendResult>): Promise<SendResult> {
   let last: SendResult = { ok: false, status: 0, body: "not attempted" };
@@ -72,12 +65,14 @@ async function log(
       ok: result.ok,
     });
     if (isTelegramAddress(to)) return;
+    // setSetting skips a write when nothing changed, so the status costs a row
+    // only on a real transition; the timestamp is throttled to once a minute.
     if (result.instanceDisconnected) {
       await setSetting("ibot.instance_status", "disconnected", "system");
-      await setSetting("ibot.instance_checked_at", new Date().toISOString(), "system");
+      await touchSetting("ibot.instance_checked_at");
     } else if (result.ok) {
       await setSetting("ibot.instance_status", "connected", "system");
-      await setSetting("ibot.instance_checked_at", new Date().toISOString(), "system");
+      await touchSetting("ibot.instance_checked_at");
     }
   } catch (err) {
     console.error("[whatsapp] failed to log outbound", err);
@@ -104,7 +99,7 @@ function chunk(text: string): string[] {
 export async function sendText(to: string, text: string): Promise<SendResult> {
   let last: SendResult = { ok: true, status: 200, body: null };
   for (const part of chunk(text)) {
-    last = await enqueue(() => withRetry(() => gatewayFor(to).sendText(to, part)));
+    last = await queue.enqueue(to, () => withRetry(() => gatewayFor(to).sendText(to, part)));
     await log(to, "text", part, null, last);
     if (!last.ok) break;
   }
@@ -116,7 +111,7 @@ export async function sendDoc(
   docUrl: string,
   caption = "",
 ): Promise<SendResult> {
-  const r = await enqueue(() => withRetry(() => gatewayFor(to).sendDoc(to, docUrl, caption)));
+  const r = await queue.enqueue(to, () => withRetry(() => gatewayFor(to).sendDoc(to, docUrl, caption)));
   await log(to, "doc", caption, docUrl, r);
   return r;
 }
@@ -126,9 +121,7 @@ export async function sendImage(
   imageUrl: string,
   caption = "",
 ): Promise<SendResult> {
-  const r = await enqueue(() =>
-    withRetry(() => gatewayFor(to).sendImage(to, imageUrl, caption)),
-  );
+  const r = await queue.enqueue(to, () => withRetry(() => gatewayFor(to).sendImage(to, imageUrl, caption)));
   await log(to, "image", caption, imageUrl, r);
   return r;
 }

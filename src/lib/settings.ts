@@ -97,6 +97,14 @@ export async function setSetting(
   updatedBy = "admin",
 ) {
   const meta = SETTING_KEYS[key];
+  const values = await loadAll();
+  const currentStored = values.get(key);
+  const current = currentStored ? readStored(key, currentStored, meta.secret) : "";
+  // Writing the same value again is a round trip for nothing, and some keys
+  // (ibot.instance_status) are written on the path of every message sent.
+  // Compared on the plaintext because a secret re-encrypts to different bytes.
+  if (current === value) return;
+
   const stored = meta.secret && value ? encryptSecret(value) : value;
   await db
     .insert(appSettings)
@@ -105,7 +113,24 @@ export async function setSetting(
       target: appSettings.key,
       set: { value: stored, isSecret: meta.secret, updatedAt: new Date(), updatedBy },
     });
-  invalidateSettingsCache();
+  // Patch rather than drop. Invalidating would make the next getSetting re-read
+  // the whole table, and a single message reads settings several times.
+  if (cache) cache.values.set(key, stored);
+}
+
+/**
+ * Heartbeat keys ("when did we last hear from iBot") written on the message hot
+ * path. The admin reads them to the minute, so writing them to the millisecond
+ * is pure write amplification.
+ */
+export async function touchSetting(key: SettingKey, minIntervalMs = 60_000) {
+  const values = await loadAll();
+  const prev = values.get(key);
+  if (prev) {
+    const at = Date.parse(prev);
+    if (Number.isFinite(at) && Date.now() - at < minIntervalMs) return;
+  }
+  await setSetting(key, new Date().toISOString(), "system");
 }
 
 /** For the admin UI: where does each value come from, masked if secret. */

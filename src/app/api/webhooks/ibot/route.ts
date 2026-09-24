@@ -4,7 +4,7 @@ import { handleInbound } from "@/lib/conversation/handler";
 import { safeEqual } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { inboundMessages } from "@/lib/db/schema";
-import { getSetting, setSetting } from "@/lib/settings";
+import { getSetting, touchSetting } from "@/lib/settings";
 import { gateway } from "@/lib/whatsapp";
 
 export const runtime = "nodejs";
@@ -44,7 +44,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid json" }, { status: 400 });
   }
 
-  waitUntil(setSetting("ibot.last_webhook_at", new Date().toISOString(), "system"));
+  // Health heartbeat, throttled: the admin reads it to the minute, and this
+  // runs on every inbound message.
+  waitUntil(touchSetting("ibot.last_webhook_at"));
 
   // --- normalize + filter
   const parsed = gateway.parseInbound(payload);
