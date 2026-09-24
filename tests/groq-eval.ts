@@ -97,7 +97,21 @@ const CLASSIFY: {
 ];
 
 async function main() {
-  const llm = openaiLLM({ apiKey: process.env.GROQ_API_KEY!, baseURL: "https://api.groq.com/openai/v1", providerName: "groq", model: "openai/gpt-oss-120b" });
+  // Runs against any OpenAI-compatible provider, so the same cases decide a
+  // provider change instead of it being decided on vibes:
+  //   EVAL_PROVIDER=openai EVAL_MODEL=gpt-4o-mini PACE_MS=0 npx tsx ... tests/groq-eval.ts
+  const provider = process.env.EVAL_PROVIDER ?? "groq";
+  const llm = openaiLLM(
+    provider === "openai"
+      ? { apiKey: process.env.OPENAI_API_KEY!, providerName: "openai", model: process.env.EVAL_MODEL ?? "gpt-4o-mini" }
+      : {
+          apiKey: process.env.GROQ_API_KEY!,
+          baseURL: "https://api.groq.com/openai/v1",
+          providerName: "groq",
+          model: process.env.EVAL_MODEL ?? "openai/gpt-oss-120b",
+        },
+  );
+  console.log(`provider=${provider} model=${process.env.EVAL_MODEL ?? "(default)"}`);
   let fails = 0;
   const pace = (ms: number) => new Promise((r) => setTimeout(r, ms));
   for (const c of CASES) {
