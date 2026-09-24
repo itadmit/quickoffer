@@ -14,6 +14,7 @@ const NAV = [
   ["/admin/quotes", "הצעות"],
   ["/admin/templates", "עיצובים"],
   ["/admin/billing", "תשלומים"],
+  ["/admin/meta", "Meta"],
   ["/admin/messages", "לוג הודעות"],
 ] as const;
 

@@ -46,6 +46,7 @@ import { Reveal } from "@/components/reveal";
 import { HowItWorks } from "@/components/how-it-works";
 import { NotificationToast } from "@/components/notification-toast";
 import { StickyCta } from "@/components/sticky-cta";
+import { MetaPixel } from "@/components/meta-pixel";
 import { PLAN_OFFERS } from "@/lib/billing/plans";
 import { formatPhone } from "@/lib/phone";
 import { appUrlBase } from "@/lib/quotes/links";
@@ -105,6 +106,7 @@ export default async function LandingPage() {
   const tgUser = await getSetting("telegram.bot_username");
   const tg = tgUser ? `https://t.me/${tgUser}` : null;
   const channels = tg ? "WhatsApp או טלגרם" : "WhatsApp";
+  const pixelId = await getSetting("meta.pixel_id");
 
   return (
     // `clip`, not `hidden`: overflow-x:hidden turns <main> into a scroll
@@ -415,6 +417,7 @@ export default async function LandingPage() {
       {/* Mobile only, and only between the end of the film and the closing CTA,
           so it never covers the sticky stage or doubles the button below it. */}
       <StickyCta href={wa} />
+      {/^\d+$/.test(pixelId) && <MetaPixel pixelId={pixelId} />}
     </main>
   );
 }

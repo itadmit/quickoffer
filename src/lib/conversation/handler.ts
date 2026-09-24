@@ -37,6 +37,7 @@ import {
   markJobUsed,
   saveJob,
 } from "../quotes/saved-jobs-store";
+import { trackMetaEvent } from "../meta/capi";
 import { estimateAudioSeconds, fetchMedia, storeFile } from "../storage";
 import { sendText, type InboundMessage } from "../whatsapp";
 import type { FilledFromBook } from "../quotes/price-book";
@@ -76,6 +77,7 @@ export async function handleInbound(msg: InboundMessage): Promise<void> {
   try {
     const { user, isNew } = await getOrCreateUser(msg);
     if (user.blocked) return;
+    if (isNew) await trackMetaEvent("Lead", user);
 
     if (msg.type === "other") {
       await sendText(user.phone, cmd.unsupportedType());
@@ -201,6 +203,7 @@ async function handleOnboarding(
       .update(users)
       .set({ logoUrl: url, onboardingState: "done" })
       .where(eq(users.id, user.id));
+    await trackMetaEvent("CompleteRegistration", user);
     await sendText(user.phone, ob.done(await settingsLink(user.id)));
     return;
   }
@@ -265,6 +268,7 @@ async function handleOnboarding(
     case "logo": {
       // any text here that isn't a quote = skip
       await db.update(users).set({ onboardingState: "done" }).where(eq(users.id, user.id));
+      await trackMetaEvent("CompleteRegistration", user);
       await sendText(user.phone, ob.done(await settingsLink(user.id)));
       return;
     }
@@ -279,6 +283,7 @@ async function finishOnboardingWithDefaults(user: User, suggested: string | null
       onboardingState: "done",
     })
     .where(eq(users.id, user.id));
+  await trackMetaEvent("CompleteRegistration", user);
 }
 
 async function saveLogo(user: User, msg: InboundMessage): Promise<string | null> {

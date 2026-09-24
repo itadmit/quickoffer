@@ -5,7 +5,8 @@ import { upgradeLink } from "../quotes/links";
 import { sendText } from "../whatsapp";
 import { createSubscription } from "./hub";
 import { billing as msg } from "../conversation/messages";
-import { planName } from "./plans";
+import { trackMetaEvent } from "../meta/capi";
+import { PLAN_OFFERS, planName } from "./plans";
 
 /**
  * What the billing hub's events mean for a professional's plan.
@@ -59,6 +60,8 @@ export async function completeCheckout(params: {
     .where(eq(billingCheckouts.id, checkout.id));
 
   await sendText(user.phone, msg.upgraded(planName(checkout.plan), await upgradeLink(user.id)));
+  const offer = PLAN_OFFERS.find((o) => o.plan === checkout.plan);
+  await trackMetaEvent("Subscribe", user, { value: offer?.price, plan: checkout.plan });
   return { user, already: false };
 }
 

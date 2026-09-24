@@ -40,6 +40,11 @@ export const SETTING_KEYS = {
   "billing.api_secret": { secret: true, env: "BILLING_API_SECRET", default: "" },
   /** verifies the events they send (webhook_endpoints.secret in the hub) */
   "billing.endpoint_secret": { secret: true, env: "BILLING_ENDPOINT_SECRET", default: "" },
+  // Meta pixel + Conversions API. Unset pixel id = no tracking anywhere.
+  "meta.pixel_id": { secret: false, env: "META_PIXEL_ID", default: "" },
+  "meta.capi_token": { secret: true, env: "META_CAPI_TOKEN", default: "" },
+  /** Events Manager → Test events. Set while testing, clear before going live. */
+  "meta.test_event_code": { secret: false, env: null, default: "" },
 } as const;
 
 export type SettingKey = keyof typeof SETTING_KEYS;

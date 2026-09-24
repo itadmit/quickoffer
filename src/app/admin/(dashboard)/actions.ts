@@ -25,6 +25,8 @@ export async function saveSettingsAction(values: Record<string, string>) {
   revalidatePath("/admin/ibot");
   revalidatePath("/admin/telegram");
   revalidatePath("/admin/billing");
+  revalidatePath("/admin/meta");
+  revalidatePath("/");
   return { ok: true as const };
 }
 
