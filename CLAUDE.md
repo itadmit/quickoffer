@@ -132,6 +132,7 @@
 | `app/w/[code]` | שליחה בלחיצה אחת: redirect ל-`wa.me` עם הצ׳אט של הלקוח וההודעה מוכנה. ההודעה נבנית מחדש בכל לחיצה, ומסמן `sent` |
 | `app/u/[token]` | מסך השדרוג. `app/admin/(dashboard)/billing` - קישורי הסליקה + מי בכל חבילה |
 | `components/signature-pad.tsx` | חתימה עם עובי דיו לפי מהירות/לחץ, undo, שמירת נקודות (לא פיקסלים) כדי לצייר מחדש אחרי סיבוב מסך |
+| `components/how-it-works.tsx` | **"איך זה עובד" בדף הבית - סרט מונע גלילה** (24.9.2026). במה sticky אחת, שלוש מערכות: הקלטה + תמלול אות-אחרי-אות, המשפט מתפרק להצעה מתומחרת (הביטוי שממנו נולדה כל שורה נדלק ב-recap), הלקוח מאשר וחותם. תנועה רציפה = CSS custom properties שלולאת rAF כותבת על `.hiw-track` (React לא מרנדר מחדש); אבני דרך בדידות (איזו אות, איזו שורה, איזו מערכה) = state. ברירות המחדל של המשתנים הן המצב **הסופי**, ולכן SSR/בלי JS/reduced-motion מציגים storyboard אנכי מלא. ה-CSS ב-`globals.css` תחת `.hiw-*` |
 | `app/admin/(dashboard)` | סופר-אדמין; `login/` מחוץ ל-route group. `lib/admin/auth.ts` — cookie `qo_admin` |
 | `components/quote-document.tsx` | רינדור ההצעה - משותף לדף לקוח, תצוגה מקדימה ואדמין. בוחר layout לפי `q.template` |
 | `components/quote-layouts/` | `shared.tsx` (QuoteView + אבני בניין), `classic.tsx`, `modern.tsx`, `minimal.tsx`. `template-thumb.tsx` = תמונה ממוזערת (scale) |

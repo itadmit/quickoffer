@@ -259,6 +259,657 @@ body {
   box-shadow: 0 20px 40px -20px rgba(15, 23, 42, 0.25);
 }
 
+/* ============================================================== how it works
+ * A sticky stage with three acts, scrubbed by the scroll position. The custom
+ * properties below are written onto .hiw-track by components/how-it-works.tsx,
+ * sixty times a second; everything here is a pure function of them, so the
+ * whole section animates without React re-rendering.
+ *
+ * The defaults are the FINISHED state on purpose: that is what a server render,
+ * a browser with JS off and reduced motion all fall back to. Only --lift and
+ * --act3 start at 0, so the first paint shows act 1 alone.
+ */
+.hiw-track {
+  --orb: 1;
+  --rec: 1;
+  --type: 1;
+  --lift: 0;
+  --act3: 0;
+  --msg: 1;
+  --tap: 0;
+  --sign: 1;
+  --seal: 1;
+  --note: 1;
+  --rail: 0;
+  position: relative;
+  height: 380svh;
+}
+.hiw-sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1.25rem, 3.5vh, 2.5rem);
+  padding-inline: 1.25rem;
+  overflow: hidden;
+}
+
+/* ---- the rail: three steps, one filling line */
+.hiw-rail {
+  position: relative;
+  width: 100%;
+  max-width: 40rem;
+}
+.hiw-rail-track {
+  position: absolute;
+  inset-inline: 16.6667%;
+  top: calc(1rem - 1px);
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line);
+}
+.hiw-rail-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--brand);
+  /* RTL: the line fills from the right, where step 1 sits. */
+  transform: scaleX(var(--rail));
+  transform-origin: 100% 50%;
+}
+.hiw-rail-steps {
+  position: relative;
+  display: flex;
+}
+.hiw-rail-step {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  text-align: center;
+}
+.hiw-rail-dot {
+  display: grid;
+  place-items: center;
+  height: 2rem;
+  width: 2rem;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: background-color 0.4s, border-color 0.4s, color 0.4s, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hiw-rail-step[data-done] .hiw-rail-dot,
+.hiw-rail-step[data-on] .hiw-rail-dot {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+}
+.hiw-rail-step[data-on] .hiw-rail-dot {
+  transform: scale(1.12);
+  box-shadow: 0 10px 22px -10px var(--brand);
+}
+.hiw-rail-label {
+  font-family: var(--font-display);
+  font-size: clamp(0.72rem, 0.66rem + 0.3vw, 0.95rem);
+  font-weight: 600;
+  color: var(--muted);
+  transition: color 0.4s;
+}
+.hiw-rail-step[data-on] .hiw-rail-label {
+  color: var(--ink);
+}
+
+/* ---- the stage: three acts on the same square */
+.hiw-stage {
+  position: relative;
+  width: 100%;
+  max-width: 54rem;
+  height: clamp(340px, 56svh, 470px);
+  display: grid;
+}
+.hiw-act {
+  grid-area: 1 / 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+/* The handover is staggered: the outgoing act is gone by the halfway point of
+   the window, the incoming one only starts at 40%. A tiny overlap reads as a
+   dissolve; a wide one reads as two acts printed on top of each other. */
+.hiw-act-record {
+  opacity: clamp(0, calc(1 - var(--lift) * 2), 1);
+  transform: translateY(calc(-1.75rem * var(--lift))) scale(calc(1 - 0.07 * var(--lift)));
+}
+.hiw-act-build {
+  opacity: calc(
+    clamp(0, calc((var(--lift) - 0.4) * 1.67), 1) * clamp(0, calc(1 - var(--act3) * 2), 1)
+  );
+  transform: translateY(calc(2rem * (1 - var(--lift)) - 1.75rem * var(--act3)))
+    scale(calc(0.96 + 0.04 * var(--lift) - 0.06 * var(--act3)));
+}
+.hiw-act-sign {
+  opacity: clamp(0, calc((var(--act3) - 0.4) * 1.67), 1);
+  transform: translateY(calc(2.5rem * (1 - var(--act3)))) scale(calc(0.94 + 0.06 * var(--act3)));
+}
+.hiw-caption {
+  margin-top: clamp(1rem, 2.5vh, 1.75rem);
+  max-width: 32rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: clamp(0.86rem, 0.8rem + 0.35vw, 1.05rem);
+  line-height: 1.6;
+}
+.hiw-dim {
+  color: var(--muted);
+  font-size: 0.86em;
+}
+.hiw-logo {
+  display: grid;
+  place-items: center;
+  height: 2rem;
+  width: 2rem;
+  flex: none;
+  border-radius: 0.7rem;
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+/* ---- act 1: the voice note */
+.hiw-orb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: clamp(58px, 8.5svh, 82px);
+  width: clamp(58px, 8.5svh, 82px);
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  box-shadow: 0 20px 45px -20px var(--brand);
+  opacity: var(--orb);
+  transform: scale(calc(0.72 + 0.28 * var(--orb)));
+}
+.hiw-orb-icon {
+  height: 45%;
+  width: 45%;
+}
+.hiw-orb::before,
+.hiw-orb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid var(--brand);
+  animation: ping-ring 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.hiw-orb::after {
+  animation-delay: 1.2s;
+}
+.hiw-wave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 46px;
+  margin-top: clamp(0.9rem, 2.5vh, 1.6rem);
+}
+.hiw-bar {
+  /* Bars light up one by one as the recording is "written", and the one on the
+     leading edge is briefly taller - that is where the voice is right now. */
+  --on: clamp(0, calc(var(--rec) * 44 - var(--i)), 1);
+  width: 3px;
+  border-radius: 999px;
+  background: var(--brand);
+  height: calc(4px + 42px * var(--bh) * (0.22 + 0.78 * var(--on)));
+  opacity: calc(0.14 + 0.86 * var(--on));
+  transform: scaleY(calc(1 + 1.2 * var(--on) * (1 - var(--on))));
+}
+.hiw-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.hiw-rec-dot {
+  height: 7px;
+  width: 7px;
+  border-radius: 999px;
+  background: var(--danger);
+  opacity: calc(1 - var(--rec));
+}
+.hiw-line {
+  margin-top: clamp(1rem, 3vh, 2rem);
+  max-width: 34rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 0.95rem + 1vw, 1.6rem);
+  font-weight: 500;
+  line-height: 1.55;
+}
+/* The untyped tail stays in the flow at zero opacity, so nothing reflows while
+   the sentence is being written. */
+.hiw-ghost {
+  opacity: 0;
+}
+.hiw-mark {
+  color: var(--brand);
+  opacity: clamp(0, calc(var(--type) * 12), 1);
+}
+.hiw-mark-end {
+  opacity: clamp(0, calc((var(--type) - 0.97) * 33), 1);
+}
+.hiw-caret {
+  position: relative;
+  display: inline-block;
+  width: 0;
+  height: 1em;
+  vertical-align: -0.16em;
+}
+.hiw-caret::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: -1px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--brand);
+  animation: caret 0.9s steps(1, end) infinite;
+}
+@keyframes caret {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0.12; }
+}
+
+/* ---- act 2: the sentence becomes a quote */
+.hiw-recap {
+  max-width: 32rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: clamp(0.72rem, 0.68rem + 0.28vw, 0.86rem);
+  line-height: 1.85;
+  margin-bottom: clamp(0.75rem, 2vh, 1.25rem);
+}
+.hiw-part {
+  border-radius: 0.4rem;
+  padding: 0.15em 0.25em;
+  /* A phrase that wraps mid-chip stops reading as one thing the bot recognised. */
+  white-space: nowrap;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+.hiw-part[data-hot] {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.hiw-build-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+}
+.hiw-card,
+.hiw-bubble,
+.hiw-note {
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+  text-align: start;
+}
+.hiw-card {
+  width: 100%;
+  max-width: 20.5rem;
+  border-radius: 1.25rem;
+  padding: 0.8rem 0.9rem;
+  font-size: clamp(0.72rem, 0.7rem + 0.2vw, 0.84rem);
+}
+.hiw-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+}
+.hiw-who {
+  margin-inline-start: auto;
+  text-align: end;
+  min-width: 0;
+}
+.hiw-items {
+  display: flex;
+  flex-direction: column;
+}
+.hiw-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+}
+.hiw-item + .hiw-item {
+  border-top: 1px solid var(--line);
+}
+.hiw-item-total {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.hiw-totals {
+  margin-top: 0.5rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.hiw-total-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted);
+}
+.hiw-total-final {
+  align-items: baseline;
+  color: var(--ink);
+  font-weight: 700;
+}
+.hiw-total-sum {
+  font-family: var(--font-display);
+  font-size: 1.4em;
+  color: var(--brand);
+  white-space: nowrap;
+}
+.hiw-reveal {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hiw-reveal[data-on] {
+  opacity: 1;
+  transform: none;
+}
+.hiw-bubble {
+  width: 100%;
+  max-width: 20.5rem;
+  border-radius: 1rem;
+  padding: 0.55rem 0.7rem;
+  font-size: clamp(0.68rem, 0.66rem + 0.18vw, 0.78rem);
+  opacity: var(--msg);
+  transform: translateY(calc(10px * (1 - var(--msg))));
+}
+.hiw-bubble-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+  color: var(--brand);
+  font-weight: 600;
+}
+.hiw-bubble-body {
+  color: var(--muted);
+  line-height: 1.65;
+}
+.hiw-link {
+  color: var(--brand);
+  text-decoration: underline;
+}
+
+/* ---- act 3: the customer signs */
+.hiw-sign-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.hiw-phone {
+  --ph: clamp(240px, 36svh, 360px);
+  position: relative;
+  flex: none;
+  height: var(--ph);
+  width: calc(var(--ph) * 0.53);
+  /* Everything inside is sized in em, so the whole phone scales as one object. */
+  font-size: calc(var(--ph) * 0.039);
+  padding: calc(var(--ph) * 0.012);
+  border-radius: calc(var(--ph) * 0.085);
+  background: #1c1c1e;
+  box-shadow: 0 30px 60px -28px rgba(15, 23, 42, 0.55);
+}
+.hiw-screen {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  border-radius: calc(var(--ph) * 0.075);
+  background: var(--card);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+}
+.hiw-doc {
+  flex: 1;
+  min-height: 0;
+  padding: 0.85em 0.8em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+.hiw-doc-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid var(--line);
+}
+.hiw-doc .hiw-logo {
+  height: 1.9em;
+  width: 1.9em;
+  border-radius: 0.55em;
+}
+.hiw-doc-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5em;
+  min-width: 0;
+}
+.hiw-amount {
+  white-space: nowrap;
+}
+.hiw-doc-note {
+  margin-top: 0.4em;
+  font-size: 0.8em;
+  color: var(--muted);
+}
+.hiw-doc-total {
+  margin-top: auto;
+  padding-top: 0.5em;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5em;
+  font-weight: 700;
+}
+.hiw-decision {
+  position: relative;
+  padding: 0.6em 0.7em 0.9em;
+  border-top: 1px solid var(--line);
+  background: var(--card);
+}
+.hiw-approve {
+  /* --press peaks halfway through the tap, then lets go. */
+  --press: calc(var(--tap) * (1 - var(--tap)) * 4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  padding: 0.55em;
+  border-radius: 0.7em;
+  background: var(--ok);
+  color: #ffffff;
+  font-weight: 700;
+  transform: scale(calc(1 - 0.05 * var(--press)));
+}
+.hiw-tap {
+  position: absolute;
+  inset-inline-start: 50%;
+  bottom: 0.8em;
+  height: 2.4em;
+  width: 2.4em;
+  margin-inline-start: -1.2em;
+  border-radius: 999px;
+  border: 2px solid var(--ok);
+  opacity: calc(var(--tap) * (1 - var(--tap)) * 3.2);
+  transform: scale(calc(0.35 + 1.15 * var(--tap)));
+}
+.hiw-sheet {
+  --open: clamp(0, calc(var(--sign) * 5), 1);
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 58%;
+  padding: 0.7em 0.8em;
+  border-top: 1px solid var(--line);
+  border-radius: 1.1em 1.1em 0 0;
+  background: var(--card);
+  box-shadow: 0 -16px 32px -20px rgba(15, 23, 42, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+  transform: translateY(calc(100% * (1 - var(--open))));
+}
+/* "signing" and "signed" share one slot, so the sheet never resizes under them. */
+.hiw-sheet-status {
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.2em;
+}
+.hiw-sheet-status > * {
+  grid-area: 1 / 1;
+}
+.hiw-sheet-title {
+  font-size: 0.85em;
+  color: var(--muted);
+  opacity: calc(1 - var(--seal));
+}
+.hiw-sig {
+  width: 82%;
+  height: auto;
+  color: var(--ink);
+}
+.hiw-sig-path {
+  /* pathLength=1 normalises the stroke, so the draw is a plain 0..1 ramp.
+     A negative offset draws from the end of the path - right to left, the way
+     the name is actually written. */
+  --draw: clamp(0, calc((var(--sign) - 0.2) * 1.25), 1);
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(var(--draw) - 1);
+}
+.hiw-sheet-name {
+  width: 70%;
+  padding-top: 0.25em;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  font-size: 0.8em;
+  color: var(--muted);
+}
+.hiw-seal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.35em 0.8em;
+  border-radius: 999px;
+  background: var(--ok);
+  color: #ffffff;
+  font-size: 0.85em;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 10px 22px -12px rgba(22, 163, 74, 0.9);
+  opacity: var(--seal);
+  transform: scale(calc(0.68 + 0.32 * var(--seal)));
+}
+.hiw-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  width: 100%;
+  max-width: 16.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 1rem;
+  font-size: clamp(0.68rem, 0.66rem + 0.18vw, 0.78rem);
+  line-height: 1.5;
+  opacity: var(--note);
+  transform: translateY(calc(12px * (1 - var(--note))));
+}
+.hiw-note-icon {
+  display: grid;
+  place-items: center;
+  height: 2rem;
+  width: 2rem;
+  flex: none;
+  border-radius: 0.7rem;
+  background: #25d366;
+  color: #ffffff;
+}
+
+/* Three Hebrew labels do not fit across a phone without touching. Below this
+   width only the step you are on is named, centred under the rail. */
+@media (max-width: 540px) {
+  .hiw-rail {
+    padding-bottom: 1.5rem;
+  }
+  .hiw-rail-label {
+    display: none;
+  }
+  .hiw-rail-step[data-on] .hiw-rail-label {
+    display: block;
+    position: absolute;
+    top: 2.6rem;
+    inset-inline: 0;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .hiw-wave {
+    gap: 4px;
+  }
+  .hiw-bar {
+    width: 4px;
+  }
+  /* From here the quote and the message it travels in fit side by side, and the
+     outgoing message sits on the left - where WhatsApp puts your own. */
+  .hiw-build-row {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1.25rem;
+  }
+  .hiw-bubble {
+    max-width: 14.5rem;
+    margin-top: 2.5rem;
+    transform: translateX(calc(-20px * (1 - var(--msg))));
+  }
+  .hiw-sign-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.75rem;
+  }
+  .hiw-note {
+    transform: translateX(calc(-22px * (1 - var(--note))));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-reveal] { opacity: 1; transform: none; transition: none; }
   .anim-float, .anim-fade-up, .anim-pop, .anim-wave, .anim-blob, .anim-ring::before {
@@ -270,4 +921,34 @@ body {
   .anim-seal { animation: none; opacity: 1; }
   .card-hover:hover { transform: none; }
   html { scroll-behavior: auto !important; }
+
+  /* "How it works" stops being a film and becomes a storyboard: the three acts
+     un-stack into a plain column, each already finished, each with its own
+     caption underneath. Nothing is bound to the scroll (see how-it-works.tsx),
+     so the defaults in .hiw-track are what everything renders at. */
+  .hiw-track { height: auto; }
+  .hiw-sticky { position: static; height: auto; gap: 2.5rem; padding-block: 1rem; }
+  .hiw-stage {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+    max-width: 44rem;
+  }
+  .hiw-act, .hiw-act-record, .hiw-act-build, .hiw-act-sign {
+    opacity: 1;
+    transform: none;
+  }
+  .hiw-orb { opacity: 1; transform: none; }
+  .hiw-orb::before, .hiw-orb::after { animation: none; opacity: 0; }
+  .hiw-bar { opacity: 1; transform: none; }
+  .hiw-rec-dot { display: none; }
+  .hiw-caret { display: none; }
+  .hiw-rail-fill { transform: none; }
+  .hiw-bubble, .hiw-note { opacity: 1; transform: none; }
+  .hiw-reveal { opacity: 1; transform: none; }
+  .hiw-sheet { transform: none; }
+  .hiw-sig-path { stroke-dashoffset: 0; }
+  .hiw-tap { display: none; }
+  .hiw-seal { opacity: 1; transform: none; }
 }

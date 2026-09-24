@@ -16,7 +16,6 @@ import {
   Droplets,
   Eye,
   Fence,
-  FileSignature,
   Forward,
   Grid2x2,
   Hammer,
@@ -44,6 +43,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Reveal } from "@/components/reveal";
+import { HowItWorks } from "@/components/how-it-works";
 import { NotificationToast } from "@/components/notification-toast";
 import { PLAN_OFFERS } from "@/lib/billing/plans";
 import { formatPhone } from "@/lib/phone";
@@ -74,7 +74,11 @@ export default async function LandingPage() {
   const channels = tg ? "WhatsApp או טלגרם" : "WhatsApp";
 
   return (
-    <main className="flex-1 overflow-x-hidden">
+    // `clip`, not `hidden`: overflow-x:hidden turns <main> into a scroll
+    // container, and position:sticky inside a non-scrolling one never sticks -
+    // which would kill the "how it works" stage. `clip` crops the hero blobs
+    // just the same without creating one.
+    <main className="flex-1 overflow-x-clip">
       {/* ---------------------------------------------------------------- hero */}
       <section className="relative">
         {/* soft background */}
@@ -191,34 +195,48 @@ export default async function LandingPage() {
       </section>
 
       {/* ---------------------------------------------------------- how it works */}
-      <section id="how" className="max-w-6xl mx-auto px-5 py-20 md:py-28 scroll-mt-16">
-        <Reveal className="text-center max-w-2xl mx-auto mb-14">
-          <p className="text-sm font-semibold text-brand mb-3">איך זה עובד</p>
-          <h2 className="text-3xl md:text-4xl font-bold">שלושה צעדים. הודעה קולית אחת.</h2>
-          <p className="text-muted mt-4 text-lg">
-            אין מה ללמוד. ההודעה הקולית היא כבר ההרגל שלך - אנחנו רק מחזירים אותה כהצעה.
-          </p>
-        </Reveal>
-        <ol className="grid md:grid-cols-3 gap-5">
-          <Step n="1" icon={Mic} title="מקליטים" delay={0}>
-            &quot;הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200, לפני מע״מ&quot;
-          </Step>
-          <Step n="2" icon={ClipboardList} title="מקבלים הצעה מוכנה" delay={120}>
-            הבוט מחזיר סיכום, קישור לעריכה, והודעה נקייה להעברה ללקוח - מהמספר שלך, באותו צ׳אט שבו שלחת.
-          </Step>
-          <Step n="3" icon={FileSignature} title="הלקוח מאשר וחותם" delay={240}>
-            הלקוח פותח דף מעוצב מהטלפון, מאשר וחותם באצבע. אתה מקבל התראה ב-WhatsApp.
-          </Step>
+      <section id="how" className="scroll-mt-16">
+        <div className="max-w-6xl mx-auto px-5 pt-20 md:pt-28">
+          <Reveal className="text-center max-w-2xl mx-auto">
+            <p className="text-sm font-semibold text-brand mb-3">איך זה עובד</p>
+            <h2 className="text-3xl md:text-4xl font-bold">שלושה צעדים. הודעה קולית אחת.</h2>
+            <p className="text-muted mt-4 text-lg">
+              אין מה ללמוד. ההודעה הקולית היא כבר ההרגל שלך - אנחנו רק מחזירים אותה כהצעה.
+            </p>
+          </Reveal>
+        </div>
+
+        {/* The three steps as text. What follows is the same story as a
+            scroll-driven film, and it is aria-hidden - this is what a screen
+            reader and a crawler read instead. */}
+        <ol className="sr-only">
+          <li>
+            מקליטים: שולחים לבוט הודעה קולית - &quot;הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל
+            ליחידה, ביקור 200, לפני מע״מ&quot;.
+          </li>
+          <li>
+            מקבלים הצעה מוכנה: הבוט מזהה את הלקוח, את הפריטים ואת המחירים, מחשב מע״מ, ומחזיר הצעה
+            מעוצבת עם קישור לעריכה והודעה נקייה להעברה ללקוח - מהמספר שלך, באותו צ׳אט שבו שלחת.
+          </li>
+          <li>
+            הלקוח מאשר וחותם: הלקוח פותח דף מעוצב מהטלפון, מאשר וחותם באצבע. אתה מקבל התראה
+            ב-WhatsApp.
+          </li>
         </ol>
-        <Reveal delay={300} className="mt-10 mx-auto max-w-2xl rounded-2xl border border-line bg-card p-5 flex gap-4 items-start">
-          <span className="grid place-items-center h-10 w-10 rounded-xl bg-brand-soft text-brand shrink-0">
-            <Pencil className="h-5 w-5" />
-          </span>
-          <p className="text-sm text-muted leading-relaxed">
-            <span className="font-semibold text-ink">טעית?</span> כותבים או אומרים &quot;תשנה ביקור ל-250&quot; - וההצעה מתעדכנת.
-            הקישור ללקוח תמיד מציג את הגרסה העדכנית, גם אם כבר העברת אותו.
-          </p>
-        </Reveal>
+
+        <HowItWorks />
+
+        <div className="max-w-6xl mx-auto px-5 pb-20 md:pb-28">
+          <Reveal className="mx-auto max-w-2xl rounded-2xl border border-line bg-card p-5 flex gap-4 items-start">
+            <span className="grid place-items-center h-10 w-10 rounded-xl bg-brand-soft text-brand shrink-0">
+              <Pencil className="h-5 w-5" />
+            </span>
+            <p className="text-sm text-muted leading-relaxed">
+              <span className="font-semibold text-ink">טעית?</span> כותבים או אומרים &quot;תשנה ביקור ל-250&quot; - וההצעה מתעדכנת.
+              הקישור ללקוח תמיד מציג את הגרסה העדכנית, גם אם כבר העברת אותו.
+            </p>
+          </Reveal>
+        </div>
       </section>
 
       {/* -------------------------------------------------------------- benefits */}
@@ -425,19 +443,6 @@ function TelegramIcon({ className = "" }: { className?: string }) {
     <svg viewBox="0 0 24 24" className={`h-6 w-6 ${className}`} fill="currentColor" aria-hidden>
       <path d="M21.9 4.6c.3-1.2-.9-2.1-2-1.7L2.6 9.6c-1.3.5-1.2 2.3.1 2.7l4.4 1.4 1.7 5.4c.2.7 1.1 1 1.7.5l2.5-2.1 4.6 3.4c.8.6 2 .1 2.2-.9l2.1-15.4zM9.3 13.3l8.4-6.6c.2-.1.4.1.2.3l-6.9 6.5-.3 3.2-1.4-3.4z" />
     </svg>
-  );
-}
-
-function Step({ n, icon: Icon, title, children, delay }: { n: string; icon: LucideIcon; title: string; children: React.ReactNode; delay: number }) {
-  return (
-    <Reveal as="li" delay={delay} className="card-hover rounded-3xl border border-line bg-card p-6 md:p-7 space-y-4 relative">
-      <span className="absolute top-5 end-5 grid place-items-center h-8 w-8 rounded-full bg-surface text-xs font-semibold text-muted">{n}</span>
-      <div className="grid place-items-center h-14 w-14 rounded-2xl bg-brand-soft text-brand">
-        <Icon className="h-7 w-7" />
-      </div>
-      <h3 className="font-bold text-xl">{title}</h3>
-      <p className="text-muted leading-relaxed">{children}</p>
-    </Reveal>
   );
 }
 
