@@ -428,3 +428,26 @@ export const notifications = {
     return `${what}\n${nudge}`;
   },
 };
+
+/**
+ * Internal heads-up to whoever runs the business, not copy the professional
+ * ever sees (lib/conversation/admin-notify.ts). Kept here anyway so every
+ * outgoing string lives in one file.
+ */
+export const admin = {
+  newUser: (user: User) => {
+    const when = new Intl.DateTimeFormat("he-IL", {
+      timeZone: "Asia/Jerusalem",
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date());
+    // Telegram users have no phone at all - their address is "tg:<chatId>".
+    const address = user.channel === "telegram" ? user.phone : formatPhone(user.phone);
+    return [
+      `🆕 נרשם חדש ב-QuickOffer`,
+      user.displayName || "בלי שם",
+      address,
+      `${when} · ${user.channel === "telegram" ? "טלגרם" : "וואטסאפ"}`,
+    ].join("\n");
+  },
+};

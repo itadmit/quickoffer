@@ -50,6 +50,12 @@ export const SETTING_KEYS = {
   "telegram.bot_username": { secret: false, env: "TELEGRAM_BOT_USERNAME", default: "" },
   // The bot's WhatsApp number (digits). QuickOffer's own line: 053-370-7533.
   "bot.phone": { secret: false, env: "BOT_PHONE", default: "972533707533" },
+  /**
+   * Who gets the internal heads-up when someone new writes to the bot.
+   * Comma separated, same address format sendText() takes anywhere else:
+   * WhatsApp digits ("972501234567") or "tg:<chatId>". Empty = nobody.
+   */
+  "admin.notify": { secret: false, env: "ADMIN_NOTIFY", default: "" },
   // Billing Hub (quick-billing) - the hub owns cards, invoices and dunning.
   // Unset = no upgrade path; the UI falls back to a WhatsApp message to us.
   "billing.hub_url": { secret: false, env: "BILLING_HUB_URL", default: "https://billing.my-quickshop.com" },

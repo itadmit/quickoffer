@@ -4,8 +4,8 @@ import { useState, useTransition } from "react";
 import { saveSettingsAction, sendTestMessageAction } from "../actions";
 
 type Cur = { value: string; source: string };
-export function IbotForm({ current }: { current: { token: Cur; instanceId: string; webhookToken: Cur; baseUrl: string; appUrl: string; botPhone: string } }) {
-  const [v, setV] = useState({ "ibot.token": "", "ibot.instance_id": current.instanceId, "ibot.webhook_token": "", "ibot.base_url": current.baseUrl, "app.url": current.appUrl, "bot.phone": current.botPhone });
+export function IbotForm({ current }: { current: { token: Cur; instanceId: string; webhookToken: Cur; baseUrl: string; appUrl: string; botPhone: string; adminNotify: string } }) {
+  const [v, setV] = useState({ "ibot.token": "", "ibot.instance_id": current.instanceId, "ibot.webhook_token": "", "ibot.base_url": current.baseUrl, "app.url": current.appUrl, "bot.phone": current.botPhone, "admin.notify": current.adminNotify });
   const [phone, setPhone] = useState("");
   const [result, setResult] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -28,6 +28,8 @@ export function IbotForm({ current }: { current: { token: Cur; instanceId: strin
           <input className="input" dir="ltr" inputMode="tel" value={v["bot.phone"]} onChange={(e) => set("bot.phone", e.target.value.replace(/\D/g, ""))} placeholder="9725XXXXXXXX" /></label>
         <label className="block"><span className="label">כתובת האפליקציה (לקישורים ב-WhatsApp)</span>
           <input className="input" dir="ltr" value={v["app.url"]} onChange={(e) => set("app.url", e.target.value)} placeholder="https://quickoffer.co.il" /></label>
+        <label className="block"><span className="label">התראה על נרשם חדש <span className="text-xs">· מספרים מופרדים בפסיק, או <code dir="ltr">tg:&lt;chatId&gt;</code>. ריק = אף אחד</span></span>
+          <input className="input" dir="ltr" value={v["admin.notify"]} onChange={(e) => set("admin.notify", e.target.value)} placeholder="972501234567,972507654321" /></label>
         <button disabled={pending} onClick={() => start(async () => { await saveSettingsAction(v); setV((s) => ({ ...s, "ibot.token": "", "ibot.webhook_token": "" })); setResult("נשמר ✓"); })} className="btn-primary">שמור</button>
       </section>
       <section className="rounded-2xl border border-line bg-card p-4 space-y-3">

@@ -31,6 +31,7 @@ export default async function AdminIbot() {
           baseUrl: s["ibot.base_url"].value,
           appUrl: s["app.url"].value,
           botPhone: s["bot.phone"].value,
+          adminNotify: s["admin.notify"].value,
         }}
       />
       <section className="space-y-2">

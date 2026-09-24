@@ -38,6 +38,7 @@ import {
   saveJob,
 } from "../quotes/saved-jobs-store";
 import { trackMetaEvent } from "../meta/capi";
+import { notifyNewUser } from "./admin-notify";
 import { audioSeconds } from "../audio";
 import { fetchMedia, storeFile } from "../storage";
 import { sendText, type InboundMessage } from "../whatsapp";
@@ -94,7 +95,13 @@ export async function handleInbound(msg: InboundMessage): Promise<void> {
   try {
     const { user, isNew } = await getOrCreateUser(msg);
     if (user.blocked) return;
-    if (isNew) await trackMetaEvent("Lead", user);
+    if (isNew) {
+      await trackMetaEvent("Lead", user);
+      // Awaited rather than fired and forgotten: we are inside the webhook's
+      // waitUntil scope, where an unawaited promise can be killed. It costs
+      // the professional under a second, once, on their first ever message.
+      await notifyNewUser(user);
+    }
 
     if (msg.type === "other") {
       await sendText(user.phone, cmd.unsupportedType());
