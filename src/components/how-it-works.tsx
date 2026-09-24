@@ -219,6 +219,17 @@ export function HowItWorks() {
   return (
     <div ref={track} className="hiw-track" aria-hidden>
       <div className="hiw-sticky">
+        {/* Pinned with the stage rather than scrolled past it: the film runs for
+            about four screens, and a section that loses its own title halfway
+            leaves you watching an animation with no idea what it is answering. */}
+        <div className="hiw-head">
+          <p className="text-sm font-semibold text-brand mb-2">איך זה עובד</p>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">שלושה צעדים. הודעה קולית אחת.</h2>
+          <p className="hiw-head-sub">
+            אין מה ללמוד. ההודעה הקולית היא כבר ההרגל שלך - אנחנו רק מחזירים אותה כהצעה.
+          </p>
+        </div>
+
         <Rail act={b.act} />
         <div className="hiw-stage">
           <Record typed={b.typed} seconds={b.seconds} />

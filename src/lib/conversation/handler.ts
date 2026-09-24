@@ -52,6 +52,7 @@ import {
   customerMessage,
   errors,
   onboarding as ob,
+  OPENING_LINE,
   quoteSummary,
   quotesList,
   sendHint,
@@ -214,6 +215,17 @@ async function handleOnboarding(
     return;
   }
   if (!msg.text) {
+    await sendText(user.phone, ob.askName(suggested));
+    return;
+  }
+
+  // The landing page's own opening line, arriving on every button click on the
+  // site. Answered without an LLM call for two reasons: it is the highest
+  // volume message the bot receives and the Groq tier is rate limited by the
+  // minute, and it says "הצעת מחיר" without being one - exactly the phrase
+  // `looksLikeQuote` is trained to fire on. Guessing wrong here would skip
+  // onboarding and name the business after whatever WhatsApp reported.
+  if (isFirstMessage && msg.text.trim() === OPENING_LINE) {
     await sendText(user.phone, ob.askName(suggested));
     return;
   }

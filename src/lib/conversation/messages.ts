@@ -10,6 +10,15 @@ import type { QuoteWithItems } from "../quotes/service";
  * change the spec first.
  */
 
+/**
+ * The line every button on the landing page puts in the user's mouth.
+ *
+ * Shared rather than duplicated because the handler has to recognise it: it is
+ * the single most common message the bot will ever receive, and it contains the
+ * words "הצעת מחיר" without being one.
+ */
+export const OPENING_LINE = "אני רוצה הצעת מחיר מעוצבת";
+
 export const onboarding = {
   askName: (suggested: string | null) =>
     `היי, אני עופר 👋 אתה מדבר - אני כותב את ההצעה.\nשתי שאלות ומתחילים.\n1️⃣ איך קוראים לעסק?${

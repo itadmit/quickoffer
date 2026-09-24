@@ -292,9 +292,37 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(1.25rem, 3.5vh, 2.5rem);
+  /* Three children now share one viewport - title, rail, stage - so the gaps
+     track the viewport height rather than sitting at a fixed size. */
+  gap: clamp(0.9rem, 2.6vh, 1.9rem);
   padding-inline: 1.25rem;
   overflow: hidden;
+}
+
+/* ---- the pinned title */
+.hiw-head {
+  text-align: center;
+  max-width: 34rem;
+}
+.hiw-head-sub {
+  margin-top: 0.6rem;
+  color: var(--muted);
+  font-size: clamp(0.88rem, 0.84rem + 0.28vw, 1.05rem);
+  line-height: 1.55;
+}
+/* On a short viewport the supporting line is what has to give: the title names
+   the section and the rail names the step, so the sentence between them is the
+   least load-bearing thing on screen. */
+@media (max-height: 780px) {
+  .hiw-head-sub {
+    display: none;
+  }
+}
+@media (max-height: 700px) {
+  .hiw-caption {
+    margin-top: 0.7rem;
+    font-size: 0.82rem;
+  }
 }
 
 /* ---- the rail: three steps, one filling line */
@@ -371,7 +399,13 @@ body {
   position: relative;
   width: 100%;
   max-width: 54rem;
-  height: clamp(340px, 56svh, 470px);
+  /* Takes whatever the title and the rail leave, instead of guessing a
+     fraction of the viewport. A fixed 46svh under-used the space that was
+     genuinely free on a short phone while act 2 overflowed into the rail;
+     flex asks the question the right way round. */
+  flex: 1 1 auto;
+  min-height: 300px;
+  max-height: 470px;
   display: grid;
 }
 .hiw-act {
@@ -670,7 +704,7 @@ body {
   gap: 0.75rem;
 }
 .hiw-phone {
-  --ph: clamp(240px, 36svh, 360px);
+  --ph: clamp(210px, 31svh, 330px);
   position: relative;
   flex: none;
   height: var(--ph);
@@ -900,12 +934,19 @@ body {
     margin-top: 2.5rem;
     transform: translateX(calc(-20px * (1 - var(--msg))));
   }
+}
+
+/* Side by side once there is width for it, and also whenever the viewport is
+   short - stacked, the notification adds its full height to the tallest act;
+   beside the phone it costs nothing, because the phone is taller anyway. */
+@media (min-width: 768px), (max-height: 780px) {
   .hiw-sign-row {
     flex-direction: row;
     align-items: center;
-    gap: 1.75rem;
+    gap: clamp(0.6rem, 2vw, 1.75rem);
   }
   .hiw-note {
+    min-width: 0;
     transform: translateX(calc(-22px * (1 - var(--note))));
   }
 }
@@ -929,12 +970,15 @@ body {
   .hiw-track { height: auto; }
   .hiw-sticky { position: static; height: auto; gap: 2.5rem; padding-block: 1rem; }
   .hiw-stage {
-    height: auto;
+    flex: none;
+    min-height: 0;
+    max-height: none;
     display: flex;
     flex-direction: column;
     gap: 3.5rem;
     max-width: 44rem;
   }
+  .hiw-head-sub { display: block; }
   .hiw-act, .hiw-act-record, .hiw-act-build, .hiw-act-sign {
     opacity: 1;
     transform: none;

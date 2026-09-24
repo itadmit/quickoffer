@@ -48,6 +48,7 @@ import { NotificationToast } from "@/components/notification-toast";
 import { StickyCta } from "@/components/sticky-cta";
 import { MetaPixel } from "@/components/meta-pixel";
 import { PLAN_OFFERS } from "@/lib/billing/plans";
+import { OPENING_LINE } from "@/lib/conversation/messages";
 import { formatPhone } from "@/lib/phone";
 import { appUrlBase } from "@/lib/quotes/links";
 import { getSetting } from "@/lib/settings";
@@ -98,7 +99,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const WELCOME = "היי";
+// Shared with the conversation handler, which has to recognise this exact
+// string: it says "הצעת מחיר" without being one, and onboarding must not read
+// it as a quote (lib/conversation/messages.ts).
+const WELCOME = OPENING_LINE;
 
 export default async function LandingPage() {
   const phone = (await getSetting("bot.phone")).replace(/\D/g, "");
@@ -231,16 +235,6 @@ export default async function LandingPage() {
 
       {/* ---------------------------------------------------------- how it works */}
       <section id="how" className="scroll-mt-16">
-        <div className="max-w-6xl mx-auto px-5 pt-20 md:pt-28">
-          <Reveal className="text-center max-w-2xl mx-auto">
-            <p className="text-sm font-semibold text-brand mb-3">איך זה עובד</p>
-            <h2 className="text-3xl md:text-4xl font-bold">שלושה צעדים. הודעה קולית אחת.</h2>
-            <p className="text-muted mt-4 text-lg">
-              אין מה ללמוד. ההודעה הקולית היא כבר ההרגל שלך - אנחנו רק מחזירים אותה כהצעה.
-            </p>
-          </Reveal>
-        </div>
-
         {/* The three steps as text. What follows is the same story as a
             scroll-driven film, and it is aria-hidden - this is what a screen
             reader and a crawler read instead. */}
@@ -341,7 +335,7 @@ export default async function LandingPage() {
         </div>
         <Reveal delay={400} className="mt-6 text-center space-y-1">
           <p className="text-sm text-muted">
-            כל החבילות מתחילות באותה דרך: שולחים &quot;{WELCOME}&quot; לבוט, מקבלים 5 הצעות חינם,
+            כל החבילות מתחילות באותה דרך: לוחצים על הכפתור, מקבלים 5 הצעות חינם,
             ומשדרגים מתוך הצ׳אט כשזה משתלם.
           </p>
           <p className="text-xs text-muted">המחירים בש״ח לחודש, לפני מע״מ.</p>
@@ -388,7 +382,7 @@ export default async function LandingPage() {
             <h2 className="text-3xl md:text-5xl font-bold leading-tight">ההצעה הבאה שלך -<br className="sm:hidden" /> בהודעה קולית אחת</h2>
           </Reveal>
           <Reveal delay={100}>
-            <p className="opacity-90 text-lg max-w-xl mx-auto">שלח &quot;{WELCOME}&quot; לבוט, ענה על שתי שאלות, ותשלח את ההצעה הראשונה תוך דקה.</p>
+            <p className="opacity-90 text-lg max-w-xl mx-auto">לחץ על הכפתור, ענה על שתי שאלות, ותשלח את ההצעה הראשונה תוך דקה.</p>
           </Reveal>
           <Reveal delay={200} className="flex flex-col sm:flex-row justify-center gap-3">
             <WhatsAppButton href={wa} big inverted />
