@@ -25,7 +25,7 @@ export default async function AdminOverview() {
 
   const inWindow = gte(processingRuns.at, windowStart);
 
-  const [[today], [month], [usersCount], [ai], [asrFail], [p90row], [unprocessed], instanceStatus, lastWebhook, aiKeySet] =
+  const [[today], [month], [usersCount], [ai], [asrFail], [p90row], [unprocessed], [noCredit], instanceStatus, lastWebhook, aiKeySet] =
     await Promise.all([
       db.select({ n: count() }).from(quotes).where(gte(quotes.createdAt, startOfDay)),
       db.select({ n: count() }).from(quotes).where(gte(quotes.createdAt, startOfMonth)),
@@ -44,6 +44,17 @@ export default async function AdminOverview() {
         .where(and(inWindow, isNotNull(processingRuns.totalMs))),
       // Served by inbound_unprocessed_idx, the same partial index the cron uses.
       db.select({ n: count() }).from(inboundMessages).where(sql`${inboundMessages.processedAt} is null`),
+      // A spent prepaid balance fails every quote and fixes itself for nobody,
+      // so it gets its own light rather than hiding in the message log.
+      db
+        .select({ n: count() })
+        .from(processingRuns)
+        .where(
+          and(
+            gte(processingRuns.at, new Date(startOfDay.getTime() - 86_400_000)),
+            sql`(${processingRuns.error} ilike '%insufficient_quota%' or ${processingRuns.error} ilike '%exceeded your current quota%' or ${processingRuns.error} ilike '%billing hard limit%')`,
+          ),
+        ),
       getSetting("ibot.instance_status"),
       getSetting("ibot.last_webhook_at"),
       getSetting("llm.api_key").then((k) => !!k),
@@ -80,8 +91,12 @@ export default async function AdminOverview() {
         <Status ok={instanceStatus === "connected"} unknown={instanceStatus === "unknown"} title="iBot instance">
           סטטוס: {instanceStatus} · webhook אחרון: {lastWebhook ? new Date(lastWebhook).toLocaleString("he-IL") : "טרם התקבל"}
         </Status>
-        <Status ok={aiKeySet} title="מפתחות AI">
-          {aiKeySet ? "מפתח LLM מוגדר" : "אין מפתח LLM - הגדר בלשונית ספקי AI"}
+        <Status ok={aiKeySet && noCredit.n === 0} title="מפתחות AI">
+          {noCredit.n > 0
+            ? `נגמר הקרדיט אצל ספק ה-AI - ${noCredit.n} הצעות נכשלו ב-24 השעות האחרונות. טען יתרה, אין מה לחכות.`
+            : aiKeySet
+              ? "מפתח LLM מוגדר"
+              : "אין מפתח LLM - הגדר בלשונית ספקי AI"}
         </Status>
       </div>
     </div>

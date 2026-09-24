@@ -29,12 +29,41 @@ import { getSettings } from "../settings";
  * "sorry, something broke".
  */
 export function isRateLimitError(err: unknown): boolean {
+  // A spent balance also answers 429, and is the opposite kind of problem:
+  // waiting does not fix it, so it must never be queued for a retry.
+  if (isOutOfCredit(err)) return false;
   if (!err || typeof err !== "object") return false;
   const e = err as { status?: unknown; code?: unknown; message?: unknown };
   if (e.status === 429) return true;
-  if (e.code === "rate_limit_exceeded" || e.code === "insufficient_quota") return true;
+  if (e.code === "rate_limit_exceeded") return true;
   const message = typeof e.message === "string" ? e.message.toLowerCase() : "";
   return message.includes("rate limit") || message.includes("429") || message.includes("too many requests");
+}
+
+/**
+ * The account is out of money, not out of pace.
+ *
+ * OpenAI answers `insufficient_quota` with status 429, the same code a rate
+ * limit uses, which makes the two easy to confuse - and they need opposite
+ * handling. A rate limit clears on its own in seconds; a spent balance clears
+ * when a human buys more credit, so retrying it just means every professional
+ * who speaks to the bot is told "I'll get back to you in a few minutes" and
+ * then never hears back.
+ *
+ * With auto-reload off - the safe choice for the bill - this is where a
+ * prepaid balance always ends, so the failure has to be legible.
+ */
+export function isOutOfCredit(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: unknown; message?: unknown; error?: { code?: unknown } };
+  const code = e.code ?? e.error?.code;
+  if (code === "insufficient_quota" || code === "billing_hard_limit_reached") return true;
+  const message = typeof e.message === "string" ? e.message.toLowerCase() : "";
+  return (
+    message.includes("insufficient_quota") ||
+    message.includes("exceeded your current quota") ||
+    message.includes("billing hard limit")
+  );
 }
 
 export type RateLimit = {

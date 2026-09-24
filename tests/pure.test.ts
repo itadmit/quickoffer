@@ -10,7 +10,7 @@ import { customerMessageText, daysUntil } from "@/lib/quotes/customer-message";
 import { daysSince, isQuietHour } from "@/lib/quotes/follow-up";
 import { isPaidPlan, PLAN_OFFERS, priceOf, upgradesFor } from "@/lib/billing/plans";
 import { toVisual } from "@/lib/og-bidi";
-import { parseResetSeconds } from "@/lib/ai/limits";
+import { isOutOfCredit, isRateLimitError, parseResetSeconds } from "@/lib/ai/limits";
 import { isBot } from "@/lib/bots";
 import { rateLimitWaitMs } from "@/lib/ai/openai";
 import { CLOSED_QUOTE_STATUSES, OPEN_QUOTE_STATUSES, quoteStatusEnum } from "@/lib/db/schema";
@@ -499,4 +499,27 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert.equal(rateLimitWaitMs(new Error("network")), null);
   assert.equal(rateLimitWaitMs(null), null);
   console.log("RATE LIMIT WAIT OK");
+}
+
+// ---- a spent balance and a rate limit both answer 429 and need opposite handling
+{
+  const quota = { status: 429, code: "insufficient_quota", message: "You exceeded your current quota" };
+  // never queued for retry: waiting does not buy credit, and the professional
+  // would be told "I'll get back to you" by a bot that never can
+  assert.equal(isOutOfCredit(quota), true);
+  assert.equal(isRateLimitError(quota), false, "out of credit must not look retryable");
+
+  // the nested shape the OpenAI SDK sometimes carries
+  assert.equal(isOutOfCredit({ error: { code: "insufficient_quota" } }), true);
+  assert.equal(isOutOfCredit({ status: 429, message: "Billing hard limit reached" }), true);
+
+  // a real rate limit still is one
+  const paced = { status: 429, code: "rate_limit_exceeded", message: "Rate limit reached" };
+  assert.equal(isRateLimitError(paced), true);
+  assert.equal(isOutOfCredit(paced), false);
+  assert.equal(isRateLimitError({ status: 429 }), true);
+
+  assert.equal(isOutOfCredit(null), false);
+  assert.equal(isOutOfCredit(new Error("network")), false);
+  console.log("OUT OF CREDIT OK");
 }
