@@ -170,7 +170,7 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, quota
                 onClick={() => update("vatStatus", v)}
                 className={`rounded-xl border px-3 py-2.5 text-sm ${form.vatStatus === v ? "border-brand bg-brand-soft text-brand font-semibold" : "border-line bg-card"}`}
               >
-                {v === "registered" ? "עוסק מורשה (מע״מ 18%)" : "עוסק פטור (ללא מע״מ)"}
+                {v === "registered" ? "מורשה / בע״מ (מע״מ 18%)" : "עוסק פטור (ללא מע״מ)"}
               </button>
             ))}
           </div>
