@@ -266,9 +266,18 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert(note.includes("https://quickoffer.co.il/r/ab12cd"));
   assert(!note.includes("wa.me"));
   assert(note.includes('"מתי אפשר להתחיל?"'));
-  // no reachable number → no dead link, and a word on where an answer must go
-  const noPhone = notifications.question({ number: 12, customerName: "דני", customerPhone: null } as never, "מתי?", null);
-  assert(noPhone.includes("לא ללקוח"));
+  // no number on the quote → still a link (WhatsApp opens on the contact
+  // picker with the answer drafted), plus how to make it direct next time
+  const noPhone = notifications.question(
+    { number: 12, customerName: "דני", customerPhone: null } as never,
+    "מתי?",
+    "https://quickoffer.co.il/r/ab12cd",
+  );
+  assert(noPhone.includes("https://quickoffer.co.il/r/ab12cd"));
+  assert(noPhone.includes("הטלפון של דני"));
+  // and if the link could not be minted at all, say where an answer must go
+  const noLink = notifications.question({ number: 12, customerName: "דני", customerPhone: null } as never, "מתי?", null);
+  assert(noLink.includes("לא ללקוח"));
   console.log("CUSTOMER MESSAGE OK");
 }
 

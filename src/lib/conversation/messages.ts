@@ -384,6 +384,15 @@ export const notifications = {
         replyUrl,
         `נפתח הצ׳אט עם השאלה מצוטטת - רק להשלים את התשובה ולשלוח.`,
       );
+    } else if (replyUrl) {
+      // No number on the quote. WhatsApp still opens with the answer drafted -
+      // one tap more (picking the chat) beats being told to go do it by hand.
+      lines.push(
+        `📲 לענות ל${who}:`,
+        replyUrl,
+        `נפתח WhatsApp עם השאלה מצוטטת - רק לבחור את הצ׳אט של ${who}, להשלים ולשלוח.`,
+        `(אפשר להגיד לי "הטלפון של ${who} 050..." והקישור הבא ייפתח ישר על הצ׳אט)`,
+      );
     } else {
       lines.push(`תשובה כאן בצ׳אט מגיעה אליי, לא ללקוח - אפשר לענות ישירות ב-WhatsApp.`);
     }

@@ -3,7 +3,6 @@ import { isBot } from "../bots";
 import { notifications } from "../conversation/messages";
 import { db } from "../db";
 import { quotes } from "../db/schema";
-import { isMobile } from "../phone";
 import { storeFile } from "../storage";
 import { sendText } from "../whatsapp";
 import { replyLink } from "./links";
@@ -129,8 +128,12 @@ export async function askQuestion(publicId: string, text: string) {
   if (!clean) return { ok: false as const, error: "empty" };
   await addEvent(q.id, "question", { question: clean });
   // The answer has to leave the bot chat to reach the customer, so hand over
-  // the tap that opens their chat - only when there is a number to open it on.
-  const replyUrl = isMobile(q.customerPhone) ? await replyLink(q.id) : null;
+  // the tap that opens WhatsApp with it drafted. Worth it without a number too:
+  // the link then opens the contact picker instead of the customer's chat.
+  const replyUrl = await replyLink(q.id).catch((e) => {
+    console.error("[askQuestion] replyLink", e);
+    return null;
+  });
   await sendText(q.user.phone, notifications.question(q, clean, replyUrl));
   return { ok: true as const };
 }
