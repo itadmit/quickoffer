@@ -29,6 +29,18 @@ import {
 export type OpenAIConfig = {
   apiKey: string;
   model: string;
+  /**
+   * Model for the classify stage, when it should differ from `model`.
+   *
+   * Classification is the easy half of the job, and on a rate limited tier the
+   * two models draw from separate token buckets, so splitting the stages buys
+   * headroom the account does not otherwise have. Measured on 24.9.2026
+   * against the 16 cases in tests/groq-eval.ts: gpt-oss-20b scored identically
+   * to gpt-oss-120b (15/16, same single failure) and was 28% faster.
+   *
+   * Undefined - the default - runs both stages on `model`.
+   */
+  classifyModel?: string;
   baseURL?: string;
   providerName: string; // "openai" | "groq" | "custom"
 };
@@ -215,11 +227,12 @@ async function structured<S extends z.ZodTypeAny>(
   user: string,
   schema: S,
   name: string,
+  model = cfg.model,
 ): Promise<WithUsage<z.infer<S>>> {
   const started = Date.now();
   const completion = await withRetry(() =>
     client(cfg).chat.completions.parse({
-      model: cfg.model,
+      model,
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
@@ -239,11 +252,11 @@ async function structured<S extends z.ZodTypeAny>(
     result: msg.parsed as z.infer<S>,
     usage: {
       provider: cfg.providerName,
-      model: cfg.model,
+      model,
       ms: Date.now() - started,
       inputTokens: inTok,
       outputTokens: outTok,
-      cost: llmCost(cfg.model, inTok, outTok),
+      cost: llmCost(model, inTok, outTok),
       raw: msg.parsed,
     },
   };
@@ -276,6 +289,7 @@ export function openaiLLM(cfg: OpenAIConfig): LLMProvider {
         `ההודעה:\n"""\n${text}\n"""`,
         IntentSchema,
         "intent",
+        cfg.classifyModel || cfg.model,
       );
     },
     parseOnboardingAnswer(text, step, suggestedName) {

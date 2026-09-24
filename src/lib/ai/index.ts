@@ -56,6 +56,7 @@ export async function getLLMProvider(): Promise<LLMProvider> {
     "llm.model",
     "llm.api_key",
     "llm.base_url",
+    "llm.classify_model",
   ]);
   const apiKey = resolveKey(s["llm.api_key"], s["llm.provider"]);
   if (!apiKey) {
@@ -69,6 +70,8 @@ export async function getLLMProvider(): Promise<LLMProvider> {
         providerName: s["llm.provider"],
         apiKey,
         model: s["llm.model"],
+        // Empty is the default and means "one model for both stages"
+        classifyModel: s["llm.classify_model"] || undefined,
         baseURL: s["llm.base_url"] || KNOWN_BASE_URLS[s["llm.provider"]] || undefined,
       });
     // anthropic / gemini: future implementations of LLMProvider (§7.6)

@@ -16,6 +16,13 @@ export const SETTING_KEYS = {
   "llm.provider": { secret: false, env: null, default: "openai" },
   "llm.model": { secret: false, env: null, default: "gpt-4o-mini" },
   "llm.api_key": { secret: true, env: null, default: "" },
+  /**
+   * Optional: run the cheap classify stage on a different model from the
+   * expensive structure stage. Empty = one model for both, which is the
+   * default. Worth setting on a rate limited tier, where the two models have
+   * separate token buckets (lib/ai/limits.ts).
+   */
+  "llm.classify_model": { secret: false, env: null, default: "" },
   "llm.base_url": { secret: false, env: null, default: "" },
   "ibot.token": { secret: true, env: "IBOT_TOKEN", default: "" },
   "ibot.instance_id": { secret: false, env: "IBOT_INSTANCE_ID", default: "" },

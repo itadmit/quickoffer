@@ -204,6 +204,15 @@ export const REQUESTS_PER_QUOTE = { transcription: 1, llm: 2 } as const;
  */
 export const TOKENS_PER_QUOTE = 5263;
 
+/**
+ * Just the structure stage (2336 in + 984 out).
+ *
+ * The right divisor when `llm.classify_model` splits the stages across two
+ * models: the buckets are per model, so what limits quotes per minute is the
+ * expensive stage alone, not the pair.
+ */
+export const STRUCTURE_TOKENS_PER_QUOTE = 3320;
+
 export type AiCapacity = {
   llm: ChannelUsage;
   transcription: ChannelUsage;

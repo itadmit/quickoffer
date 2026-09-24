@@ -28,6 +28,7 @@ export function AiSettingsForm({ transcription, llm }: { transcription: Setting[
     "llm.provider": get(llm, "llm.provider")?.value ?? "openai",
     "llm.model": get(llm, "llm.model")?.value ?? "",
     "llm.base_url": get(llm, "llm.base_url")?.value ?? "",
+    "llm.classify_model": get(llm, "llm.classify_model")?.value ?? "",
     "llm.api_key": "",
   });
   const [pending, start] = useTransition();
@@ -62,6 +63,12 @@ export function AiSettingsForm({ transcription, llm }: { transcription: Setting[
         {values["llm.provider"] === "custom" && (
           <Text label="Base URL" value={values["llm.base_url"]} onChange={(v) => set("llm.base_url", v)} placeholder="https://…/v1" />
         )}
+        <Combo label="מודל לסיווג (רשות)" value={values["llm.classify_model"]} onChange={(v) => set("llm.classify_model", v)} options={LLM_MODELS} />
+        <p className="text-xs text-muted -mt-2">
+          ריק = אותו מודל לשני השלבים. מודל נפרד לסיווג מקבל מכסת קצב נפרדת אצל הספק, ולכן מכפיל את
+          התקרה היומית. נמדד 24.9.2026: <code dir="ltr">gpt-oss-20b</code> סיווג בדיוק כמו{" "}
+          <code dir="ltr">gpt-oss-120b</code> (15/16, אותו כשל יחיד) ומהר ב-28%.
+        </p>
         <Secret label="מפתח API ל-LLM" current={get(llm, "llm.api_key")} value={values["llm.api_key"]} onChange={(v) => set("llm.api_key", v)} />
         <TestButton label="בדוק חיבור (LLM)" run={() => testLLMAction().then(setLlmTest)} result={llmTest} />
       </Section>

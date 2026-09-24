@@ -3,7 +3,7 @@
 import { and, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getLLMProvider, getTranscriptionProvider } from "@/lib/ai";
-import { probeAiCapacity } from "@/lib/ai/limits";
+import { probeAiCapacity, STRUCTURE_TOKENS_PER_QUOTE } from "@/lib/ai/limits";
 import { requireAdmin } from "@/lib/admin/auth";
 import { handleInbound } from "@/lib/conversation/handler";
 import { db } from "@/lib/db";
@@ -107,6 +107,12 @@ export async function probeAiCapacityAction() {
         isNotNull(processingRuns.llmInputTokens),
       ),
     );
+  // With the stages split across two models the buckets are separate, so what
+  // bounds quotes per minute is the structure stage alone. processing_runs
+  // sums both stages into one row and cannot tell them apart, so the measured
+  // average is only the right divisor when a single model carries both.
+  const split = !!(await getSetting("llm.classify_model"));
+  if (split) return probeAiCapacity(STRUCTURE_TOKENS_PER_QUOTE);
   const measured = Number(row?.avgTokens ?? 0);
   return probeAiCapacity(measured > 0 ? Math.round(measured) : undefined);
 }
