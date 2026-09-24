@@ -13,12 +13,19 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 /**
- * GET /api/cron/tick?secret=… - called every 5 minutes by an external pinger
- * (cron-job.org) for the demo; Vercel Cron in production (PRODUCT.md §16).
+ * GET /api/cron/tick - every 5 minutes, from Vercel Cron (`vercel.json`).
+ * Vercel sends `Authorization: Bearer $CRON_SECRET` automatically; `?secret=`
+ * is kept for manual and local runs.
  *  - re-runs inbound messages stuck without processed_at for > 2 min (max 3 attempts)
  *  - expires quotes past valid_until
  *  - nudges the professional about quotes that went quiet (§6.6)
  *  - reports instance health as last known (§5.5)
+ *
+ * Every step is reconciliation-based ("expire everything already past due")
+ * rather than incremental, which is what Vercel's best-effort delivery needs:
+ * a missed run is caught up by the next one, and a duplicate run is a no-op.
+ * `maxDuration` 60s is well inside the 5 minute interval, so two runs cannot
+ * overlap and no lock is needed.
  */
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -26,7 +33,10 @@ export async function GET(req: NextRequest) {
     req.nextUrl.searchParams.get("secret") ??
     req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
     "";
-  if (secret && !safeEqual(provided, secret)) {
+  // Fail closed. Treating a missing secret as "no auth required" would turn a
+  // deleted env var into a public endpoint that anyone can use to re-drive
+  // message processing.
+  if (!secret || !safeEqual(provided, secret)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

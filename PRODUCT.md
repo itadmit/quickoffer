@@ -700,7 +700,7 @@ draft ──"שלח"/"שלחתי"/כפתור──▶ sent ──צפייה─�
 | LLM (JSON, תיקונים, סיווג) | OpenAI GPT, structured output | ספק/מודל/מפתח מהאדמין. Anthropic/Gemini כמימושים נוספים של §7.6 כשיהיה eval |
 | הגדרות ומפתחות | `app_settings` ב-Neon, מוצפן AES-GCM | env = fallback בלבד |
 | עיבוד webhook | `waitUntil` מ-`@vercel/functions` — 200 מיד, עיבוד ממשיך ברקע | כתיבה ל-`inbound_messages` לפני ה-200; cron מרים תקועים. Inngest/QStash כשיש משתמשים אמיתיים |
-| Cron | דמו: cron-job.org / UptimeRobot → endpoint. Pro: Vercel Cron | Hobby מוגבל לפעם ביום |
+| Cron | **Vercel Cron** (`vercel.json`, `*/5 * * * *`) — הפרויקט על team בתוכנית Pro, שמאפשרת תדירות של עד פעם בדקה | Hobby מוגבל לפעם ביום ולדיוק של ±59 דק׳ |
 | קבצים | Vercel Blob (או R2) — הקלטות 30 יום, לוגואים, חתימות, PDF | |
 | PDF | **נדחה מהדמו.** אח"כ: שירות HTML→PDF חיצוני (Browserless/PDFShift) או `@sparticuz/chromium` | פונטים בעברית + RTL לבדוק |
 | WhatsApp | iBot — מאחורי `lib/whatsapp/` עם ממשק אחד (`sendText`, `sendDoc`, `parseInbound`) | |

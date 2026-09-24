@@ -80,7 +80,7 @@
 - **ציבורי לחלוטין, ללא אימות. נמחק אחרי 30 יום** (סטיקרים אחרי 24 שעות). לכן: למשוך מיד אחרי ה-200, להעלות ל-Blob/R2, לא לשמור את ה-URL לטווח ארוך.
 
 ### עדיין חסר ב-iBot (לא חוסם דמו, חוסם production)
-- endpoint סטטוס instance / webhook על ניתוק (PRODUCT.md §5.5). בינתיים: pinger חיצוני (cron-job.org) + התראה כש-`send-text` מחזיר `Instance not connected`.
+- endpoint סטטוס instance / webhook על ניתוק (PRODUCT.md §5.5). בינתיים: Vercel Cron כל 5 דק׳ + התראה כש-`send-text` מחזיר `Instance not connected`.
 
 ### כללי שליחה
 - לא במקביל — תור יוצא, הודעה אחת בכל פעם, 300–500ms ריווח, retry ×3.
@@ -198,7 +198,7 @@ QuickOffer מחובר ל-**Quick Commerce Billing Hub** (`~/Desktop/Projeccts/qu
 **סטטוס ה-endpoints על הדומיין החדש:** `/api/webhooks/telegram` → 401 בלי סוד תקין (חי) · `/api/cron/tick` → 401 בלי secret (חי) · `/api/webhooks/ibot` → **503**, וזה תקין: `ibot.webhook_token` ריק, והראוט מחזיר 503 מפורש כשהוא לא מוגדר (route.ts:31). יהפוך ל-401 ברגע שיוזן טוקן iBot אמיתי.
 
 **נותר ידנית:**
-1. ⏳ ה-pinger החיצוני (cron-job.org) → `https://quickoffer.co.il/api/cron/tick?secret=` — עדיין מצביע על הדומיין הישן. זה מה שמרים הודעות תקועות ומפקיע תוקף. (שקול להחליף ב-Vercel Cron ולהיפטר מהתלות החיצונית — דורש תוכנית Pro בשביל תדירות של 5 דק׳.)
+1. ~~ה-pinger החיצוני (cron-job.org)~~ — **הוחלף ב-Vercel Cron** (24.9). `vercel.json` → `/api/cron/tick` כל 5 דק׳. ה-team `itadmit-gmailcoms-projects` בתוכנית **Pro** (חשבון המשתמש עצמו hobby, אבל הבעלים הוא ה-team) ולכן תדירות של עד פעם בדקה מותרת. **אפשר לכבות את ה-pinger ב-cron-job.org.**
 2. ⏳ טוקן iBot — טרם הוזן. עד אז `/api/webhooks/ibot` מחזיר 503.
 3. ~~`APP_URL` ל-Preview~~ — **לא צריך.** Preview חולק את אותו `DATABASE_URL` (ולכן אותו `app_settings`), אז `app.url` מה-DB גובר ממילא וה-env הזה לעולם לא נקרא שם. ה-CLI גם מסרב להוסיף אותו ללא prompt.
 

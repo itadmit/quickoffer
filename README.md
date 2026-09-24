@@ -53,7 +53,7 @@ python3 tests/sent.py                             # מה הבוט "שלח"
 |---|---|
 | `POST /api/webhooks/ibot` | קליטת הודעות WhatsApp (200 מיד, עיבוד ב-`waitUntil`) |
 | `POST /api/webhooks/telegram` | קליטת הודעות טלגרם, אותו חוזה |
-| `GET /api/cron/tick?secret=` | הרמת הודעות תקועות, פקיעת תוקף — כל 5 דק׳ מפינגר חיצוני |
+| `GET /api/cron/tick` | הרמת הודעות תקועות, פקיעת תוקף — כל 5 דק׳ מ-Vercel Cron (`vercel.json`). אימות: `Authorization: Bearer $CRON_SECRET` ש-Vercel שולח אוטומטית; `?secret=` להרצה ידנית |
 | `/q/{publicId}` | דף לקוח: צפייה, אישור + חתימה, שאלה, דחייה |
 | `/e/{token}` | מסך עריכה (magic link, 7 ימים) |
 | `/s/{token}` | הגדרות העסק |
