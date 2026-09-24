@@ -12,7 +12,15 @@ import {
   renameSavedJob,
   replaceJobItems,
 } from "@/lib/quotes/saved-jobs-store";
-import { JobFormSchema, SettingsSchema, type JobForm, type SettingsForm } from "./schema";
+import { deleteContact, updateContact } from "@/lib/quotes/contacts-store";
+import {
+  ContactFormSchema,
+  JobFormSchema,
+  SettingsSchema,
+  type ContactForm,
+  type JobForm,
+  type SettingsForm,
+} from "./schema";
 
 
 async function authorize(token: string) {
@@ -107,4 +115,20 @@ function normalizePhone(v: string | null): string | null {
   if (d.length === 10 && d.startsWith("0")) return `972${d.slice(1)}`;
   if (d.length === 9 && !d.startsWith("0")) return `972${d}`;
   return d || null;
+}
+
+export async function saveContactAction(token: string, id: string, form: ContactForm) {
+  const user = await authorize(token);
+  if (!user) return { ok: false as const, error: "unauthorized" };
+  const parsed = ContactFormSchema.safeParse(form);
+  if (!parsed.success) return { ok: false as const, error: "invalid" };
+  await updateContact(user.id, id, parsed.data);
+  return { ok: true as const };
+}
+
+export async function deleteContactAction(token: string, id: string) {
+  const user = await authorize(token);
+  if (!user) return { ok: false as const, error: "unauthorized" };
+  await deleteContact(user.id, id);
+  return { ok: true as const };
 }

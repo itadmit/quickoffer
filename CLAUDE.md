@@ -119,6 +119,8 @@
 | `lib/quotes/links.ts` | **קישורים קצרים (20.9.2026):** `/e/{code}`, `/s/{code}`, `/w/{code}` = קוד 6 תווים בטבלת `magic_links` (purpose, subject, expires_at). `/u/{code}` משתמש בקוד של `s`. `editLink()` משתמש שוב באותו קוד כל עוד נשארו >24 שעות. `resolveLink(code, purpose)`; קוד עם "." = טוקן HMAC ישן. cron מוחק פגי תוקף. `public_id` גם 6 תווים (היה 10) |
 | `lib/whatsapp/` | `types.ts` (ממשק), `ibot.ts` (פרסר + send-*), `telegram.ts` (Bot API, כתובות `tg:<chatId>`, מדיה `tg-file:<id>` שנפתרת רק בזמן הורדה), `index.ts` (`gatewayFor(address)` בוחר ערוץ; תור סדרתי 400ms, retry ×3, לוג `outbound_messages`, פיצול >3900 תווים) |
 | `lib/ai/` | `types.ts` (Zod schemas), `prompts.ts` (4 system prompts), `openai.ts` (Whisper + `chat.completions.parse`; משמש גם Groq/custom דרך baseURL), `index.ts` (factory מהגדרות) |
+| `lib/quotes/contacts.ts` · `contacts-store.ts` | **ספר הלקוחות (24.9.2026)** - אותו דפוס של קטלוג המחירים: `contactKey` ממזג איות אחד של אדם ולעולם לא שני אנשים, `findPhoneFor` מחזיר null ולא ניחוש. נלמד מכל הצעה עם שם, והטלפון ממלא את עצמו בהצעה הבאה לאותו לקוח (`phoneFromContacts` → `cmd.phoneRemembered`). נערך ב-`/s` |
+| `lib/conversation/admin-notify.ts` | התראת "נרשם חדש" ליוגב ולמריה. נמענים ב-`app_settings["admin.notify"]` (מופרד בפסיק, מקבל גם `tg:<chatId>`), עריכה ב-`/admin → iBot`. כישלון נבלע - לדעת על נרשם לא שווה לאבד את התשובה |
 | `lib/quotes/` | `calc.ts` (מע״מ, עיגול), `service.ts` (CRUD, טיוטה פעילה, snapshot), `links.ts`, `customer-actions.ts` (צפייה/אישור/דחייה/שאלה + התראות), `template-spec.ts` (טיפוס תבנית, pure), `templates.ts` (DB: `getTemplateForUser`), `sample.ts` (הצעת הדוגמה), `price-book.ts` (**קטלוג מחירים - pure**: `priceKey`, `applyPriceBook`, `catalogNames`), `price-book-store.ts` (DB: `loadPriceBook`, `learnFromItems`), `customer-message.ts` (ההודעה ללקוח - pure, כדי שמסך העריכה יבנה אותה מחדש חי), `follow-up.ts` (תזכורות על הצעות שנתקעו) |
 | `lib/phone.ts` | `normalizePhone` / `formatPhone` / `isMobile` / `waLink` - מקור אמת אחד למספרים. `formatPhone` מיוצא מחדש מ-`quote-layouts/shared` לתאימות |
 | `lib/billing/plans.ts` | `PLAN_OFFERS` - **מקור האמת לתמחור**. דף הנחיתה, `/u`, הודעות המכסה והתוכניות שנרשמו בהאב קוראים ממנו. מזהה התוכנית = `plan_code` בהאב |
@@ -296,6 +298,19 @@ QuickOffer מחובר ל-**Quick Commerce Billing Hub** (`~/Desktop/Projeccts/qu
 3. Vercel Blob (`BLOB_READ_WRITE_TOKEN`) — בלעדיו לוגו/חתימה/אודיו לא נשמרים (הקוד מחזיר null ולא נופל).
 4. סליקה אמיתית: חשבון Grow/PayPlus → URL לכל חבילה ב-`/admin → תשלומים`.
 5. תמונת ההצעה בצ׳אט (`send-image`) - בעל המקצוע עדיין לא רואה את המסמך שלו. PDF (§8.3).
+
+## סבב תיקוני שיחה (24.9.2026, מתוך לוג אמיתי)
+
+ארבעה כשלים שנצפו בשיחה אחת של המשתמש, כולם בסיווג ולא במכניקה:
+
+1. **`"הטלפון של מריה 0542284283"` סווג `unclear`.** הבוט עצמו מכתיב את הניסוח הזה ב-`sendHint`, ואז לא הבין אותו - `applyCorrection` כבר ידע לקלוט מספר ולהחזיר קישור שליחה, אף אחד לא הגיע לשם. הפרומפט אומר עכשיו במפורש שמסירת פרט על הלקוח היא `correction`.
+2. **`"תקן"` סווג `unclear` → לולאה אינסופית.** `unclearCorrectionOrNew` מבקש לכתוב "תקן", ו"תקן" לא היה באוצר המילים. נוספה פקודה `correct` שמחזירה "מה לתקן?" עם דוגמאות וקישור עריכה - תשובה שמקדמת, במקום לחזור על השאלה.
+3. **`"שלח למריה את ההצעה הקודמת"` סווג `mark_sent`.** "שלח" ישב ברשימת `mark_sent` לצד "שלחתי". נוספה `send_to` (ציווי) והופרדה מ-`mark_sent` (עבר). בקשה לשלוח נענתה ב"סומנה כנשלחה" ואז שום דבר לא נשלח.
+4. **הקופי מכר רק הקלטה.** כל הודעות הפתיחה אמרו "אפשר לשלוח הודעה קולית" בזמן שהמשתמש הקליד כל הזמן והכל עבד. עודכן לשקף את שתי הדרכים.
+
+⚠️ **המודל סותר את עצמו לפעמים** - `"כמו ההצעה של דני אבל לשרון"` חזר עם `intent=new_quote` ו-`command=repeat`, והקוד זרק את ה-command בשקט. יש עכשיו guard ב-`handleReady`: פקודה נושאת-`reference` (`repeat`/`job_use`) בהודעה בלי מחירים גוברת על ה-intent. לא לסמוך על כך שה-LLM יהיה עקבי עם עצמו.
+
+**eval: 22/23** (`EVAL_PROVIDER=openai EVAL_MODEL=gpt-4o-mini npx tsx tests/groq-eval.ts`). שבעת המקרים מהלוג נוספו לקובץ. הכשל היחיד שנותר הוא `"התקנת מזגן לדני כהן"` → new_quote במקום job_use, הכשל הידוע שקיים בכל המודלים שנבדקו.
 
 ## החלטות פתוחות (PRODUCT.md §15)
 - דומיין קצר לקישורים (טרם נבחר; בדוגמאות `qv.app`)

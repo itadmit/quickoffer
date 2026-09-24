@@ -81,6 +81,21 @@ const CLASSIFY: {
   { t: "מה ההצעות שלי", draft: false, want: "command" },
   { t: "זה כולל מע״מ?", draft: true, want: "question" },
   { t: "300 שקל", draft: true, want: "unclear" },
+  /**
+   * Every one of these was misclassified in production on 2026-09-24 and cost
+   * a real conversation. The phone case is the worst of them: the bot itself
+   * asks for that exact wording, then answered it with "תקן או חדש?".
+   */
+  { t: "הטלפון של מריה 0542284283", draft: true, want: "correction" },
+  { t: "המספר של הלקוח 050-1234567", draft: true, want: "correction" },
+  { t: "תקן", draft: true, want: "command", cmd: "correct" },
+  { t: "לתקן", draft: true, want: "command", cmd: "correct" },
+  // Imperative, not a report: answering this with "סומנה כנשלחה" sends nothing
+  { t: "שלח למריה את ההצעה הקודמת", draft: true, want: "command", cmd: "send_to",
+    fields: (r) => !!r.customerName?.includes("מריה") },
+  { t: "תשלח לדני את ההצעה", draft: true, want: "command", cmd: "send_to" },
+  // ...and the past tense must still mean "mark it", or nothing ever gets marked
+  { t: "העברתי ללקוח", draft: true, want: "command", cmd: "mark_sent" },
   // --- §6.8
   { t: "עיצוב מודרני", draft: false, want: "command", cmd: "design",
     fields: (r) => r.designName === "מודרני" },

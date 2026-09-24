@@ -474,7 +474,38 @@ export const savedJobItems = pgTable(
   (t) => [index("saved_job_items_job_idx").on(t.jobId, t.position)],
 );
 
+/**
+ * The professional's own customers, learned from the quotes they write.
+ *
+ * Same idea as price_book one table over: a detail said once should never have
+ * to be said again. Telling the bot "הטלפון של מריה 054..." used to help
+ * exactly one quote; now it makes the next quote for מריה sendable in one tap
+ * without asking. Matching lives in lib/quotes/contacts.ts.
+ */
+export const contacts = pgTable(
+  "contacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Normalized form of the name - what two spellings of one customer collapse to. */
+    key: text("key").notNull(),
+    /** As last written by the professional, which is how they want to see it. */
+    name: text("name").notNull(),
+    phone: text("phone"),
+    quoteCount: integer("quote_count").notNull().default(1),
+    lastQuoteAt: timestamp("last_quote_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("contacts_user_key_idx").on(t.userId, t.key),
+    index("contacts_user_recent_idx").on(t.userId, t.lastQuoteAt),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
+export type Contact = typeof contacts.$inferSelect;
 export type SavedJob = typeof savedJobs.$inferSelect;
 export type SavedJobItem = typeof savedJobItems.$inferSelect;
 export type PriceBookEntry = typeof priceBook.$inferSelect;

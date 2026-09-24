@@ -7,6 +7,7 @@ import { TemplateThumb } from "@/components/template-thumb";
 import type { QuoteTemplateSpec } from "@/lib/quotes/template-spec";
 import { removeLogoAction, saveSettingsAction, uploadLogoAction } from "./actions";
 import { JobsEditor, type Job } from "./jobs-editor";
+import { ContactsEditor, type ContactRow } from "./contacts-editor";
 import type { SettingsForm } from "./schema";
 
 type Props = {
@@ -19,6 +20,8 @@ type Props = {
   templates: { id: string; name: string; description: string | null; isDefault: boolean; lockedFor: string | null; spec: QuoteTemplateSpec }[];
   /** §6.8 saved jobs - managed here, created in the chat */
   jobs: Job[];
+  /** The customer book - learned from quotes, corrected here. */
+  contacts: ContactRow[];
   /** false on the top plan - there is nothing to sell */
   canUpgrade: boolean;
   initial: SettingsForm;
@@ -31,7 +34,7 @@ const PLAN_LABEL: Record<string, string> = {
   unlimited: "Unlimited",
 };
 
-export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, quota, templates, jobs, canUpgrade, initial }: Props) {
+export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, quota, templates, jobs, contacts, canUpgrade, initial }: Props) {
   const [form, setForm] = useState<SettingsForm>(initial);
   const [logoUrl, setLogoUrl] = useState(initialLogo);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -249,6 +252,7 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, quota
       )}
 
       <JobsEditor token={token} initial={jobs} />
+      <ContactsEditor token={token} initial={contacts} />
 
       <div className="fixed bottom-0 inset-x-0 bg-card border-t border-line p-3">
         <div className="max-w-lg mx-auto flex items-center gap-3">

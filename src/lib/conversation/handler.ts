@@ -40,6 +40,7 @@ import {
 import { trackMetaEvent } from "../meta/capi";
 import { notifyNewUser } from "./admin-notify";
 import { audioSeconds } from "../audio";
+import { isMobile } from "../phone";
 import { fetchMedia, storeFile } from "../storage";
 import { sendText, type InboundMessage } from "../whatsapp";
 import type { FilledFromBook } from "../quotes/price-book";
@@ -414,6 +415,27 @@ async function handleReady(user: User, msg: InboundMessage, run: RunLog) {
     if (intent.command === "job_use" && looksLikeNewQuote(text)) {
       intent = { intent: "new_quote", command: null, ...blank };
     }
+
+    /**
+     * The model contradicting itself: a command named while `intent` says
+     * something else. Seen live on "כמו ההצעה של דני, אבל לשרון", which came
+     * back as intent=new_quote with command=repeat and silently lost the
+     * command - the professional got a blank new quote instead of a copy.
+     *
+     * Only for the commands that carry a `reference`, and only when the
+     * message has no prices of its own: naming a previous quote is the whole
+     * content of those messages, so the command is the more reliable half of
+     * the answer. Anything with numbers in it stays a new quote.
+     */
+    const REFERENCING: Command[] = ["repeat", "job_use"];
+    if (
+      intent.intent !== "command" &&
+      intent.command &&
+      REFERENCING.includes(intent.command) &&
+      !looksLikeNewQuote(text)
+    ) {
+      intent = { ...intent, intent: "command" };
+    }
   }
 
   switch (intent.intent) {
@@ -588,6 +610,11 @@ async function newQuote(user: User, text: string, audioUrl: string | null, run: 
 
   const quote = await createQuoteFromJSON(user, json, { transcript: text, audioUrl });
   run.quoteId = quote.id;
+  // Say it out loud when we filled the number ourselves. Silently knowing a
+  // customer's phone is indistinguishable from having the wrong one.
+  if (quote.phoneFromContacts) {
+    await sendText(user.phone, cmd.phoneRemembered(quote.phoneFromContacts));
+  }
   await sendQuoteMessages(user, quote, quote.filledFromBook);
 }
 
@@ -787,6 +814,37 @@ async function runCommand(
       }
       await markSent(target.id);
       await sendText(user.phone, cmd.markedSent(target));
+      return;
+    }
+    /**
+     * "שלח למריה" - a request to send, not a report that it was sent. With a
+     * mobile on file this is one tap; without one we say so and hand over the
+     * forwardable message rather than silently doing nothing.
+     */
+    case "send_to": {
+      const target = draft ?? (await getLatestQuote(user.id));
+      if (!target) {
+        await sendText(user.phone, cmd.nothingToSend());
+        return;
+      }
+      if (isMobile(target.customerPhone)) {
+        await sendText(user.phone, cmd.sendNow(target, await sendLink(target.id)));
+        return;
+      }
+      await sendText(user.phone, cmd.needPhone(intent.customerName ?? target.customerName));
+      await sendText(
+        user.phone,
+        customerMessage(target, user, await publicLink(target.publicId)),
+      );
+      return;
+    }
+    /** Bare "תקן" - they want to fix something but haven't said what yet. */
+    case "correct": {
+      if (!draft) {
+        await sendText(user.phone, cmd.nothingToCorrect());
+        return;
+      }
+      await sendText(user.phone, cmd.whatToCorrect(draft, await editLink(draft.id)));
       return;
     }
     case "cancel": {

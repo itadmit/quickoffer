@@ -55,8 +55,9 @@ export const onboarding = {
    */
   done: (settingsUrl: string) =>
     [
-      `✅ הכול מוכן. אפשר לשלוח לי הודעה קולית, למשל:`,
+      `✅ הכול מוכן. אפשר להקליט או לכתוב - מה שנוח. למשל:`,
       `🎤 "הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200"`,
+      `⌨️ או להקליד בדיוק את אותו משפט.`,
       `ותוך דקה חוזרת הצעה מוכנה להעברה ללקוח.`,
       ``,
       `טעיתי במשהו? פשוט להגיד לי - "תשנה ביקור ל-250".`,
@@ -187,7 +188,7 @@ export function correctionSummary(
 
 /** §6.5 `הצעות` */
 export function quotesList(list: Quote[], editUrls: string[]): string {
-  if (!list.length) return `עדיין אין הצעות. אפשר לשלוח לי הודעה קולית ומתחילים 🎤`;
+  if (!list.length) return `עדיין אין הצעות. אפשר להקליט או לכתוב לי את הראשונה ומתחילים 🎤`;
   const status: Record<Quote["status"], string> = {
     draft: "טיוטה",
     sent: "נשלחה",
@@ -250,7 +251,7 @@ export const jobs = {
       `בפעם הבאה: "${name} לדני כהן".`,
     ].join("\n"),
   needDraft: () =>
-    `אין הצעה לשמור. קודם הודעה קולית עם ההצעה, ואז "תשמור את זה כ<שם התבנית>".`,
+    `אין הצעה לשמור. קודם ההצעה עצמה - בהקלטה או בכתב - ואז "תשמור את זה כ<שם התבנית>".`,
   needName: () => `איך לקרוא לתבנית? למשל: "תשמור את זה כהתקנת מזגן".`,
   notFound: (names: string[]) =>
     names.length
@@ -268,7 +269,7 @@ export const commands = {
   nothingToSend: () => `אין טיוטה פעילה לסימון. לכתוב "הצעות" לרשימה.`,
   cancelled: (q: Quote) => `🗑️ הצעה #${q.number} בוטלה.`,
   nothingToCancel: () => `אין טיוטה פעילה לביטול.`,
-  newContext: () => `👌 מוכן להצעה חדשה - אפשר לשלוח הודעה קולית.`,
+  newContext: () => `👌 מוכן להצעה חדשה - בהקלטה או בכתב.`,
   settings: (url: string) => `⚙️ הגדרות העסק: ${url}`,
   editLink: (q: Quote, url: string, sendUrl: string | null) =>
     [
@@ -277,12 +278,12 @@ export const commands = {
         ? [`📲 לשלוח ל${q.customerName ?? "לקוח"} (${formatPhone(q.customerPhone!)}): ${sendUrl}`]
         : []),
     ].join("\n"),
-  noQuotes: () => `עדיין אין הצעות. אפשר לשלוח לי הודעה קולית ומתחילים 🎤`,
+  noQuotes: () => `עדיין אין הצעות. אפשר להקליט או לכתוב לי את הראשונה ומתחילים 🎤`,
   pdfNotYet: () =>
     `הקישור ללקוח הוא ההצעה - תמיד מעודכן, ומאפשר אישור וחתימה. בדף עצמו יש כפתור "הדפס / שמור כ-PDF" אם צריך קובץ.`,
   help: () =>
     [
-      `🎤 הודעה קולית - ואני מחזיר הצעת מחיר.`,
+      `🎤 הודעה קולית, או ⌨️ הודעה כתובה - ואני מחזיר הצעת מחיר. שתיהן עובדות אותו דבר.`,
       `כשיש טיוטה פעילה, אפשר לכתוב או להגיד תיקון: "תשנה ביקור ל-250".`,
       ``,
       `פקודות:`,
@@ -300,15 +301,53 @@ export const commands = {
     ].join("\n"),
   unclearCorrectionOrNew: (customer: string | null) =>
     `לתקן את ההצעה${customer ? ` ל${customer}` : " הפעילה"}, או הצעה חדשה? (לכתוב "תקן" או "חדש")`,
+  /**
+   * Answer to a bare "תקן". The bot asked for this exact word, so the reply
+   * has to move things forward - repeating the question is how the
+   * conversation looped.
+   */
+  whatToCorrect: (q: Quote, editUrl: string) =>
+    [
+      `מה לתקן בהצעה #${q.number}${q.customerName ? ` ל${q.customerName}` : ""}?`,
+      `אפשר לכתוב או להקליט, למשל: "תשנה את המחיר ל-9000", "תוסיף אחריות שנה", "השם הוא מריה סוחין".`,
+      ``,
+      `✏️ או לערוך הכול במסך: ${editUrl}`,
+    ].join("\n"),
+  nothingToCorrect: () =>
+    `אין טיוטה פעילה לתיקון. אפשר לשלוח הצעה חדשה - בהקלטה או בכתב - או "הצעות" לרשימה.`,
+  /**
+   * We filled the customer's phone from the book. Always announced: a number
+   * we used without saying so is indistinguishable from a number we got wrong,
+   * and this one decides who receives the quote.
+   */
+  phoneRemembered: (c: { name: string; phone: string | null }) =>
+    `📇 זכרתי את הטלפון של ${c.name} (${formatPhone(c.phone!)}) מהצעה קודמת. אם השתנה - להגיד לי.`,
+  /** A request to send, answered with the one tap that actually sends. */
+  sendNow: (q: Quote, sendUrl: string) =>
+    [
+      `📲 לשלוח ל${q.customerName ?? "לקוח"} (${formatPhone(q.customerPhone!)}) - בלחיצה אחת:`,
+      sendUrl,
+      ``,
+      `הקישור פותח את הצ׳אט עם ההודעה מוכנה, ונשלח מהמספר שלך.`,
+    ].join("\n"),
+  needPhone: (who: string | null) => {
+    const name = who ?? "הלקוח";
+    return [
+      `אין לי מספר טלפון של ${name}.`,
+      `אפשר לכתוב לי אותו - "הטלפון של ${name} 0501234567" - ואחזיר קישור ששולח בלחיצה אחת.`,
+      ``,
+      `בינתיים אפשר להעביר ידנית את ההודעה הבאה 👇`,
+    ].join("\n");
+  },
   unsupportedType: () => `אני מבין הודעות קוליות, טקסט ותמונות (ללוגו).`,
   logoUpdated: () => `הלוגו עודכן 👌`,
-  question: () => `אני עופר, הבוט של QuickOffer - אני עושה הצעות מחיר 🙂 אפשר לשלוח לי הודעה קולית עם ההצעה, או "עזרה" לרשימת פקודות.`,
+  question: () => `אני עופר, הבוט של QuickOffer - אני עושה הצעות מחיר 🙂 אפשר להקליט לי את ההצעה או לכתוב אותה, או "עזרה" לרשימת פקודות.`,
   greeting: (hasDraft: boolean) =>
     hasDraft
-      ? `👋 יש לך טיוטה פעילה. אפשר להגיד לי תיקון, לכתוב "שלחתי" כשהעברת ללקוח, או לשלוח הודעה קולית להצעה חדשה.`
-      : `👋 היי, אני עופר - מדברים, ואני כותב את ההצעה. אפשר לשלוח לי הודעה קולית, למשל:
+      ? `👋 יש לך טיוטה פעילה. אפשר להגיד או לכתוב לי תיקון, לכתוב "שלחתי" כשהעברת ללקוח, או לשלוח הצעה חדשה - בהקלטה או בכתב.`
+      : `👋 היי, אני עופר - מדברים או כותבים, ואני מכין את ההצעה. למשל:
 🎤 "הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200"
-ואני מחזיר הצעה מוכנה תוך דקה.`,
+⌨️ אפשר גם פשוט להקליד את זה. ואני מחזיר הצעה מוכנה תוך דקה.`,
 };
 
 /**

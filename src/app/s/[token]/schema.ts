@@ -29,3 +29,10 @@ export const JobFormSchema = z.object({
   items: z.array(JobItemSchema).min(1).max(50),
 });
 export type JobForm = z.infer<typeof JobFormSchema>;
+
+/** The customer book - learned from quotes, corrected here. */
+export const ContactFormSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  phone: z.string().trim().max(30).nullable(),
+});
+export type ContactForm = z.infer<typeof ContactFormSchema>;

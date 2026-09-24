@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { parseIbotInbound } from "@/lib/whatsapp/ibot";
+import { contactKey, findPhoneFor, isLearnableContact } from "@/lib/quotes/contacts";
 import { calcTotals, formatMoney, qtyLabel } from "@/lib/quotes/calc";
 import { notifications } from "@/lib/conversation/messages";
 import { makeToken, verifyToken, encryptSecret, decryptSecret } from "@/lib/crypto";
@@ -642,4 +643,38 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert.ok(errors.tooLong(200, 180).includes("200"), "the refusal must say how long theirs was");
   assert.ok(errors.tooLong(200, 180).includes("3"), "and what the limit is");
   console.log("AUDIO DURATION OK");
+}
+
+// ---- the customer book: one spelling of a person, never two people merged
+{
+    // Same person, written differently on two different days
+  assert.equal(contactKey("מריה סוחין"), contactKey("מריה  סוחין "));
+  assert.equal(contactKey("מריה סוחין"), contactKey("מריה סוחין."));
+  assert.equal(contactKey("דני כהן"), contactKey("מר דני כהן"));
+  assert.equal(contactKey("Maria"), contactKey("maria"));
+
+  /**
+   * The failure that matters. Filling a phone from the wrong contact sends one
+   * customer's priced quote to another customer - the worst thing this product
+   * can do - so near-misses must stay apart.
+   */
+  assert.notEqual(contactKey("דני כהן"), contactKey("דני לוי"));
+  assert.notEqual(contactKey("מריה"), contactKey("מריה סוחין"));
+  assert.notEqual(contactKey("יוסי"), contactKey("יוסף"));
+
+  assert.ok(!isLearnableContact(null));
+  assert.ok(!isLearnableContact("א"), "one letter is a typo, not a customer");
+  assert.ok(isLearnableContact("מריה"));
+
+  const book = [
+    { key: contactKey("מריה סוחין"), name: "מריה סוחין", phone: "972547359759", quoteCount: 2 },
+    { key: contactKey("דני כהן"), name: "דני כהן", phone: null, quoteCount: 1 },
+  ];
+  assert.equal(findPhoneFor("מריה סוחין", book)?.phone, "972547359759");
+  assert.equal(findPhoneFor("מר מריה סוחין", book)?.phone, "972547359759");
+  // Known by name but no number on file - must not be treated as a hit
+  assert.equal(findPhoneFor("דני כהן", book), null);
+  assert.equal(findPhoneFor("שרון", book), null);
+  assert.equal(findPhoneFor(null, book), null);
+  console.log("CONTACTS OK");
 }

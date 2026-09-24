@@ -15,6 +15,8 @@ import type { QuoteJSON } from "../ai/types";
 import { calcTotals, lineTotal, VAT_RATE } from "./calc";
 import { applyPriceBook, type FilledFromBook } from "./price-book";
 import { learnFromItems, loadPriceBook } from "./price-book-store";
+import { findPhoneFor, type ContactEntry } from "./contacts";
+import { learnContact, loadContacts } from "./contacts-store";
 
 export type QuoteWithItems = Quote & { items: QuoteItem[] };
 
@@ -189,7 +191,7 @@ export async function createQuoteFromJSON(
   user: User,
   json: QuoteJSON,
   source: { transcript: string | null; audioUrl: string | null },
-): Promise<QuoteWithItems & { filledFromBook: FilledFromBook[] }> {
+): Promise<QuoteWithItems & { filledFromBook: FilledFromBook[]; phoneFromContacts: ContactEntry | null }> {
   const vatRate = user.vatStatus === "exempt" ? 0 : VAT_RATE;
   const vatIncluded = json.vatIncluded ?? false;
   const validDays = json.validDays ?? user.defaultValidDays;
@@ -201,6 +203,10 @@ export async function createQuoteFromJSON(
     .where(eq(users.id, user.id))
     .returning({ number: sql<number>`${users.nextQuoteNumber} - 1` });
 
+  // A customer we already know arrives sendable: the professional said this
+  // number once, and being asked for it again is the bot forgetting them.
+  const known = json.customerPhone ? null : findPhoneFor(json.customerName, await loadContacts(user.id));
+
   const [q] = await db
     .insert(quotes)
     .values({
@@ -208,7 +214,7 @@ export async function createQuoteFromJSON(
       userId: user.id,
       number,
       customerName: json.customerName,
-      customerPhone: json.customerPhone,
+      customerPhone: json.customerPhone ?? known?.phone ?? null,
       title: json.title,
       vatIncluded,
       vatRate,
@@ -233,7 +239,12 @@ export async function createQuoteFromJSON(
   });
   // The one place a use is counted: one quote, one bump per item.
   await learnFromItems(user.id, items, { bump: true });
-  return { ...(await getQuote(q.id))!, filledFromBook: filled };
+  await learnContact(
+    user.id,
+    { name: json.customerName, phone: json.customerPhone ?? known?.phone ?? null },
+    { bump: true },
+  );
+  return { ...(await getQuote(q.id))!, filledFromBook: filled, phoneFromContacts: known };
 }
 
 /** Apply a corrected JSON to an existing draft (§6.4). */
@@ -259,6 +270,10 @@ export async function applyJSONToQuote(
       updatedAt: new Date(),
     })
     .where(eq(quotes.id, quote.id));
+  await learnContact(quote.userId, {
+    name: json.customerName ?? quote.customerName,
+    phone: json.customerPhone ?? quote.customerPhone,
+  });
   const { items, filled } = applyPriceBook(
     itemsFromJSON(json),
     await loadPriceBook(quote.userId),

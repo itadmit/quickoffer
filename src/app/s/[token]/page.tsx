@@ -9,6 +9,7 @@ import { planAllows, PLAN_LABELS } from "@/lib/quotes/template-spec";
 import { listTemplates, specOf } from "@/lib/quotes/templates";
 import { checkQuota } from "@/lib/conversation/quota";
 import { listSavedJobsWithItems } from "@/lib/quotes/saved-jobs-store";
+import { listContacts } from "@/lib/quotes/contacts-store";
 import { formatPhone } from "@/components/quote-document";
 import { SettingsEditor } from "./settings-editor";
 
@@ -35,12 +36,19 @@ export default async function SettingsPage({ params }: { params: Promise<{ token
 
   const quota = await checkQuota(user);
   const jobs = await listSavedJobsWithItems(user.id);
+  const contacts = (await listContacts(user.id)).map((c) => ({
+    id: c.id,
+    name: c.name,
+    phone: c.phone,
+    quoteCount: c.quoteCount,
+  }));
 
   return (
     <SettingsEditor
       token={token}
       templates={templates}
       jobs={jobs}
+      contacts={contacts}
       canUpgrade={upgradesFor(user.plan).length > 0}
       quota={quota.limit === Infinity ? null : { used: quota.used, limit: quota.limit, monthly: user.plan !== "trial" }}
       phone={user.channel === "whatsapp" ? user.phone : null}

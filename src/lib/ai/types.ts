@@ -38,7 +38,20 @@ export type CorrectionResult = z.infer<typeof CorrectionResultSchema>;
 
 export const COMMANDS = [
   "list",
+  /** past tense - "שלחתי". The professional is telling us it already happened. */
   "mark_sent",
+  /**
+   * Imperative - "שלח למריה". Asking us to send it now, which is the opposite
+   * of mark_sent and used to collapse into it: a request to send was answered
+   * with "סומנה כנשלחה" and nothing reached anyone.
+   */
+  "send_to",
+  /**
+   * Bare "תקן", with nothing said about what to change. The bot's own
+   * disambiguation prompt asks for exactly this word, so failing to understand
+   * it looped the conversation forever.
+   */
+  "correct",
   "pdf",
   "cancel",
   "new",
