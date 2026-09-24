@@ -184,19 +184,23 @@ QuickOffer מחובר ל-**Quick Commerce Billing Hub** (`~/Desktop/Projeccts/qu
 - **מה אומת חי מול ההאב:** ping חתום, יצירת לקוח, יצירת דף סליקה של Grow, יצירת מנוי עם `plan_code: pro`. בצד שלנו: דחיית webhook לא חתום ובעל חתימה שגויה, אידמפוטנטיות, past-due, recovered, cancelled. נתוני הבדיקה נמחקו מההאב.
 - **בלי חיבור** (`billing.api_key` ריק) כפתור השדרוג מוביל להודעת WhatsApp למספר הבוט - הפעלה ידנית, כמו קודם.
 
-## דומיין: quickoffer.co.il (נרכש 22.9.2026)
+## דומיין: quickoffer.co.il — חי (24.9.2026)
 
-הדומיין נרכש, ה-DNS הופנה ל-Vercel ושני ה-hosts נוספו לפרויקט. **נכון ל-22.9 ההאצלה ברישום `.il` עוד לא פורסמה** (שרת ה-TLD מחזיר SOA של `co.il` במקום NS), לכן Vercel מציג "Invalid Configuration" - זה מצב תקין בהמתנה, לא תקלה.
+**הדומיין באוויר ומחובר.** אומת 24.9: `A → 216.150.1.1`, `www → …vercel-dns-016.com`, NS = `ns1/ns2.mynames.co.il`, תעודת ZeroSSL ל-`quickoffer.co.il` בתוקף עד 22.12.2026, `/` מחזיר 200 עם האתר שלנו, `/q/<לא קיים>` מחזיר 404, `www` מפנה ב-308 ל-apex.
 
-**נעשה כבר:** `APP_URL` בפרודקשן ב-Vercel = `https://quickoffer.co.il` (היה מחרוזת ריקה - מוקש: fallback ל-`http://localhost:3000`) · redirect מ-`www` ל-apex ב-`next.config.ts` · `metadataBase` ב-`/q/[publicId]` נגזר מ-`app.url` בזמן ריצה.
+**הוחלף בפועל:**
+- `app.url` = `https://quickoffer.co.il` (היה `https://quickoffer.vercel.app`). `appUrl()` ב-`lib/quotes/links.ts` נקרא בזמן ריצה → כל הקישורים החדשים (`/q`, `/e`, `/s`, `/w`) על הדומיין החדש **מיידית**. קישורים שכבר נשלחו ללקוחות ממשיכים לעבוד — `quickoffer.vercel.app` נשאר חי.
+- webhook טלגרם נרשם מחדש על `https://quickoffer.co.il/api/webhooks/telegram` עם **סוד חדש** (רוטציה, כדי שהרישום הישן לא יוכל להמשיך למסור). 0 pending, בלי שגיאות.
+- `APP_URL` בפרודקשן ב-Vercel = הדומיין החדש (היה מחרוזת ריקה — מוקש: fallback ל-`http://localhost:3000`).
+- redirect `www` → apex ב-`next.config.ts` (בקוד ולא בדשבורד, כדי שישרוד יצירה מחדש של הפרויקט).
+- `metadataBase` ב-`/q/[publicId]` נגזר מ-`app.url` בזמן ריצה — כרטיס התצוגה ב-WhatsApp עוקב אחרי הקישורים ולא מפגר.
 
-**כשהדומיין עולה עם תעודת TLS תקינה - בסדר הזה:**
-1. `/admin → iBot` → `app.url` = `https://quickoffer.co.il`. ⚠️ **לא לפני שהוא באמת עונה ב-HTTPS.** `appUrl()` ב-`lib/quotes/links.ts` נקרא בזמן ריצה, אז ההחלפה מיידית וטוטאלית על כל הקישורים - `/q`, `/e`, `/s`, `/w`. החלפה מוקדמת = כל הצעה שנשלחת ללקוח היא קישור מת. קישורים שכבר נשלחו ממשיכים לעבוד כי `quickoffer.vercel.app` נשאר חי.
-2. `/admin → טלגרם → הגדר webhook` (רשום כרגע על `quickoffer.vercel.app`).
-3. ה-pinger החיצוני של הקרון → `https://quickoffer.co.il/api/cron/tick?secret=`.
-4. iBot: כתובת ה-webhook **נגזרת לבד** מ-`app.url` ומוצגת ב-`/admin → iBot`.
+**סטטוס ה-endpoints על הדומיין החדש:** `/api/webhooks/telegram` → 401 בלי סוד תקין (חי) · `/api/cron/tick` → 401 בלי secret (חי) · `/api/webhooks/ibot` → **503**, וזה תקין: `ibot.webhook_token` ריק, והראוט מחזיר 503 מפורש כשהוא לא מוגדר (route.ts:31). יהפוך ל-401 ברגע שיוזן טוקן iBot אמיתי.
 
-**נותר ידנית:** `APP_URL` ל-Preview - ה-CLI מסרב להוסיף אותו ללא prompt (`git_branch_required`), צריך קליק בדשבורד. לא חוסם: משפיע רק על preview deployments.
+**נותר ידנית (לא חוסם):**
+1. ה-pinger החיצוני (cron-job.org) → `https://quickoffer.co.il/api/cron/tick?secret=` — עדיין מצביע על הדומיין הישן.
+2. `APP_URL` ל-Preview — ה-CLI מסרב ללא prompt (`git_branch_required`), צריך קליק בדשבורד. משפיע רק על preview deployments.
+3. טוקן iBot — טרם הוזן (ראה §6.8 / היסטוריית ה-app_settings).
 
 ## מה הלאה (לפי סדר)
 1. **חיבור אמיתי:** Neon DB + Vercel deploy + מפתח OpenAI ב-`/admin` + webhook token ב-iBot → הודעה קולית אמיתית מהטלפון של המשתמש. לאמת ש-`X-Webhook-Token` באמת מגיע.
