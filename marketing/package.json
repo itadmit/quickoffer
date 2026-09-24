@@ -1,0 +1,12 @@
+{
+  "name": "quickoffer-marketing",
+  "private": true,
+  "type": "module",
+  "description": "Renders the ad compositions to video. Separate from the app so puppeteer never lands in a Vercel build.",
+  "scripts": {
+    "screens": "node render-demo.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23.11.1"
+  }
+}

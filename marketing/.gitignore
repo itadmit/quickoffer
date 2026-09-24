@@ -7,9 +7,13 @@
 #
 # If a specific render needs to be shared, upload it rather than committing it.
 .build/
+.build-demo/
 export/
 hf/
 audio/
+shots/
+node_modules/
+render-demo.log
 *.mp4
 *.mov
 *.wav
