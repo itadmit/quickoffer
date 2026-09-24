@@ -66,3 +66,18 @@ export function formatMoney(n: number): string {
 export function formatQty(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toLocaleString("he-IL", { maximumFractionDigits: 2 });
 }
+
+/**
+ * Units that measure nothing. "קומפלט" is how a professional says "for the
+ * whole job" and "יח׳" is the default the model falls back to - printed next
+ * to the number in the quantity column they read as noise ("1 קומפלט"), so the
+ * number stands alone. Real measures (מ״ר, מ״א, שעה, יום, נקודה) stay: there
+ * the unit is what the price is per, and dropping it loses meaning.
+ */
+const UNITLESS = new Set(["קומפלט", "יח׳", "יח'", "יחידה"]);
+
+export function qtyLabel(quantity: number, unit: string | null | undefined): string {
+  const u = (unit ?? "").trim();
+  const n = formatQty(quantity);
+  return !u || UNITLESS.has(u) ? n : `${n} ${u}`;
+}

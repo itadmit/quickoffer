@@ -11,8 +11,11 @@ const SETTINGS_TTL_MS = 30 * 24 * 3600 * 1000;
 // so "ערוך" twice in a row gives the same short link.
 const REUSE_MIN_REMAINING_MS = 24 * 3600 * 1000;
 
-/** e = edit a quote · s = business settings · w = one-tap send to the customer */
-type Purpose = "e" | "s" | "w";
+/**
+ * e = edit a quote · s = business settings · w = one-tap send to the customer
+ * r = one-tap reply to the customer's question
+ */
+type Purpose = "e" | "s" | "w" | "r";
 
 export async function appUrl(): Promise<string> {
   return (await getSetting("app.url")).replace(/\/$/, "");
@@ -64,7 +67,8 @@ async function codeFor(purpose: Purpose, subject: string, ttlMs: number): Promis
 export async function resolveLink(code: string, purpose: Purpose): Promise<string | null> {
   // Legacy signed tokens only ever existed for edit and settings links.
   if (code.includes(".")) {
-    return purpose === "w" ? null : (verifyToken(code, purpose)?.s ?? null);
+    if (purpose !== "e" && purpose !== "s") return null;
+    return verifyToken(code, purpose)?.s ?? null;
   }
   const row = await db.query.magicLinks.findFirst({
     where: and(eq(magicLinks.code, code), eq(magicLinks.purpose, purpose), gt(magicLinks.expiresAt, new Date())),
@@ -105,6 +109,17 @@ export async function editLink(quoteId: string): Promise<string> {
  */
 export async function sendLink(quoteId: string): Promise<string> {
   return `${await appUrl()}/w/${await codeFor("w", quoteId, EDIT_TTL_MS)}`;
+}
+
+/**
+ * One-tap reply to a question the customer typed on the quote page
+ * (app/r/[code]). A redirect for the same reason as sendLink: the raw wa.me URL
+ * carries the whole question and fills the chat bubble with percent-escapes.
+ * The draft is rebuilt on each tap from the latest question on that quote, so a
+ * second question reuses the same link and still quotes the right one.
+ */
+export async function replyLink(quoteId: string): Promise<string> {
+  return `${await appUrl()}/r/${await codeFor("r", quoteId, EDIT_TTL_MS)}`;
 }
 
 export async function publicLink(publicId: string): Promise<string> {

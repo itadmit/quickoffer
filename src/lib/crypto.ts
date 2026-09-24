@@ -69,8 +69,8 @@ function tokenSecret(): string {
 }
 
 type TokenPayload = {
-  /** purpose: e=edit quote, s=settings, a=admin session */
-  p: "e" | "s" | "a";
+  /** purpose: e=edit quote, s=settings, a=admin session, d=professional's own device */
+  p: "e" | "s" | "a" | "d";
   /** subject: quote id / user id / "admin" */
   s: string;
   /** expiry, unix seconds */

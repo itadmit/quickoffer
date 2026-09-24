@@ -8,6 +8,20 @@ import type { QuoteWithItems } from "../quotes/service";
 /**
  * Bot copy - word for word from PRODUCT.md §6. Don't improvise here;
  * change the spec first.
+ *
+ * **Gender.** Half the trades we serve are women, and Hebrew has no neutral
+ * second person - "שלח" tells a plumber named Sharon this wasn't written for
+ * her. So nothing here addresses the professional or their customer in a
+ * gendered form, and we get there with real Hebrew rather than slashes:
+ *
+ * - infinitive instead of imperative - "אפשר לשלוח" / "לכתוב", not "שלח"
+ * - impersonal plural - "מדברים - ואני כותב", not "אתה מדבר"
+ * - passive for what the customer did - "הצעה #12 נפתחה", not "דני פתח"
+ * - unvocalised forms that are already identical: past 2nd person (שלחת,
+ *   הגעת, נתת), the pronouns לך / אותך / אליך, and רוצה
+ *
+ * Verbs pointed *at the bot* stay masculine - עופר is a he, and "תשנה ביקור
+ * ל-250" is the user talking to him.
  */
 
 /**
@@ -21,11 +35,11 @@ export const OPENING_LINE = "אני רוצה הצעת מחיר מעוצבת";
 
 export const onboarding = {
   askName: (suggested: string | null) =>
-    `היי, אני עופר 👋 אתה מדבר - אני כותב את ההצעה.\nשתי שאלות ומתחילים.\n1️⃣ איך קוראים לעסק?${
-      suggested ? ` (לפי WhatsApp: "${suggested}" - שלח "כן" או שם אחר)` : ""
+    `היי, אני עופר 👋 מדברים - ואני כותב את ההצעה.\nשתי שאלות ומתחילים.\n1️⃣ איך קוראים לעסק?${
+      suggested ? ` (לפי WhatsApp: "${suggested}" - לכתוב "כן" או שם אחר)` : ""
     }`,
   askVat: () => `2️⃣ עוסק פטור, עוסק מורשה או חברה בע״מ?\n(מורשה/בע״מ = ההצעות יכללו מע״מ 18%)`,
-  askLogo: () => `מעולה. יש לוגו? שלח אותו כתמונה, או "דלג".`,
+  askLogo: () => `מעולה. יש לוגו? אפשר לשלוח אותו כתמונה, או לכתוב "דלג".`,
   /**
    * The activation message. Only two capabilities are named: correcting by
    * voice (the first worry a new user has) and "עזרה" as the door to the rest.
@@ -34,16 +48,17 @@ export const onboarding = {
    */
   done: (settingsUrl: string) =>
     [
-      `✅ הכול מוכן. שלח לי הודעה קולית, למשל:`,
+      `✅ הכול מוכן. אפשר לשלוח לי הודעה קולית, למשל:`,
       `🎤 "הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200"`,
-      `ותוך דקה תחזור אליך הצעה מוכנה להעברה ללקוח.`,
+      `ותוך דקה חוזרת הצעה מוכנה להעברה ללקוח.`,
       ``,
-      `טעיתי במשהו? פשוט תגיד לי - "תשנה ביקור ל-250".`,
+      `טעיתי במשהו? פשוט להגיד לי - "תשנה ביקור ל-250".`,
       `"עזרה" - כל מה שאני יודע לעשות.`,
       ``,
       `פרטי העסק (כתובת, ח.פ., תנאי תשלום) - כאן: ${settingsUrl}`,
     ].join("\n"),
-  didntGetName: () => `לא הבנתי 🙂 איך קוראים לעסק? שלח את השם, או "כן" לאישור השם מ-WhatsApp.`,
+  didntGetName: () =>
+    `לא הבנתי 🙂 איך קוראים לעסק? אפשר לכתוב את השם, או "כן" לאישור השם מ-WhatsApp.`,
   didntGetVat: () => `עוסק פטור, עוסק מורשה או חברה בע״מ? (מורשה/בע״מ = ההצעות יכללו מע״מ 18%)`,
   logoSaved: () => `הלוגו נשמר 👌`,
 };
@@ -75,9 +90,9 @@ function totalsLines(q: Quote): string[] {
 function priceBookLines(filled: FilledFromBook[]): string[] {
   if (!filled.length) return [];
   return [
-    `🧠 השלמתי מחירים שאתה תמיד גובה: ${filled
+    `🧠 השלמתי לפי המחירים הקבועים שלך: ${filled
       .map((f) => `${f.description} ${formatMoney(f.unitPrice)}`)
-      .join(", ")} - תגיד לי אם השתנה.`,
+      .join(", ")} - להגיד לי אם השתנה.`,
   ];
 }
 
@@ -97,11 +112,11 @@ export function quoteSummary(
   const missing = q.items.filter((it) => it.needsReview && it.unitPrice === 0);
   if (missing.length) {
     lines.push(
-      `⚠️ חסר מחיר: ${missing.map((m) => m.description).join(", ")} - תגיד לי את המחיר או תקן בעריכה`,
+      `⚠️ חסר מחיר: ${missing.map((m) => m.description).join(", ")} - להגיד לי את המחיר או לתקן בעריכה`,
     );
   }
-  if (!q.customerName) lines.push(`❓ למי ההצעה? (תגיד לי את שם הלקוח)`);
-  lines.push("", `✏️ לתקן: כתוב או תגיד לי ("תשנה ביקור ל-250")`, `🖊️ עריכה מלאה: ${editUrl}`);
+  if (!q.customerName) lines.push(`❓ למי ההצעה? (אפשר להגיד לי את שם הלקוח)`);
+  lines.push("", `✏️ לתקן: לכתוב או להגיד לי ("תשנה ביקור ל-250")`, `🖊️ עריכה מלאה: ${editUrl}`);
   return lines.join("\n");
 }
 
@@ -117,14 +132,14 @@ export function sendHint(q: Quote, sendUrl: string): string {
   if (isMobile(q.customerPhone)) {
     const who = q.customerName ?? "הלקוח";
     return [
-      `📲 לשלוח ל${who} (${formatPhone(q.customerPhone!)}) - לחץ כאן:`,
+      `📲 לשלוח ל${who} (${formatPhone(q.customerPhone!)}) - בלחיצה אחת:`,
       sendUrl,
       `נפתח הצ׳אט עם ההודעה מוכנה. רק ללחוץ שלח.`,
     ].join("\n");
   }
   return [
-    `👇 להעביר ללקוח - לחץ לחיצה ארוכה על ההודעה הבאה ← העבר`,
-    `(או תגיד לי את המספר שלו - "הטלפון של ${q.customerName ?? "הלקוח"} 050..." - ואשלח לך קישור בלחיצה אחת)`,
+    `👇 להעביר ללקוח - לחיצה ארוכה על ההודעה הבאה ← העבר`,
+    `(או להגיד לי את הטלפון - "הטלפון של ${q.customerName ?? "הלקוח"} 050..." - ואשלח לך קישור בלחיצה אחת)`,
   ].join("\n");
 }
 
@@ -165,7 +180,7 @@ export function correctionSummary(
 
 /** §6.5 `הצעות` */
 export function quotesList(list: Quote[], editUrls: string[]): string {
-  if (!list.length) return `עדיין אין הצעות. שלח לי הודעה קולית ונתחיל 🎤`;
+  if (!list.length) return `עדיין אין הצעות. אפשר לשלוח לי הודעה קולית ומתחילים 🎤`;
   const status: Record<Quote["status"], string> = {
     draft: "טיוטה",
     sent: "נשלחה",
@@ -192,12 +207,12 @@ export const templates = {
           `${i + 1}. ${t.name}${t.current ? " ✓ (נוכחי)" : ""}${t.lockedFor ? ` 🔒 ${t.lockedFor}` : ""}${t.description ? ` - ${t.description}` : ""}`,
       ),
       ``,
-      `להחלפה כתוב למשל "עיצוב ${items.find((t) => !t.current && !t.lockedFor)?.name ?? items[0]?.name ?? "מודרני"}".`,
+      `להחלפה - לכתוב למשל "עיצוב ${items.find((t) => !t.current && !t.lockedFor)?.name ?? items[0]?.name ?? "מודרני"}".`,
       `לראות איך כל עיצוב נראה: ${settingsUrl}`,
     ].join("\n"),
   chosen: (name: string, previewUrl: string | null) =>
     `✅ מעכשיו ההצעות שלך בעיצוב "${name}". הצעות שכבר נחתמו לא משתנות.${previewUrl ? `\nלתצוגה מקדימה של הטיוטה: ${previewUrl}` : ""}`,
-  notFound: (names: string[]) => `לא מצאתי עיצוב כזה. העיצובים: ${names.join(" / ")}. כתוב למשל "עיצוב ${names[0] ?? "מודרני"}".`,
+  notFound: (names: string[]) => `לא מצאתי עיצוב כזה. העיצובים: ${names.join(" / ")}. לכתוב למשל "עיצוב ${names[0] ?? "מודרני"}".`,
   locked: (name: string, plan: string, upgradeUrl: string) => `🔒 העיצוב "${name}" זמין בתוכנית ${plan} ומעלה. לשדרוג: ${upgradeUrl}`,
   none: () => `אין כרגע עיצובים לבחירה.`,
 };
@@ -220,7 +235,7 @@ export const jobs = {
   none: () =>
     [
       `עדיין אין תבניות שמורות.`,
-      `כשתהיה לך הצעה שחוזרת על עצמה, כתוב "תשמור את זה כהתקנת מזגן" - ובפעם הבאה "התקנת מזגן לדני כהן" יפתח אותה מוכנה.`,
+      `כשתהיה לך הצעה שחוזרת על עצמה - "תשמור את זה כהתקנת מזגן", ובפעם הבאה "התקנת מזגן לדני כהן" יפתח אותה מוכנה.`,
     ].join("\n"),
   saved: (name: string, itemCount: number, total: number, replaced: boolean) =>
     [
@@ -228,25 +243,25 @@ export const jobs = {
       `בפעם הבאה: "${name} לדני כהן".`,
     ].join("\n"),
   needDraft: () =>
-    `אין הצעה לשמור. שלח לי הודעה קולית עם ההצעה, ואז "תשמור את זה כ<שם התבנית>".`,
+    `אין הצעה לשמור. קודם הודעה קולית עם ההצעה, ואז "תשמור את זה כ<שם התבנית>".`,
   needName: () => `איך לקרוא לתבנית? למשל: "תשמור את זה כהתקנת מזגן".`,
   notFound: (names: string[]) =>
     names.length
       ? `לא מצאתי תבנית כזו. התבניות שלך: ${names.join(" / ")}.`
-      : `אין לך תבניות שמורות עדיין. כתוב "תבניות" ואסביר איך שומרים.`,
+      : `אין לך תבניות שמורות עדיין - לכתוב "תבניות" ואסביר איך שומרים.`,
   /** The repeat path (§6.8 layer 1) has nothing to fall back on. */
   repeatNotFound: (reference: string) =>
-    `לא מצאתי הצעה קודמת ל"${reference}". שלח "הצעות" לרשימה, או תגיד לי את מספר ההצעה.`,
+    `לא מצאתי הצעה קודמת ל"${reference}". לכתוב "הצעות" לרשימה, או להגיד לי את מספר ההצעה.`,
   repeatNeedReference: () =>
-    `כמו איזו הצעה? תגיד לי שם לקוח או מספר - למשל "כמו ההצעה של דני כהן".`,
+    `כמו איזו הצעה? אפשר להגיד לי שם לקוח או מספר - למשל "כמו ההצעה של דני כהן".`,
 };
 
 export const commands = {
-  markedSent: (q: Quote) => `👍 הצעה #${q.number} סומנה כנשלחה. אעדכן אותך כשהלקוח יפתח.`,
-  nothingToSend: () => `אין טיוטה פעילה לסימון. שלח "הצעות" לרשימה.`,
+  markedSent: (q: Quote) => `👍 הצעה #${q.number} סומנה כנשלחה. אעדכן אותך כשההצעה תיפתח.`,
+  nothingToSend: () => `אין טיוטה פעילה לסימון. לכתוב "הצעות" לרשימה.`,
   cancelled: (q: Quote) => `🗑️ הצעה #${q.number} בוטלה.`,
   nothingToCancel: () => `אין טיוטה פעילה לביטול.`,
-  newContext: () => `👌 שלח הודעה קולית להצעה חדשה.`,
+  newContext: () => `👌 מוכן להצעה חדשה - אפשר לשלוח הודעה קולית.`,
   settings: (url: string) => `⚙️ הגדרות העסק: ${url}`,
   editLink: (q: Quote, url: string, sendUrl: string | null) =>
     [
@@ -255,13 +270,13 @@ export const commands = {
         ? [`📲 לשלוח ל${q.customerName ?? "לקוח"} (${formatPhone(q.customerPhone!)}): ${sendUrl}`]
         : []),
     ].join("\n"),
-  noQuotes: () => `עדיין אין הצעות. שלח לי הודעה קולית ונתחיל 🎤`,
+  noQuotes: () => `עדיין אין הצעות. אפשר לשלוח לי הודעה קולית ומתחילים 🎤`,
   pdfNotYet: () =>
     `הקישור ללקוח הוא ההצעה - תמיד מעודכן, ומאפשר אישור וחתימה. בדף עצמו יש כפתור "הדפס / שמור כ-PDF" אם צריך קובץ.`,
   help: () =>
     [
-      `🎤 שלח הודעה קולית - ואני מחזיר הצעת מחיר.`,
-      `כשיש טיוטה פעילה, כתוב או תגיד תיקון: "תשנה ביקור ל-250".`,
+      `🎤 הודעה קולית - ואני מחזיר הצעת מחיר.`,
+      `כשיש טיוטה פעילה, אפשר לכתוב או להגיד תיקון: "תשנה ביקור ל-250".`,
       ``,
       `פקודות:`,
       `• הצעות - 5 ההצעות האחרונות`,
@@ -277,14 +292,14 @@ export const commands = {
       `או פשוט: "כמו ההצעה של דני, אבל לשרון".`,
     ].join("\n"),
   unclearCorrectionOrNew: (customer: string | null) =>
-    `לתקן את ההצעה${customer ? ` ל${customer}` : " הפעילה"}, או הצעה חדשה? (ענה "תקן" או "חדש")`,
+    `לתקן את ההצעה${customer ? ` ל${customer}` : " הפעילה"}, או הצעה חדשה? (לכתוב "תקן" או "חדש")`,
   unsupportedType: () => `אני מבין הודעות קוליות, טקסט ותמונות (ללוגו).`,
   logoUpdated: () => `הלוגו עודכן 👌`,
-  question: () => `אני עופר, הבוט של QuickOffer - אני עושה הצעות מחיר 🙂 שלח לי הודעה קולית עם ההצעה, או "עזרה" לרשימת פקודות.`,
+  question: () => `אני עופר, הבוט של QuickOffer - אני עושה הצעות מחיר 🙂 אפשר לשלוח לי הודעה קולית עם ההצעה, או "עזרה" לרשימת פקודות.`,
   greeting: (hasDraft: boolean) =>
     hasDraft
-      ? `👋 יש לך טיוטה פעילה. תגיד לי תיקון, "שלחתי" כשהעברת ללקוח, או שלח הודעה קולית להצעה חדשה.`
-      : `👋 היי, אני עופר - אתה מדבר, אני כותב את ההצעה. שלח לי הודעה קולית, למשל:
+      ? `👋 יש לך טיוטה פעילה. אפשר להגיד לי תיקון, לכתוב "שלחתי" כשהעברת ללקוח, או לשלוח הודעה קולית להצעה חדשה.`
+      : `👋 היי, אני עופר - מדברים, ואני כותב את ההצעה. אפשר לשלוח לי הודעה קולית, למשל:
 🎤 "הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200"
 ואני מחזיר הצעה מוכנה תוך דקה.`,
 };
@@ -304,7 +319,7 @@ export const billing = {
     [
       `⚠️ החיוב החודשי לחבילת ${plan} לא עבר.`,
       `החבילה ממשיכה לפעול ואנחנו ננסה שוב בימים הקרובים.`,
-      `כדי לא לאבד אותה - עדכן אמצעי תשלום: ${updateUrl}`,
+      `כדי לא לאבד אותה - לעדכן אמצעי תשלום: ${updateUrl}`,
     ].join("\n"),
   chargeRecovered: (plan: string) => `👍 החיוב עבר. חבילת ${plan} ממשיכה כרגיל.`,
   cancelled: (plan: string, upgradeUrl: string) =>
@@ -318,10 +333,10 @@ export const billing = {
 /** §6.7 */
 export const errors = {
   transcriptionFailed: () =>
-    `לא הצלחתי לשמוע 🙉 נסה שוב במקום שקט יותר, או כתוב לי את ההצעה בטקסט.`,
+    `לא הצלחתי לשמוע 🙉 אפשר לנסות שוב במקום שקט יותר, או לכתוב לי את ההצעה בטקסט.`,
   noItems: (transcript: string) =>
-    `שמעתי: "${transcript.slice(0, 200)}" - אבל לא זיהיתי פריטים ומחירים. נסה: "לדני - 3 נקודות חשמל 180 שקל ליחידה".`,
-  mediaUnavailable: () => `יש תקלה זמנית, נסה שוב בעוד דקה.`,
+    `שמעתי: "${transcript.slice(0, 200)}" - אבל לא זיהיתי פריטים ומחירים. למשל: "לדני - 3 נקודות חשמל 180 שקל ליחידה".`,
+  mediaUnavailable: () => `יש תקלה זמנית, אפשר לנסות שוב בעוד דקה.`,
   tooLong: () => `ההקלטה ארוכה מדי - עד 3 דקות.`,
   quotaExceeded: (plan: string, limit: number, upgradeUrl: string) =>
     [
@@ -329,7 +344,7 @@ export const errors = {
       `ההצעה למעלה מוכנה - רק הקישור ללקוח נעול עד השדרוג.`,
       `👉 ${upgradeUrl}`,
     ].join("\n"),
-  generic: () => `משהו השתבש אצלי 😕 נסה שוב בעוד רגע.`,
+  generic: () => `משהו השתבש אצלי 😕 אפשר לנסות שוב בעוד רגע.`,
   /**
    * The AI provider is rate limited. Sent once, and then the message really is
    * retried (cron tick) - so this promises something we keep.
@@ -337,15 +352,43 @@ export const errors = {
   busy: () => `יש עומס רגעי 🙏 ההודעה שלך אצלי, אני חוזר אליך תוך כמה דקות. אין צורך לשלוח שוב.`,
 };
 
-/** §6.6 */
+/**
+ * §6.6 - what the customer did, reported to the professional.
+ *
+ * Phrased around the quote ("הצעה #12 נפתחה") rather than around the customer
+ * ("דני פתח"), because the customer's gender is a name we can't conjugate: half
+ * of them are Sharon, Noa or Michal. The name still leads with a dash when we
+ * have one, so the notification is scannable at a glance.
+ */
 export const notifications = {
-  viewed: (q: Quote) => `👀 ${q.customerName ?? "הלקוח"} פתח את ההצעה #${q.number}`,
-  approved: (q: Quote, signer: string) =>
-    `✅ ${signer || q.customerName || "הלקוח"} אישר וחתם על הצעה #${q.number} (${formatMoney(q.total)}).`,
+  viewed: (q: Quote) =>
+    `👀 הצעה #${q.number} נפתחה${q.customerName ? ` - ${q.customerName}` : ""}`,
+  approved: (q: Quote, signer: string) => {
+    const by = signer || q.customerName;
+    return `✅ הצעה #${q.number} אושרה ונחתמה (${formatMoney(q.total)})${by ? ` - ${by}` : ""}.`;
+  },
   rejected: (q: Quote, reason: string | null) =>
-    `❌ ${q.customerName ?? "הלקוח"} דחה את הצעה #${q.number}.${reason ? ` סיבה: "${reason}"` : ""}`,
-  question: (q: Quote, text: string) =>
-    `💬 ${q.customerName ?? "הלקוח"} שאל על #${q.number}: "${text}" - ענה לו ישירות ב-WhatsApp`,
+    `❌ הצעה #${q.number} נדחתה${q.customerName ? ` - ${q.customerName}` : ""}.${reason ? ` סיבה: "${reason}"` : ""}`,
+  /**
+   * A question typed on the quote page. The answer must not be typed back here
+   * - this chat is with the bot, and the customer would never see it - so the
+   * notification carries a one-tap way into the customer's own chat with the
+   * question already quoted.
+   */
+  question: (q: Quote, text: string, replyUrl: string | null) => {
+    const who = q.customerName ?? "הלקוח";
+    const lines = [`💬 הגיעה שאלה על הצעה #${q.number} מ${who}:`, `"${text}"`, ``];
+    if (replyUrl && isMobile(q.customerPhone)) {
+      lines.push(
+        `📲 לענות ל${who} בשיחה אישית (${formatPhone(q.customerPhone!)}):`,
+        replyUrl,
+        `נפתח הצ׳אט עם השאלה מצוטטת - רק להשלים את התשובה ולשלוח.`,
+      );
+    } else {
+      lines.push(`תשובה כאן בצ׳אט מגיעה אליי, לא ללקוח - אפשר לענות ישירות ב-WhatsApp.`);
+    }
+    return lines.join("\n");
+  },
 
   /**
    * The quote went quiet. Sent at most twice per quote (lib/quotes/follow-up.ts):
@@ -355,10 +398,10 @@ export const notifications = {
     const who = q.customerName ?? "הלקוח";
     const what =
       q.status === "viewed"
-        ? `👀 ${who} פתח את הצעה #${q.number} (${formatMoney(q.total)}) לפני ${days} ימים ולא חזר אליך.`
+        ? `👀 הצעה #${q.number} ל${who} (${formatMoney(q.total)}) נפתחה לפני ${days} ימים - ומאז שקט.`
         : `⏳ הצעה #${q.number} ל${who} (${formatMoney(q.total)}) נשלחה לפני ${days} ימים ועוד לא נפתחה.`;
     const nudge = sendUrl
-      ? `רוצה לשלוח תזכורת? לחץ כאן ותקבל הודעה מוכנה:\n${sendUrl}`
+      ? `רוצה לשלוח תזכורת? כאן יש הודעה מוכנה:\n${sendUrl}`
       : `שווה טלפון או הודעה - הצעה שנסגרת ביום השלישי שווה יותר מהצעה שנשכחת.`;
     return `${what}\n${nudge}`;
   },

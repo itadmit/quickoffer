@@ -1,6 +1,6 @@
 import { BadgeCheck, TriangleAlert } from "lucide-react";
 import { formatPhone } from "@/lib/phone";
-import { formatMoney, formatQty } from "@/lib/quotes/calc";
+import { formatMoney, qtyLabel } from "@/lib/quotes/calc";
 import type { QuoteTemplateSpec } from "@/lib/quotes/template-spec";
 
 // Building blocks shared by the quote layouts. Each layout arranges these
@@ -106,7 +106,7 @@ export function ItemsTable({ q, showReviewFlags, headless = false }: { q: QuoteV
               {showReviewFlags && it.needsReview && <TriangleAlert className="inline h-3.5 w-3.5 ms-1 text-warn-ink" />}
             </td>
             <td className="py-2.5 ps-3 text-center text-muted whitespace-nowrap">
-              {formatQty(it.quantity)} {it.unit}
+              {qtyLabel(it.quantity, it.unit)}
             </td>
             <td className="py-2.5 ps-3 text-end whitespace-nowrap">{formatMoney(it.unitPrice)}</td>
             <td className="py-2.5 ps-3 text-end font-medium whitespace-nowrap">{formatMoney(it.lineTotal)}</td>

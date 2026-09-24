@@ -4,6 +4,7 @@ import { customerMessage } from "@/lib/conversation/messages";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { waLink } from "@/lib/phone";
+import { PRO_DEVICE_COOKIE, proDeviceCookieOptions, proDeviceToken } from "@/lib/pro-device";
 import { publicLink, resolveLink } from "@/lib/quotes/links";
 import { getQuote, markSent } from "@/lib/quotes/service";
 
@@ -33,5 +34,13 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ code: strin
   // best signal we get. Failure here must not block the redirect.
   await markSent(quote.id).catch((e) => console.error("[send-link] markSent", e));
 
-  return NextResponse.redirect(waLink(quote.customerPhone, text), 307);
+  const res = NextResponse.redirect(waLink(quote.customerPhone, text), 307);
+  // Only the professional ever reaches this route. Remember the browser so
+  // their own visits to /q don't show up as the customer opening the quote.
+  try {
+    res.cookies.set(PRO_DEVICE_COOKIE, proDeviceToken(user.id), proDeviceCookieOptions);
+  } catch (e) {
+    console.error("[send-link] proDevice", e);
+  }
+  return res;
 }

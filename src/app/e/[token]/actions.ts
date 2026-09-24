@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { quotes } from "@/lib/db/schema";
+import { markProDevice } from "@/lib/pro-device";
 import { learnFromItems } from "@/lib/quotes/price-book-store";
 import { saveJob } from "@/lib/quotes/saved-jobs-store";
 import { addEvent, deleteQuote, getQuote, markSent, replaceItemsAndRecalc } from "@/lib/quotes/service";
@@ -17,6 +18,18 @@ async function authorize(token: string) {
   const q = await getQuote(subject);
   if (!q) return null;
   return q;
+}
+
+/**
+ * Remember this browser as the professional's own (lib/pro-device.ts), so a
+ * look at their own public link isn't reported to them as the customer opening
+ * the quote. Only an intact edit link can claim it.
+ */
+export async function claimDeviceAction(token: string) {
+  const q = await authorize(token);
+  if (!q) return { ok: false as const };
+  await markProDevice(q.userId);
+  return { ok: true as const };
 }
 
 export async function saveQuoteAction(token: string, form: QuoteForm) {

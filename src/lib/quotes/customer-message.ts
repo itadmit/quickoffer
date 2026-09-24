@@ -4,6 +4,9 @@
  * Pure and dependency-free so the edit screen can rebuild it from the form as
  * the professional types - otherwise "שלח ללקוח" would send the name and total
  * from before their last correction.
+ *
+ * We know the customer's name but never their gender, so nothing here addresses
+ * them in a conjugated form: "לאישור - הקישור למעלה", not "לחץ על הקישור".
  */
 
 export type CustomerMessageInput = {
@@ -19,8 +22,26 @@ export function customerMessageText(i: CustomerMessageInput): string {
   return [
     `${greeting}מצורפת הצעת מחיר מ${i.businessName ?? "העסק"}:`,
     i.publicUrl,
-    `ההצעה תקפה ל-${i.validDays} יום. לאישור - לחץ על הקישור.`,
+    `ההצעה תקפה ל-${i.validDays} יום. לאישור ולחתימה - הקישור למעלה.`,
   ].join("\n");
+}
+
+/**
+ * The reply to a question asked from the quote page (§8.2), prefilled in the
+ * professional's own WhatsApp.
+ *
+ * The question arrives in the bot chat, but an answer typed there would reach
+ * the bot, not the customer - the customer never talks to us. So we hand the
+ * professional their customer's chat with the question already quoted and the
+ * cursor on an empty answer line. Asterisks are WhatsApp's bold.
+ *
+ * The quote keeps the customer oriented ("which question?") while staying
+ * short enough that the link doesn't swallow the chat bubble.
+ */
+export function questionReplyText(question: string): string {
+  const q = question.trim().replace(/\s+/g, " ");
+  const quoted = q.length > 200 ? `${q.slice(0, 200)}…` : q;
+  return `*בקשר לשאלתך:* "${quoted}"\n*התשובה שלי היא:*\n`;
 }
 
 /** Days left until `validUntil`, floored at 1 - never tell a customer "0 ימים". */

@@ -1,5 +1,5 @@
 import { TriangleAlert } from "lucide-react";
-import { formatMoney, formatQty } from "@/lib/quotes/calc";
+import { formatMoney, qtyLabel } from "@/lib/quotes/calc";
 import { Approval, BusinessMeta, dateFmt, Footer, Logo, TermsAndNotes, totalLabel, totalsRows, type LayoutProps } from "./shared";
 
 /** Accent band on top, items as cards, one big total. */
@@ -41,7 +41,7 @@ export function ModernLayout({ q, t, showReviewFlags, plain }: LayoutProps) {
                 {showReviewFlags && it.needsReview && <TriangleAlert className="inline h-3.5 w-3.5 ms-1 text-warn-ink" />}
               </div>
               <div className="text-xs text-muted">
-                {formatQty(it.quantity)} {it.unit} × {formatMoney(it.unitPrice)}
+                {qtyLabel(it.quantity, it.unit)} × {formatMoney(it.unitPrice)}
               </div>
             </div>
             <div className="font-semibold whitespace-nowrap">{formatMoney(it.lineTotal)}</div>

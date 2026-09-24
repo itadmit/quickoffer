@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { QuoteDocument, type QuoteView } from "@/components/quote-document";
 import { totalLabel } from "@/components/quote-layouts/shared";
+import { isProDevice } from "@/lib/pro-device";
 import { formatMoney } from "@/lib/quotes/calc";
 import { recordView } from "@/lib/quotes/customer-actions";
 import { appUrlBase } from "@/lib/quotes/links";
@@ -53,8 +54,11 @@ export default async function CustomerQuotePage({ params }: Props) {
     ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
     ua: h.get("user-agent"),
   };
+  // Read the cookie here, while the request is still in scope, and hand the
+  // verdict to the deferred work.
+  const self = await isProDevice(q.userId);
   // View tracking after the response (§8.2) - never blocks the customer.
-  after(() => recordView(publicId, meta).catch((e) => console.error("[recordView]", e)));
+  after(() => recordView(publicId, meta, { self }).catch((e) => console.error("[recordView]", e)));
 
   const expired =
     q.status === "expired" || (q.validUntil ? q.validUntil < new Date() : false);
@@ -109,9 +113,11 @@ export default async function CustomerQuotePage({ params }: Props) {
         totalNote={label.note ?? label.label}
       />
 
+      {/* The plan badge names the tool and stops there. How the professional
+          dictated the quote is their business, not the customer's. */}
       {showBadge && (
         <p className="text-center text-xs text-muted pt-4">
-          נוצר ב-<span className="font-semibold">QuickOffer</span> · הצעות מחיר מהודעה קולית
+          נוצר ב-<span className="font-semibold">QuickOffer</span>
         </p>
       )}
     </main>

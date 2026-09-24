@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Link2, MessageCircle, Trash2, TriangleAlert, Wrench } from "lucide-react";
 import { UNITS } from "@/lib/ai/types";
@@ -9,7 +9,7 @@ import { calcTotals, formatMoney } from "@/lib/quotes/calc";
 import { customerMessageText, daysUntil } from "@/lib/quotes/customer-message";
 import { QuoteDocument, type QuoteView } from "@/components/quote-document";
 import { StatusBadge } from "@/components/status-badge";
-import { deleteQuoteAction, markSentAction, saveAsJobAction, saveQuoteAction } from "./actions";
+import { claimDeviceAction, deleteQuoteAction, markSentAction, saveAsJobAction, saveQuoteAction } from "./actions";
 import type { QuoteForm } from "./schema";
 
 type Props = {
@@ -45,6 +45,12 @@ export function QuoteEditor({ token, quote, initial }: Props) {
   const [jobMsg, setJobMsg] = useState<string | null>(null);
   const router = useRouter();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Whoever holds the edit link is the professional. Marking the browser here
+  // keeps their own look at the public link out of the view notifications.
+  useEffect(() => {
+    void claimDeviceAction(token);
+  }, [token]);
 
   const totals = useMemo(
     () =>
