@@ -6,7 +6,7 @@ import { QuoteDocument, type QuoteView } from "@/components/quote-document";
 import { totalLabel } from "@/components/quote-layouts/shared";
 import { formatMoney } from "@/lib/quotes/calc";
 import { recordView } from "@/lib/quotes/customer-actions";
-import { appUrl } from "@/lib/quotes/links";
+import { appUrlBase } from "@/lib/quotes/links";
 import { contactPhone, getQuoteByPublicId } from "@/lib/quotes/service";
 import { normalizeTemplateSpec, type QuoteTemplateSpec } from "@/lib/quotes/template-spec";
 import { getTemplateForUser } from "@/lib/quotes/templates";
