@@ -236,7 +236,7 @@ export function SettingsEditor({ token, phone, plan, logoUrl: initialLogo, quota
                       <Check className="h-3.5 w-3.5" />
                     </span>
                   )}
-                  <TemplateThumb template={t.spec} width={200} height={170} />
+                  <TemplateThumb template={t.spec} width={200} height={170} fill />
                   <div className="px-1 pb-1">
                     <div className="font-semibold text-sm">{t.name}</div>
                     {t.description && <div className="text-xs text-muted leading-snug">{t.description}</div>}
