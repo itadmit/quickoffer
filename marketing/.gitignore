@@ -1,0 +1,17 @@
+# Version the recipe, not the render.
+#
+# The sources here (prompts, HTML compositions, mix scripts) are small and worth
+# keeping - they are how a clip gets rebuilt. The outputs are 221MB, one of them
+# is over GitHub's 50MB warning, and every one of them would be pulled on every
+# clone and every Vercel build, permanently, because git history does not forget.
+#
+# If a specific render needs to be shared, upload it rather than committing it.
+.build/
+export/
+hf/
+audio/
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.png

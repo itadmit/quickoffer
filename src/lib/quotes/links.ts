@@ -18,6 +18,22 @@ export async function appUrl(): Promise<string> {
   return (await getSetting("app.url")).replace(/\/$/, "");
 }
 
+/**
+ * `app.url` as the absolute base Next resolves og:image against. Derived from
+ * the setting and not hardcoded, so moving to a new domain is one setting
+ * change and the preview cards follow the links instead of lagging behind on
+ * whatever VERCEL_URL the last deployment happened to get.
+ *
+ * Never lets a malformed app.url break a page - the card is an enhancement.
+ */
+export async function appUrlBase(): Promise<URL | undefined> {
+  try {
+    return new URL(await appUrl());
+  } catch {
+    return undefined;
+  }
+}
+
 async function codeFor(purpose: Purpose, subject: string, ttlMs: number): Promise<string> {
   const existing = await db.query.magicLinks.findFirst({
     where: and(

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<style>
+  /* Ping Heavy is the project's display face - the same one the ad's titles use,
+     so the logo belongs to the same world as the rest of the film. */
+  @font-face{font-family:"Ping";src:url("ping-heavy.woff2") format("woff2");font-weight:900}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:640px;height:640px;background:transparent}
+  .badge{
+    width:640px;height:640px;background:#0a0a0a;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;padding:52px 40px;
+  }
+  .l{
+    font-family:"Ping",system-ui,sans-serif;font-weight:900;
+    color:#FFD400;line-height:.92;letter-spacing:-.02em;
+    white-space:nowrap;display:block;
+  }
+  /* each line is scaled to fill the badge width - that stacked, width-filling
+     look is what reads as a trade logo rather than as a wordmark */
+  .l1{font-size:196px}
+  .l2{font-size:150px}
+  .l3{font-size:112px}
+  .rule{width:74%;height:14px;background:#FFD400;margin:14px 0 10px}
+</style>
+</head>
+<body>
+  <div class="badge">
+    <span class="l l1">יוסי</span>
+    <span class="rule"></span>
+    <span class="l l2">חשמל</span>
+    <span class="l l3">ותאורה</span>
+  </div>
+</body>
+</html>

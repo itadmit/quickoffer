@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+  /* Rendered on a transparent page - the renderer screenshots with
+     omitBackground, so everything not painted here stays alpha 0. */
+  @font-face{font-family:"QO";src:url("ping-heavy.woff2") format("woff2");font-weight:900}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1080px;height:1920px;background:transparent;overflow:hidden}
+
+  #stage{position:absolute;inset:0;display:flex;align-items:flex-end;
+    justify-content:center;padding-bottom:300px}
+
+  /* the capsule is opaque: it has to read over live footage, not tint it */
+  #bar{display:flex;align-items:center;gap:30px;
+    background:#151d29;border:2px solid #222e3f;
+    border-radius:999px;padding:30px 44px;
+    box-shadow:0 30px 80px rgba(0,0,0,.55)}
+
+  #dot{width:30px;height:30px;border-radius:50%;background:#ef4444;flex:none;
+    box-shadow:0 0 26px rgba(239,68,68,.8)}
+
+  #wave{display:flex;align-items:center;gap:9px;height:96px}
+  #wave i{display:block;width:9px;border-radius:5px;background:#2dd4bf;
+    height:20px;transform-origin:center}
+
+  #time{font-family:"QO",system-ui,sans-serif;font-weight:900;font-size:48px;
+    color:#e8edf6;font-variant-numeric:tabular-nums;flex:none;min-width:118px;
+    text-align:left;direction:ltr}
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div id="bar">
+      <span id="dot"></span>
+      <span id="wave"></span>
+      <span id="time">0:00</span>
+    </div>
+  </div>
+
+<script>
+var DUR = 12;                 // seconds; the timer runs in real time
+var BARS = 26;
+var wave = document.getElementById("wave");
+for (var i = 0; i < BARS; i++) wave.appendChild(document.createElement("i"));
+var bars = wave.querySelectorAll("i");
+
+window.__timelines = {};
+var tl = gsap.timeline({ paused: true });
+
+/* Deterministic "live" waveform. No Math.random anywhere: the renderer seeks
+   frame by frame, so the motion has to be a pure function of time or the clip
+   would flicker differently on every render. */
+bars.forEach(function (b, i) {
+  var phase = (i * 0.37) % 1;
+  var speed = 0.34 + ((i * 7) % 5) * 0.045;
+  var peak  = 30 + ((i * 13) % 7) * 9;
+  tl.to(b, {
+    height: peak, duration: speed, ease: "sine.inOut",
+    yoyo: true, repeat: Math.ceil(DUR / speed)
+  }, phase * speed);
+});
+
+/* the record dot breathes */
+tl.to("#dot", { opacity: .35, scale: .84, duration: .62, ease: "sine.inOut",
+  yoyo: true, repeat: Math.ceil(DUR / .62) }, 0);
+
+/* running timer, real time */
+var t = { v: 0 };
+tl.to(t, { v: DUR, duration: DUR, ease: "none", onUpdate: function () {
+  var s = Math.floor(t.v);
+  document.getElementById("time").textContent = "0:" + (s < 10 ? "0" + s : s);
+} }, 0);
+
+/* a short fade in and out so it can be dropped on a cut without popping */
+tl.from("#bar", { autoAlpha: 0, y: 26, duration: .45, ease: "power3.out" }, 0);
+tl.to("#bar",   { autoAlpha: 0, y: -18, duration: .45, ease: "power2.in" }, DUR - .45);
+
+tl.to({}, { duration: .05 }, DUR);
+window.__timelines["main"] = tl;
+</script>
+</body>
+</html>

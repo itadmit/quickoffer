@@ -37,22 +37,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    // Absolute base for the sibling opengraph-image. Derived from app.url and
-    // not hardcoded, so moving to a new domain is one setting change and the
-    // WhatsApp preview card follows the links instead of lagging behind them
-    // on whatever VERCEL_URL the last deployment happened to get.
-    metadataBase: metadataBaseFrom(await appUrl()),
+    // Absolute base for the sibling opengraph-image.
+    metadataBase: await appUrlBase(),
     openGraph: { title, description, type: "website", locale: "he_IL", siteName: business },
   };
-}
-
-/** Never let a malformed app.url break the page - the card is an enhancement. */
-function metadataBaseFrom(url: string): URL | undefined {
-  try {
-    return new URL(url);
-  } catch {
-    return undefined;
-  }
 }
 
 export default async function CustomerQuotePage({ params }: Props) {

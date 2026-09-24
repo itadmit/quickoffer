@@ -45,24 +45,47 @@ import {
 import { Reveal } from "@/components/reveal";
 import { HowItWorks } from "@/components/how-it-works";
 import { NotificationToast } from "@/components/notification-toast";
+import { StickyCta } from "@/components/sticky-cta";
 import { PLAN_OFFERS } from "@/lib/billing/plans";
 import { formatPhone } from "@/lib/phone";
+import { appUrlBase } from "@/lib/quotes/links";
 import { getSetting } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "QuickOffer - הצעת מחיר מהודעה קולית ב-WhatsApp",
-  description:
-    "בעל מקצוע? שלח הודעה קולית ב-WhatsApp וקבל תוך דקה הצעת מחיר מעוצבת, מוכנה להעברה ללקוח. הלקוח מאשר וחותם בקישור. בלי אפליקציה, בלי הרשמה.",
-  robots: { index: true, follow: true },
-  openGraph: {
-    title: "QuickOffer - שלח הודעה קולית. קבל הצעת מחיר. סגור עסקה.",
-    description: "הצעות מחיר מעוצבות מהודעה קולית ב-WhatsApp, תוך דקה.",
-    locale: "he_IL",
-    type: "website",
-  },
-};
+const OG_TITLE = "שלח הודעה קולית. קבל הצעת מחיר. סגור עסקה | QuickOffer";
+const OG_DESCRIPTION = "הצעות מחיר מעוצבות מהודעה קולית ב-WhatsApp, תוך דקה.";
+
+/**
+ * The card WhatsApp draws when someone forwards the link.
+ *
+ * The title opens with Hebrew and ends with the brand on purpose. WhatsApp
+ * picks the line's direction by its first strong character, so a title that
+ * started with "QuickOffer" resolved the whole line as LTR and threw the
+ * closing period to the far right - a period floating at the start of a Hebrew
+ * sentence. Leading with Hebrew pins the line to RTL, and every period stays
+ * to the left of the sentence it closes. Keep it that way when editing.
+ *
+ * The picture itself is the sibling opengraph-image.png; metadataBase is what
+ * turns it into the absolute URL a scraper can fetch.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "QuickOffer - הצעת מחיר מהודעה קולית ב-WhatsApp",
+    description:
+      "בעל מקצוע? שלח הודעה קולית ב-WhatsApp וקבל תוך דקה הצעת מחיר מעוצבת, מוכנה להעברה ללקוח. הלקוח מאשר וחותם בקישור. בלי אפליקציה, בלי הרשמה.",
+    robots: { index: true, follow: true },
+    metadataBase: await appUrlBase(),
+    openGraph: {
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
+      siteName: "QuickOffer",
+      locale: "he_IL",
+      type: "website",
+    },
+    twitter: { card: "summary_large_image", title: OG_TITLE, description: OG_DESCRIPTION },
+  };
+}
 
 const WELCOME = "היי";
 
@@ -236,11 +259,24 @@ export default async function LandingPage() {
               הקישור ללקוח תמיד מציג את הגרסה העדכנית, גם אם כבר העברת אותו.
             </p>
           </Reveal>
+
+          {/* The film ends here, and the hero button is four screens back. */}
+          <Reveal delay={150} className="mt-10 text-center space-y-3">
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
+              <WhatsAppButton href={wa} big />
+              {tg && <TelegramButton href={tg} big />}
+            </div>
+            <p className="text-sm text-muted">5 ההצעות הראשונות חינם. בלי כרטיס אשראי.</p>
+          </Reveal>
         </div>
       </section>
 
       {/* -------------------------------------------------------------- benefits */}
       <section className="relative bg-card border-y border-line">
+        {/* Where the sticky mobile CTA starts following you: past the film.
+            1px and absolute, not h-0 - a zero-area target never reports an
+            intersection, so an IntersectionObserver on it never fires. */}
+        <span id="cta-start" aria-hidden className="absolute top-0 inset-x-0 h-px" />
         <div className="max-w-6xl mx-auto px-5 py-20 md:py-28">
           <Reveal className="text-center max-w-2xl mx-auto mb-14">
             <p className="text-sm font-semibold text-brand mb-3">למה QuickOffer</p>
@@ -284,10 +320,20 @@ export default async function LandingPage() {
               items={o.features}
               highlight={o.highlight}
               delay={i * 100}
+              href={wa}
+              // Every plan starts the same way, so every card says so rather
+              // than promising a checkout that does not exist yet on this page.
+              cta={o.price === 0 ? "התחל חינם" : "התחל ב-WhatsApp"}
             />
           ))}
         </div>
-        <p className="text-center text-xs text-muted mt-6">המחירים בש״ח לחודש, לפני מע״מ.</p>
+        <Reveal delay={400} className="mt-6 text-center space-y-1">
+          <p className="text-sm text-muted">
+            כל החבילות מתחילות באותה דרך: שולחים &quot;{WELCOME}&quot; לבוט, מקבלים 5 הצעות חינם,
+            ומשדרגים מתוך הצ׳אט כשזה משתלם.
+          </p>
+          <p className="text-xs text-muted">המחירים בש״ח לחודש, לפני מע״מ.</p>
+        </Reveal>
       </section>
 
       {/* -------------------------------------------------------------------- FAQ */}
@@ -310,11 +356,19 @@ export default async function LandingPage() {
               </Reveal>
             ))}
           </div>
+          <Reveal delay={FAQ.length * 60} className="mt-10 text-center space-y-4">
+            <p className="text-muted">
+              נשארה שאלה? הדרך המהירה לראות איך זה עובד היא לשלוח הודעה אחת.
+            </p>
+            <div className="flex justify-center">
+              <WhatsAppButton href={wa} big />
+            </div>
+          </Reveal>
         </div>
       </section>
 
       {/* -------------------------------------------------------------------- CTA */}
-      <section className="relative overflow-hidden bg-brand text-brand-ink">
+      <section id="cta-final" className="relative overflow-hidden bg-brand text-brand-ink">
         <div className="anim-blob absolute -top-24 -start-24 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
         <div className="anim-blob absolute -bottom-24 -end-24 h-96 w-96 rounded-full bg-[#25D366]/25 blur-3xl [animation-delay:-7s]" />
         <div className="relative max-w-6xl mx-auto px-5 py-20 md:py-28 text-center space-y-6">
@@ -331,13 +385,26 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      <footer className="max-w-6xl mx-auto px-5 py-10 text-sm text-muted flex flex-wrap gap-x-6 gap-y-2 justify-between items-center">
+      <footer className="max-w-6xl mx-auto px-5 py-10 pb-28 sm:pb-10 text-sm text-muted flex flex-wrap gap-x-6 gap-y-3 justify-between items-center">
         <span className="inline-flex items-center gap-2 font-semibold text-ink">
           <span className="grid place-items-center h-7 w-7 rounded-lg bg-brand text-brand-ink"><Mic className="h-3.5 w-3.5" /></span>
           QuickOffer
         </span>
+        <a
+          href={wa}
+          target="_blank"
+          rel="noopener"
+          className="inline-flex items-center gap-2 hover:text-ink transition-colors"
+        >
+          <WhatsAppIcon className="h-4 w-4 text-[#25D366]" />
+          <bdi dir="ltr">{formatPhone(phone)}</bdi>
+        </a>
         <span>© {new Date().getFullYear()} · הצעות מחיר בלבד - לא תוכנת הנהלת חשבונות.</span>
       </footer>
+
+      {/* Mobile only, and only between the end of the film and the closing CTA,
+          so it never covers the sticky stage or doubles the button below it. */}
+      <StickyCta href={wa} />
     </main>
   );
 }
@@ -414,9 +481,9 @@ function WhatsAppButton({ href, big, inverted, compact }: { href: string; big?: 
   );
 }
 
-function WhatsAppIcon() {
+function WhatsAppIcon({ className = "h-6 w-6" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor" aria-hidden>
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
       <path d="M17.5 14.4c-.3-.1-1.8-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.2-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z" />
     </svg>
   );
@@ -458,11 +525,11 @@ function Benefit({ icon: Icon, title, children, delay }: { icon: LucideIcon; tit
   );
 }
 
-function Plan({ name, price, oldPrice, badge, per, items, highlight, delay }: { name: string; price: string; oldPrice?: string; badge?: string; per: string; items: string[]; highlight?: boolean; delay: number }) {
+function Plan({ name, price, oldPrice, badge, per, items, highlight, delay, href, cta }: { name: string; price: string; oldPrice?: string; badge?: string; per: string; items: string[]; highlight?: boolean; delay: number; href: string; cta: string }) {
   return (
     <Reveal
       delay={delay}
-      className={`card-hover relative rounded-3xl border p-6 space-y-5 ${highlight ? "border-brand bg-white shadow-xl shadow-brand/10 ring-1 ring-brand/30" : "border-line bg-card"}`}
+      className={`card-hover relative rounded-3xl border p-6 flex flex-col gap-5 ${highlight ? "border-brand bg-white shadow-xl shadow-brand/10 ring-1 ring-brand/30" : "border-line bg-card"}`}
     >
       {highlight && (
         <span className="absolute -top-3 start-5 rounded-full bg-brand text-brand-ink text-xs font-semibold px-3 py-1 shadow">הכי פופולרי</span>
@@ -481,7 +548,7 @@ function Plan({ name, price, oldPrice, badge, per, items, highlight, delay }: { 
         </div>
         <div className="text-sm text-muted">{per}</div>
       </div>
-      <ul className="text-sm space-y-1.5">
+      <ul className="text-sm space-y-1.5 flex-1">
         {items.map((it) => (
           <li key={it} className="flex gap-2 items-start">
             <Check className="h-4 w-4 mt-0.5 shrink-0 text-brand" />
@@ -489,6 +556,21 @@ function Plan({ name, price, oldPrice, badge, per, items, highlight, delay }: { 
           </li>
         ))}
       </ul>
+      {/* Outlined on the side plans: four solid green buttons in a row reads as
+          a wall, and only one of them is the recommendation. */}
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener"
+        className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 ${
+          highlight
+            ? "bg-[#25D366] text-white shadow-md shadow-[#25D366]/30 hover:shadow-lg hover:shadow-[#25D366]/40"
+            : "border border-line bg-surface hover:border-[#25D366] hover:text-[#1da851]"
+        }`}
+      >
+        <WhatsAppIcon className="h-5 w-5" />
+        {cta}
+      </a>
     </Reveal>
   );
 }

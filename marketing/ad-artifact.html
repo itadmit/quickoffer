@@ -1,0 +1,301 @@
+<title>QuickOffer - ההצעה שלא נשלחה</title>
+<style>
+  /* Deliberately single-theme: a screening room. A light chrome would fight the
+     film's black open, so both the page and the film share one ground. */
+  :root{
+    --room:#08090c; --panel:#0e131b; --hair:#1b2431; --chip:#121925;
+    --label:#7c8899; --label-hi:#d3dbe6; --ink-hi:#ffffff;
+    --teal:#2dd4bf; --teal-deep:#0f766e;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--room)}
+  body{
+    background:var(--room); color:var(--label-hi); direction:rtl;
+    font-family:"QO Text",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.55;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 20px 72px;
+    display:flex;flex-direction:column;gap:34px}
+
+  header{display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center}
+  .mark{display:inline-flex;align-items:center;gap:12px}
+  .mark span.sq{width:38px;height:38px;border-radius:12px;background:var(--teal-deep);
+    display:grid;place-items:center}
+  .mark b{font-size:19px;letter-spacing:-.01em;color:var(--ink-hi);font-weight:700}
+  h1{margin:6px 0 0;font-size:clamp(28px,5vw,44px);line-height:1.1;letter-spacing:-.02em;
+    color:var(--ink-hi);font-weight:800;text-wrap:balance}
+  .kicker{font-size:13px;letter-spacing:.14em;color:var(--teal);text-transform:uppercase}
+  .sub{font-size:15px;color:var(--label);max-width:56ch}
+
+  /* Two cuts of one film, one stage. The switch is the page's argument:
+     the same nine scenes, with and without the live-action woven between them. */
+  .switch{display:flex;gap:4px;padding:4px;border:1px solid var(--hair);border-radius:999px;
+    background:var(--panel);align-self:center}
+  .switch button{appearance:none;border:0;border-radius:999px;cursor:pointer;
+    padding:9px 20px;font:inherit;font-size:14px;font-weight:600;
+    background:none;color:var(--label);transition:background .15s,color .15s}
+  .switch button:hover{color:var(--label-hi)}
+  .switch button[aria-pressed="true"]{background:var(--teal);color:#04211f}
+  .switch button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+
+  .stagewrap{position:relative;display:grid;place-items:center;gap:0}
+  .bloom{position:absolute;width:min(520px,72vw);height:min(520px,46vh);border-radius:50%;
+    filter:blur(90px);background:rgba(45,212,191,.14);pointer-events:none}
+  video{position:relative;width:min(420px,88vw);aspect-ratio:9/16;display:block;
+    border-radius:24px;background:#000;box-shadow:0 40px 110px rgba(0,0,0,.7),0 0 0 1px var(--hair)}
+
+  /* The strip is the cut itself, to scale: block width is clip duration.
+     Teal blocks are live-action, grey blocks are the rendered composition. */
+  .strip{position:relative;direction:ltr;display:flex;gap:2px;width:min(420px,88vw);
+    margin-top:14px;height:34px;border-radius:8px;overflow:hidden}
+  .strip button{appearance:none;border:0;padding:0;cursor:pointer;min-width:2px;
+    background:var(--chip);border-top:3px solid #24313f;transition:filter .15s}
+  .strip button.live{background:#123b38;border-top-color:var(--teal)}
+  .strip button:hover{filter:brightness(1.5)}
+  .strip button:focus-visible{outline:2px solid var(--teal);outline-offset:-2px}
+  .head{position:absolute;top:0;bottom:0;width:2px;background:var(--teal);
+    pointer-events:none;box-shadow:0 0 8px var(--teal)}
+  .legend{display:flex;gap:18px;justify-content:center;font-size:12.5px;color:var(--label);
+    margin-top:10px;direction:rtl;flex-wrap:wrap}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;
+    margin-inline-end:6px;vertical-align:-1px;background:var(--chip);border-top:2px solid #24313f}
+  .legend i.live{background:#123b38;border-top-color:var(--teal)}
+
+  .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;
+    font-size:14px;font-weight:600;text-decoration:none;border:1px solid var(--hair);
+    background:var(--chip);color:var(--label-hi);transition:border-color .15s,color .15s}
+  .btn:hover{border-color:#2b3646;color:var(--ink-hi)}
+  .btn.key{background:var(--teal);border-color:var(--teal);color:#04211f}
+  .btn.key:hover{color:#04211f;filter:brightness(1.06)}
+  .btn:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+
+  .caption{text-align:center;font-size:14px;color:var(--label);max-width:60ch;
+    margin:0 auto;text-wrap:balance}
+  .caption b{color:var(--label-hi);font-weight:600}
+
+  /* The scene list is a real index into the film, not decoration: each row seeks. */
+  .scenes{border:1px solid var(--hair);border-radius:18px;background:var(--panel);overflow:hidden}
+  .scenes h2{margin:0;padding:16px 20px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--label);border-bottom:1px solid var(--hair);font-weight:600;
+    display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  .scenes h2 em{font-style:normal;letter-spacing:0;text-transform:none;font-size:12.5px;
+    color:var(--label);font-weight:400}
+  .scene-row{display:grid;grid-template-columns:62px 1fr;gap:14px;align-items:baseline;
+    width:100%;text-align:right;padding:13px 20px;background:none;border:0;cursor:pointer;
+    border-bottom:1px solid rgba(27,36,49,.6);color:inherit;font:inherit;direction:rtl}
+  .scene-row:last-child{border-bottom:0}
+  .scene-row:hover{background:#111825}
+  .scene-row:focus-visible{outline:2px solid var(--teal);outline-offset:-2px}
+  .scene-row.live{background:rgba(18,59,56,.35)}
+  .scene-row.live:hover{background:rgba(18,59,56,.6)}
+  .t{font-variant-numeric:tabular-nums;font-size:13px;color:var(--teal);direction:ltr;text-align:left}
+  .n{font-size:15px;color:var(--label-hi)}
+  .tag{font-size:11px;letter-spacing:.08em;color:var(--teal);border:1px solid #1d4e49;
+    border-radius:5px;padding:1px 6px;margin-inline-start:8px;vertical-align:1px;
+    font-variant-numeric:tabular-nums}
+  .d{font-size:13px;color:var(--label);display:block;margin-top:2px}
+
+  .notes{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .note{border:1px solid var(--hair);border-radius:16px;background:var(--panel);padding:16px 18px}
+  .note h3{margin:0 0 6px;font-size:14px;color:var(--ink-hi);font-weight:700}
+  .note p{margin:0;font-size:13.5px;color:var(--label)}
+  .note code{font-size:12.5px;color:var(--teal);background:#0b1017;padding:1px 5px;border-radius:5px}
+  footer{font-size:12.5px;color:var(--label);text-align:center}
+  @media (prefers-reduced-motion:reduce){.btn,.switch button,.strip button{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="mark">
+      <span class="sq"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="9" y="2" width="6" height="12" rx="3" fill="#fff" stroke="none"></rect>
+        <path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v4"></path></svg></span>
+      <b>QuickOffer</b>
+    </div>
+    <p class="kicker">פרסומת · 9:16 · שלושה קאטים</p>
+    <h1>עופר על זה</h1>
+    <p class="sub">המסמך, פס האישור ומסך ההחתמה שעל הטלפון הם צילום של QuickOffer האמיתי
+      רץ מקומית, לא מוקאפ. הקאט המשולב שוזר ביניהם חמישה שוטים חיים.</p>
+  </header>
+
+  <div class="switch" role="group" aria-label="בחירת קאט">
+    <button type="button" data-cut="film" aria-pressed="true">הסרט · 37 שנ׳</button>
+    <button type="button" data-cut="hybrid" aria-pressed="false">הקאט המשולב · 39 שנ׳</button>
+    <button type="button" data-cut="vo" aria-pressed="false">עם קריינות · 39 שנ׳</button>
+  </div>
+
+  <div class="stagewrap">
+    <div class="bloom"></div>
+    <video id="v" src="ad.mp4" controls playsinline muted autoplay loop preload="auto"></video>
+    <div class="strip" id="strip"><div class="head" id="head" style="left:0"></div></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <p class="caption" id="caption"></p>
+
+  <div class="actions">
+    <a class="btn key" id="dl" href="ad.mp4" download="quickoffer-ad.mp4">הורדת MP4</a>
+    <button class="btn" id="restart" type="button">מהתחלה</button>
+  </div>
+
+  <section class="scenes">
+    <h2><span>הסצנות</span><em id="scenes-note"></em></h2>
+    <div id="rows"></div>
+  </section>
+
+  <div class="notes">
+    <div class="note"><h3>הפסקול נבנה בנפרד</h3>
+      <p>הסרט עצמו אילם - HTML + GSAP שרונדר פריים-פריים. הפסקול מולבש ע"י
+         <code>mix-audio.sh</code>: כל מקור מנורמל ליעד RMS מוצהר, והמוזיקה
+         מקבלת דאקינג מתחת לקריינות.</p></div>
+    <div class="note"><h3>העברית לא הולכת למודל</h3>
+      <p>מודלי וידאו לא כותבים עברית. לכן בכל שוט חי המסך כבוי או מופנה מהמצלמה,
+         וכל אות על מסך מגיעה מהקומפוזיציה.</p></div>
+    <div class="note"><h3>הלוגו אמיתי גם הוא</h3>
+      <p>הקריינות אומרת "עם הלוגו שלך", אז יש לוגו: נבנה ב-HTML עם Ping Heavy,
+         נשמר על העסק במוצר, והמסמך צולם איתו. לא נוצר במודל תמונה - מודלים
+         לא כותבים עברית.</p></div>
+    <div class="note"><h3>המספרים אמיתיים</h3>
+      <p>3×180 + 200 = 740 · מע״מ 18% = 133.20 · <code>873.20 ₪</code>.
+         בדיוק מה שנאמר בהודעה הקולית, ובדיוק מה שמופיע במסמך ובפס ההחלטה שצולמו מהמוצר.</p></div>
+  </div>
+
+  <footer>1080×1920 · 30fps · H.264 · לחיצה על שורה או על בלוק ברצועה קופצת לשם.</footer>
+</div>
+
+<script>
+  var CUTS = {
+    film: {
+      src: "ad.mp4", file: "quickoffer-ad.mp4", dur: 37.5,
+      note: "תשע סצנות, בלי קריינות",
+      caption: "הקאט שרונדר: מושן-גרפיקס מקצה לקצה, בלי דמויות ובלי מצלמה. מרונדר מחדש לפי הנוסח החדש.",
+      rows: [
+        [0,    4,   "gfx", "שתי הודעות",        "\"אחי, מה עם הצעת המחיר?\" ואז הנקודות הופכות ל\"שכחת אותי?\" - והקריין עונה."],
+        [4,    3.5, "gfx", "לא שכחת",            "\"פשוט לא היה לך רגע.\" למה זה קרה, בלי תירוצים."],
+        [7.5,  3.5, "gfx", "עופר, הבוט שלנו",    "בועת הודעה קולית שיוצאת אליו. הקריין אומר את השם באותו רגע."],
+        [11,   4.5, "gfx", "לא מקלידים",         "\"פשוט מקליטים.\" מיקרופון, גלי קול, טיימר שרץ ל-0:12."],
+        [15.5, 5.5, "gfx", "תמלול. חישוב.",      "התמלול יושב עכשיו בכרטיס קריא ונפתח לטבלה. הסכום מטפס ל-873.20 ₪."],
+        [21,   5.5, "gfx", "המסמך",              "המוצר האמיתי, עם הלוגו של העסק בכותרת - בדיוק מה שהקריין מבטיח."],
+        [26.5, 4.5, "gfx", "בלי להתקין",         "פס ההחלטה האמיתי, ריפל על הכפתור, החתימה נמשכת."],
+        [31,   3,   "gfx", "ההתראה",             "\"דני כהן אישר וחתם\" - ואתה יודע באותה שנייה."],
+        [34,   3.5, "gfx", "עופר על זה",         "שורת המותג לבדה על הפריים האחרון, ו-5 הצעות חינם."]
+      ]
+    },
+    hybrid: {
+      src: "hybrid.mp4", file: "quickoffer-ad-hybrid.mp4", dur: 39.4,
+      note: "חמישה שוטים חיים · קאט מלא",
+      caption: "ששת השוטים החיים הופקו ב-Higgsfield ונמצאים ב-<b>hf/</b> - אין יותר סלייטים. " +
+               "הדמות נשמרת בין השוטים כי כל קליפ הוא image-to-video מסטיל מקושר, לא text-to-video. " +
+               "אין טקסט על אף מסך באף קליפ; כל העברית מגיעה מהמושן-גרפיקס.",
+      rows: [
+        [0,    2,   "HF-A", "ידיים בלוח חשמל",      "מברג מבריג, ואז הטלפון רוטט בכיס בקצב - והוא לא עונה."],
+        [2,    4,   "gfx",  "שתי הודעות",           "הנקודות נפרעות בהודעה שנייה: \"שכחת אותי?\" - ו\"לא שכחת\" עונה לה."],
+        [6,    2,   "HF-B", "לא היה לו רגע",        "ברכב בסוף היום, נשען, מסתכל בטלפון כבוי ומוריד את היד."],
+        [8,    3.5, "gfx",  "עופר, הבוט שלנו",      "בועת הודעה קולית שיוצאת אליו, והקריין אומר את השם."],
+        [11.5, 3.5, "HF-D", "מחזיק את ההקלטה",      "מדבר בקול רגיל. הטלפון מכסה את הפה."],
+        [15,   5.5, "gfx",  "תמלול. חישוב.",        "כרטיס התמלול נפתח לטבלה. 873.20 ₪."],
+        [20.5, 5.5, "gfx",  "המסמך",                "המוצר האמיתי, עם הלוגו של העסק בכותרת."],
+        [26,   1.2, "HF-E", "האגודל חותם",          "מסך ההחתמה האמיתי על הטלפון, האגודל מלפנים. בלי אפקט - רק המצע."],
+        [27.2, 4.5, "gfx",  "בלי להתקין",           "פס ההחלטה, ריפל על הכפתור, החתימה נמשכת."],
+        [31.7, 3,   "gfx",  "ההתראה",               "\"דני כהן אישר וחתם\"."],
+        [34.7, 1.2, "HF-F", "מציץ וממשיך",          "חיוך קטן, הטלפון לכיס, חוזר לעבודה."],
+        [35.9, 3.5, "gfx",  "עופר על זה",           "שורת המותג, ו-5 הצעות חינם."]
+      ]
+    }
+  };
+
+  // אותו קאט משולב בדיוק, עם הקריינות מולבשת. כל שורה הונחתה על פעימת התמונה שלה:
+  // "מאשר וחותם" יושב על האגודל ב-HF-E, "ועופר על זה" על ה-CTA.
+  CUTS.vo = {
+    src: "hybrid-vo.mp4", file: "quickoffer-ad-hybrid-vo.mp4", dur: 39.4,
+    note: "פסקול מלא · -14.7 LUFS",
+    caption: "קריינות, הודעה קולית, אפקטים ומצע מוזיקלי. כל שורה מונחתת על פעימת התמונה שלה - " +
+             "\"וחותם\" נופל על האגודל, \"ועופר על זה\" על הפריים האחרון. המוזיקה נכנסת " +
+             "כשהוא מרים את הטלפון (§1) ויורדת אוטומטית מתחת לקריינות. " +
+             "ההודעה הקולית עצמה היא עדיין <b>פלייסהולדר</b> שמיועד להקלטה אמיתית.",
+    rows: CUTS.hybrid.rows
+  };
+
+  var v = document.getElementById("v"),
+      strip = document.getElementById("strip"),
+      head = document.getElementById("head"),
+      rows = document.getElementById("rows"),
+      legend = document.getElementById("legend"),
+      caption = document.getElementById("caption"),
+      note = document.getElementById("scenes-note"),
+      dl = document.getElementById("dl"),
+      current = "film";
+
+  function clock(s) {
+    return "0:" + String(Math.floor(s)).padStart(2, "0");
+  }
+
+  function seek(t) {
+    v.currentTime = t;
+    v.play();
+  }
+
+  function render(key) {
+    var cut = CUTS[key];
+    current = key;
+
+    document.querySelectorAll(".switch button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.cut === key));
+    });
+
+    v.src = cut.src;
+    v.play();
+    dl.href = cut.src;
+    dl.download = cut.file;
+    caption.innerHTML = cut.caption;
+    note.textContent = cut.note;
+
+    strip.querySelectorAll("button").forEach(function (b) { b.remove(); });
+    rows.textContent = "";
+
+    cut.rows.forEach(function (r) {
+      var start = r[0], dur = r[1], kind = r[2], name = r[3], desc = r[4],
+          live = kind !== "gfx";
+
+      var block = document.createElement("button");
+      block.type = "button";
+      block.style.flex = dur;
+      block.className = live ? "live" : "";
+      block.title = (live ? kind + " - " : "") + name;
+      block.setAttribute("aria-label", name + " " + clock(start));
+      block.addEventListener("click", function () { seek(start); });
+      strip.appendChild(block);
+
+      var row = document.createElement("button");
+      row.type = "button";
+      row.className = "scene-row" + (live ? " live" : "");
+      row.innerHTML =
+        '<span class="t">' + clock(start) + '</span><span><span class="n">' +
+        name + (live ? '<span class="tag">' + kind + '</span>' : '') +
+        '</span><span class="d">' + desc + '</span></span>';
+      row.addEventListener("click", function () {
+        seek(start);
+        v.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      rows.appendChild(row);
+    });
+
+    legend.innerHTML = key === "hybrid"
+      ? '<span><i class="live"></i>לייב-אקשן · Higgsfield</span><span><i></i>הקומפוזיציה</span>'
+      : '<span><i></i>מושן-גרפיקס · HTML + GSAP</span>';
+  }
+
+  v.addEventListener("timeupdate", function () {
+    var pct = Math.min(1, v.currentTime / CUTS[current].dur);
+    head.style.left = (pct * 100) + "%";
+  });
+
+  document.querySelectorAll(".switch button").forEach(function (b) {
+    b.addEventListener("click", function () { render(b.dataset.cut); });
+  });
+  document.getElementById("restart").addEventListener("click", function () { seek(0); });
+
+  render("film");
+</script>
