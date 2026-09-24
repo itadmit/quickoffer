@@ -1,4 +1,4 @@
-import { and, eq, gt, lt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { verifyToken } from "../crypto";
 import { db } from "../db";
 import { magicLinks } from "../db/schema";
@@ -74,9 +74,21 @@ export async function resolveLink(code: string, purpose: Purpose): Promise<strin
   return row.subject;
 }
 
+/**
+ * Bounded, and counted without carrying every deleted code back over the wire:
+ * `returning` on an unbounded delete would materialise the whole expired set
+ * just to call `.length` on it.
+ */
 export async function purgeExpiredLinks(): Promise<number> {
-  const gone = await db.delete(magicLinks).where(lt(magicLinks.expiresAt, new Date())).returning({ code: magicLinks.code });
-  return gone.length;
+  const result = await db.execute<{ n: number }>(sql`
+    delete from ${magicLinks}
+    where ${magicLinks.code} in (
+      select ${magicLinks.code} from ${magicLinks} where ${magicLinks.expiresAt} < now() limit 500
+    )
+    returning 1 as n
+  `);
+  const rows = (result as unknown as { rows?: unknown[] }).rows;
+  return Array.isArray(rows) ? rows.length : 0;
 }
 
 export async function editLink(quoteId: string): Promise<string> {

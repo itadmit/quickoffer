@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -45,6 +46,21 @@ export const quoteEventTypeEnum = pgEnum("quote_event_type", [
   // the bot nudged the professional that this quote went quiet
   "reminded",
 ]);
+/** A quote nobody can act on any more. */
+export const CLOSED_QUOTE_STATUSES = ["approved", "rejected", "expired"] as const;
+/**
+ * A quote still in play - what the cron expires and nudges.
+ *
+ * Derived rather than written out, and asserted in tests, because the partial
+ * predicate of `quotes_open_valid_until_idx` spells the same set literally: a
+ * new status added to the enum has to reach the index too, or the tick goes
+ * back to scanning every quote ever written.
+ */
+export const OPEN_QUOTE_STATUSES = quoteStatusEnum.enumValues.filter(
+  (s): s is Exclude<(typeof quoteStatusEnum.enumValues)[number], (typeof CLOSED_QUOTE_STATUSES)[number]> =>
+    !(CLOSED_QUOTE_STATUSES as readonly string[]).includes(s),
+);
+
 export const inboundTypeEnum = pgEnum("inbound_type", [
   "text",
   "audio",
@@ -166,6 +182,19 @@ export const quotes = pgTable(
   (t) => [
     uniqueIndex("quotes_user_number_idx").on(t.userId, t.number),
     index("quotes_user_created_idx").on(t.userId, t.createdAt),
+    // The admin's "today / this month" counters, which have no user to filter
+    // by and so cannot use the index above.
+    index("quotes_created_idx").on(t.createdAt),
+    // The cron tick expires and nudges every five minutes, forever. Both
+    // queries only ever look at quotes that are still open, which is the
+    // shrinking minority once the table has some history - so both indexes are
+    // partial, and neither grows with the archive.
+    index("quotes_open_valid_until_idx")
+      .on(t.validUntil)
+      .where(sql`${t.status} in ('draft', 'sent', 'viewed')`),
+    index("quotes_followup_idx")
+      .on(t.lastReminderAt, t.createdAt)
+      .where(sql`${t.status} in ('sent', 'viewed') and ${t.remindersSent} < 2`),
   ],
 );
 
@@ -218,7 +247,14 @@ export const inboundMessages = pgTable(
     error: text("error"),
     attempts: integer("attempts").notNull().default(0),
   },
-  (t) => [index("inbound_user_at_idx").on(t.userPhone, t.at)],
+  (t) => [
+    index("inbound_user_at_idx").on(t.userPhone, t.at),
+    // The cron's "stuck messages" query. Partial, so it holds only the handful
+    // of rows that are actually in flight rather than every message ever.
+    index("inbound_unprocessed_idx").on(t.at).where(sql`${t.processedAt} is null`),
+    // Retention sweep.
+    index("inbound_at_idx").on(t.at),
+  ],
 );
 
 export const outboundMessages = pgTable(
@@ -233,7 +269,11 @@ export const outboundMessages = pgTable(
     ok: boolean("ok").notNull().default(false),
     at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("outbound_user_at_idx").on(t.userPhone, t.at)],
+  (t) => [
+    index("outbound_user_at_idx").on(t.userPhone, t.at),
+    // Retention sweep and the admin's "last 10 sent".
+    index("outbound_at_idx").on(t.at),
+  ],
 );
 
 export const appSettings = pgTable("app_settings", {
@@ -278,7 +318,11 @@ export const processingRuns = pgTable(
     error: text("error"),
     at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("processing_runs_quote_idx").on(t.quoteId)],
+  (t) => [
+    index("processing_runs_quote_idx").on(t.quoteId),
+    // Every admin counter is "since <date>", and the retention sweep is too.
+    index("processing_runs_at_idx").on(t.at),
+  ],
 );
 
 /**
@@ -376,7 +420,11 @@ export const magicLinks = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
   },
-  (t) => [index("magic_links_subject_idx").on(t.purpose, t.subject)],
+  (t) => [
+    index("magic_links_subject_idx").on(t.purpose, t.subject),
+    // purgeExpiredLinks, every five minutes.
+    index("magic_links_expires_idx").on(t.expiresAt),
+  ],
 );
 
 /**

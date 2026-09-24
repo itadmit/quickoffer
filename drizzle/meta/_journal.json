@@ -57,6 +57,20 @@
       "when": 1790087098538,
       "tag": "0007_burly_solo",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790255495263,
+      "tag": "0008_scale_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790255824367,
+      "tag": "0009_quotes_created_idx",
+      "breakpoints": true
     }
   ]
 }
