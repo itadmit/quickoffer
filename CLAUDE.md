@@ -197,10 +197,10 @@ QuickOffer מחובר ל-**Quick Commerce Billing Hub** (`~/Desktop/Projeccts/qu
 
 **סטטוס ה-endpoints על הדומיין החדש:** `/api/webhooks/telegram` → 401 בלי סוד תקין (חי) · `/api/cron/tick` → 401 בלי secret (חי) · `/api/webhooks/ibot` → **503**, וזה תקין: `ibot.webhook_token` ריק, והראוט מחזיר 503 מפורש כשהוא לא מוגדר (route.ts:31). יהפוך ל-401 ברגע שיוזן טוקן iBot אמיתי.
 
-**נותר ידנית (לא חוסם):**
-1. ה-pinger החיצוני (cron-job.org) → `https://quickoffer.co.il/api/cron/tick?secret=` — עדיין מצביע על הדומיין הישן.
-2. `APP_URL` ל-Preview — ה-CLI מסרב ללא prompt (`git_branch_required`), צריך קליק בדשבורד. משפיע רק על preview deployments.
-3. טוקן iBot — טרם הוזן (ראה §6.8 / היסטוריית ה-app_settings).
+**נותר ידנית:**
+1. ⏳ ה-pinger החיצוני (cron-job.org) → `https://quickoffer.co.il/api/cron/tick?secret=` — עדיין מצביע על הדומיין הישן. זה מה שמרים הודעות תקועות ומפקיע תוקף. (שקול להחליף ב-Vercel Cron ולהיפטר מהתלות החיצונית — דורש תוכנית Pro בשביל תדירות של 5 דק׳.)
+2. ⏳ טוקן iBot — טרם הוזן. עד אז `/api/webhooks/ibot` מחזיר 503.
+3. ~~`APP_URL` ל-Preview~~ — **לא צריך.** Preview חולק את אותו `DATABASE_URL` (ולכן אותו `app_settings`), אז `app.url` מה-DB גובר ממילא וה-env הזה לעולם לא נקרא שם. ה-CLI גם מסרב להוסיף אותו ללא prompt.
 
 ## מה הלאה (לפי סדר)
 1. **חיבור אמיתי:** Neon DB + Vercel deploy + מפתח OpenAI ב-`/admin` + webhook token ב-iBot → הודעה קולית אמיתית מהטלפון של המשתמש. לאמת ש-`X-Webhook-Token` באמת מגיע.
