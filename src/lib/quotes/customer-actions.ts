@@ -1,4 +1,5 @@
 import { and, eq, notInArray } from "drizzle-orm";
+import { isBot } from "../bots";
 import { notifications } from "../conversation/messages";
 import { db } from "../db";
 import { quotes } from "../db/schema";
@@ -13,6 +14,9 @@ import { getTemplateForUser } from "./templates";
  */
 
 export async function recordView(publicId: string, meta: { ip: string | null; ua: string | null }) {
+  // A link-preview crawler is not a customer (lib/bots.ts). Skipping before the
+  // lookup also keeps a crawled link from costing a query.
+  if (isBot(meta.ua)) return;
   const q = await getQuoteByPublicId(publicId);
   if (!q) return;
   if (["approved", "rejected", "expired"].includes(q.status)) return;
