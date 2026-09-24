@@ -38,7 +38,8 @@ import {
   saveJob,
 } from "../quotes/saved-jobs-store";
 import { trackMetaEvent } from "../meta/capi";
-import { estimateAudioSeconds, fetchMedia, storeFile } from "../storage";
+import { audioSeconds } from "../audio";
+import { fetchMedia, storeFile } from "../storage";
 import { sendText, type InboundMessage } from "../whatsapp";
 import type { FilledFromBook } from "../quotes/price-book";
 import { matchTemplateName, planAllows, PLAN_LABELS } from "../quotes/template-spec";
@@ -51,6 +52,7 @@ import {
   correctionSummary,
   customerMessage,
   errors,
+  MAX_AUDIO_MINUTES,
   onboarding as ob,
   OPENING_LINE,
   quoteSummary,
@@ -58,7 +60,8 @@ import {
   sendHint,
 } from "./messages";
 
-const MAX_AUDIO_SECONDS = 180;
+/** Quoted to the professional in the activation message - keep the two in step. */
+const MAX_AUDIO_SECONDS = MAX_AUDIO_MINUTES * 60;
 const PROCESSING_NOTICE_AFTER_MS = 3_000;
 /**
  * How many times a message that keeps failing for real is retried before we
@@ -507,8 +510,9 @@ async function transcribeInbound(
     await sendText(user.phone, errors.mediaUnavailable());
     return null;
   }
-  if (estimateAudioSeconds(buffer.length) > MAX_AUDIO_SECONDS) {
-    await sendText(user.phone, errors.tooLong());
+  const seconds = audioSeconds(buffer);
+  if (seconds > MAX_AUDIO_SECONDS) {
+    await sendText(user.phone, errors.tooLong(seconds, MAX_AUDIO_SECONDS));
     return null;
   }
 

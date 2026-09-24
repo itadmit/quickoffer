@@ -33,6 +33,13 @@ import type { QuoteWithItems } from "../quotes/service";
  */
 export const OPENING_LINE = "אני רוצה הצעת מחיר מעוצבת";
 
+/**
+ * Stated in the activation message rather than discovered by being refused.
+ * Kept beside the copy that quotes it so the two cannot drift; the ceiling
+ * itself is MAX_AUDIO_SECONDS in the handler.
+ */
+export const MAX_AUDIO_MINUTES = 3;
+
 export const onboarding = {
   askName: (suggested: string | null) =>
     `היי, אני עופר 👋 מדברים - ואני כותב את ההצעה.\nשתי שאלות ומתחילים.\n1️⃣ איך קוראים לעסק?${
@@ -337,7 +344,13 @@ export const errors = {
   noItems: (transcript: string) =>
     `שמעתי: "${transcript.slice(0, 200)}" - אבל לא זיהיתי פריטים ומחירים. למשל: "לדני - 3 נקודות חשמל 180 שקל ליחידה".`,
   mediaUnavailable: () => `יש תקלה זמנית, אפשר לנסות שוב בעוד דקה.`,
-  tooLong: () => `ההקלטה ארוכה מדי - עד 3 דקות.`,
+  /**
+   * Says what was sent and what fits, because "too long" without a number
+   * leaves the professional guessing how much to cut. Splitting is suggested
+   * rather than just refused - the work usually divides cleanly anyway.
+   */
+  tooLong: (seconds: number, maxSeconds: number) =>
+    `ההקלטה ארוכה מדי (${Math.round(seconds)} שניות). המקסימום הוא ${Math.round(maxSeconds / 60)} דקות.\nאפשר לחלק לשתי הקלטות - אני אצרף אותן לאותה הצעה.`,
   quotaExceeded: (plan: string, limit: number, upgradeUrl: string) =>
     [
       `הגעת ל-${limit} ההצעות של חבילת ${plan}.`,

@@ -13,6 +13,8 @@ import { isPaidPlan, PLAN_OFFERS, priceOf, upgradesFor } from "@/lib/billing/pla
 import { toVisual } from "@/lib/og-bidi";
 import { isOutOfCredit, isRateLimitError, parseResetSeconds } from "@/lib/ai/limits";
 import { isBot } from "@/lib/bots";
+import { audioDurationSeconds, audioSeconds } from "@/lib/audio";
+import { errors, MAX_AUDIO_MINUTES } from "@/lib/conversation/messages";
 import { TRANSCRIPTION_CHOICES } from "@/lib/ai/transcription-choices";
 import { MAX_ATTEMPTS, RETRY_WINDOW_MS } from "@/lib/conversation/handler";
 import { rateLimitWaitMs } from "@/lib/ai/openai";
@@ -596,4 +598,48 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert.ok(TRANSCRIPTION_CHOICES.groq.agorotPer20s < TRANSCRIPTION_CHOICES.openai.agorotPer20s);
   assert.ok(TRANSCRIPTION_CHOICES.groq.typicalMs < TRANSCRIPTION_CHOICES.openai.typicalMs);
   console.log("TRANSCRIPTION CHOICES OK");
+}
+
+// ---- how long a voice note is, which decides both the ceiling and the bill
+{
+  // A WAV we can build exactly: 2 seconds at 8kHz, 16-bit mono = 16000 bytes/s
+  const wav = (seconds: number) => {
+    const rate = 8000, byteRate = rate * 2;
+    const data = Buffer.alloc(Math.round(seconds * byteRate));
+    const h = Buffer.alloc(44);
+    h.write("RIFF", 0); h.writeUInt32LE(36 + data.length, 4); h.write("WAVE", 8);
+    h.write("fmt ", 12); h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(1, 22);
+    h.writeUInt32LE(rate, 24); h.writeUInt32LE(byteRate, 28); h.writeUInt16LE(2, 32); h.writeUInt16LE(16, 34);
+    h.write("data", 36); h.writeUInt32LE(data.length, 40);
+    return Buffer.concat([h, data]);
+  };
+  assert.equal(audioDurationSeconds(wav(2)), 2);
+  assert.equal(audioDurationSeconds(wav(0.5)), 0.5);
+
+  // An Ogg page carrying a granule position: Opus counts samples at 48kHz
+  const ogg = (samples: number) => {
+    const p = Buffer.alloc(27);
+    p.write("OggS", 0);
+    p.writeUInt32LE(samples % 2 ** 32, 6);
+    p.writeInt32LE(Math.floor(samples / 2 ** 32), 10);
+    return Buffer.concat([Buffer.from("OggS" + "\0".repeat(23), "latin1"), p]);
+  };
+  assert.equal(audioDurationSeconds(ogg(48_000)), 1);
+  assert.equal(audioDurationSeconds(ogg(494_400)), 10.3, "the real note measured 10.3s and Groq billed 10");
+
+  // Nothing we can read must produce a confident number rather than null
+  assert.equal(audioDurationSeconds(Buffer.from("not audio at all")), null);
+  assert.equal(audioDurationSeconds(Buffer.alloc(0)), null);
+  // a header page reports granule 0 - that is "unknown", not "zero seconds"
+  assert.equal(audioDurationSeconds(ogg(0)), null);
+
+  // audioSeconds always answers, falling back to the old guess
+  assert.equal(audioSeconds(wav(3)), 3);
+  assert.equal(audioSeconds(Buffer.alloc(1200)), 1, "fallback is bytes/1200");
+
+  // The ceiling the bot promises must be the ceiling it enforces
+  assert.equal(MAX_AUDIO_MINUTES, 3);
+  assert.ok(errors.tooLong(200, 180).includes("200"), "the refusal must say how long theirs was");
+  assert.ok(errors.tooLong(200, 180).includes("3"), "and what the limit is");
+  console.log("AUDIO DURATION OK");
 }

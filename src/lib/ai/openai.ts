@@ -1,5 +1,6 @@
 import OpenAI, { toFile } from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
+import { audioSeconds } from "../audio";
 import { parseResetSeconds } from "./limits";
 import type { z } from "zod";
 import {
@@ -206,8 +207,9 @@ export function openaiTranscription(cfg: OpenAIConfig): TranscriptionProvider {
         }),
       );
       const ms = Date.now() - started;
-      // Ogg/Opus from WhatsApp is ~1.2KB/s (verified 5.8KB for 5s); estimate minutes for cost
-      const minutes = audio.length / 1200 / 60;
+      // The real duration, which is what both providers bill (lib/audio.ts).
+      // Sizing this from the file length overstated it about twofold.
+      const minutes = audioSeconds(audio) / 60;
       const usage: Usage = {
         provider: cfg.providerName,
         model: cfg.model,
