@@ -122,7 +122,7 @@ export function totalsRows(q: QuoteView): { label: string; value: string }[] {
   const rows: { label: string; value: string }[] = [];
   if (q.discountAmount > 0) {
     rows.push({ label: "סה״כ פריטים", value: formatMoney(q.subtotal) });
-    rows.push({ label: "הנחה", value: `−${formatMoney(q.discountAmount)}` });
+    rows.push({ label: "הנחה", value: `-${formatMoney(q.discountAmount)}` });
   }
   if (q.vatRate === 0) return rows;
   if (q.vatIncluded) {

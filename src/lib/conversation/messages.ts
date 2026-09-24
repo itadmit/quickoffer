@@ -72,7 +72,7 @@ function itemLine(it: QuoteItem): string {
 
 function totalsLines(q: Quote): string[] {
   const lines: string[] = [];
-  if (q.discountAmount > 0) lines.push(`הנחה: −${formatMoney(q.discountAmount)}`);
+  if (q.discountAmount > 0) lines.push(`הנחה: -${formatMoney(q.discountAmount)}`);
   if (q.vatRate === 0) {
     lines.push(`סה״כ ${formatMoney(q.total)} (עוסק פטור, ללא מע״מ)`);
   } else if (q.vatIncluded) {
