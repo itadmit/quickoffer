@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --tsconfig tsconfig.json tests/pure.test.ts",
+    "test": "tsx --tsconfig tsconfig.json tests/pure.test.ts && tsx --tsconfig tsconfig.json tests/queue.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",

@@ -11,6 +11,8 @@ import { daysSince, isQuietHour } from "@/lib/quotes/follow-up";
 import { isPaidPlan, PLAN_OFFERS, priceOf, upgradesFor } from "@/lib/billing/plans";
 import { toVisual } from "@/lib/og-bidi";
 import { parseResetSeconds } from "@/lib/ai/limits";
+import { isBot } from "@/lib/bots";
+import { CLOSED_QUOTE_STATUSES, OPEN_QUOTE_STATUSES, quoteStatusEnum } from "@/lib/db/schema";
 import {
   isValidJobName,
   itemsForJob,
@@ -423,4 +425,47 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert.equal(parseResetSeconds(null), null);
   assert.equal(parseResetSeconds("soon"), null);
   console.log("RATE LIMIT PARSE OK");
+}
+
+// ---- link-preview crawlers must not be counted as a customer opening a quote
+{
+  // the one that actually matters: forwarding the link in WhatsApp
+  assert.equal(isBot("WhatsApp/2.2412.54 A"), true);
+  assert.equal(isBot("facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"), true);
+  assert.equal(isBot("TelegramBot (like TwitterBot)"), true);
+  assert.equal(isBot("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"), true);
+  assert.equal(isBot("curl/8.7.1"), true);
+  // no user agent at all is a script, not a customer
+  assert.equal(isBot(""), true);
+  assert.equal(isBot(null), true);
+
+  // real customers, who must still be counted
+  assert.equal(
+    isBot("Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"),
+    false,
+  );
+  assert.equal(
+    isBot("Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36"),
+    false,
+  );
+  // a phone whose model name ends in "bot" must not be mistaken for one
+  assert.equal(
+    isBot("Mozilla/5.0 (Linux; Android 12; CUBOT_NOTE_20) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36"),
+    false,
+  );
+  console.log("BOT FILTER OK");
+}
+
+// ---- the cron's status filter must stay identical to the partial index
+{
+  // quotes_open_valid_until_idx is declared as `status in ('draft','sent','viewed')`.
+  // If a status is ever added to the enum, this fails before the tick quietly
+  // goes back to scanning the whole table.
+  assert.deepEqual([...OPEN_QUOTE_STATUSES], ["draft", "sent", "viewed"]);
+  assert.deepEqual(
+    [...OPEN_QUOTE_STATUSES, ...CLOSED_QUOTE_STATUSES].sort(),
+    [...quoteStatusEnum.enumValues].sort(),
+    "every quote status must be either open or closed",
+  );
+  console.log("QUOTE STATUS SETS OK");
 }
