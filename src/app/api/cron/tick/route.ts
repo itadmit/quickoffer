@@ -1,6 +1,6 @@
-import { and, inArray, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, gt, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
-import { handleInbound } from "@/lib/conversation/handler";
+import { handleInbound, MAX_ATTEMPTS, RETRY_WINDOW_MS } from "@/lib/conversation/handler";
 import { safeEqual } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { inboundMessages, OPEN_QUOTE_STATUSES, quotes } from "@/lib/db/schema";
@@ -17,7 +17,8 @@ export const maxDuration = 60;
  * GET /api/cron/tick - every 5 minutes, from Vercel Cron (`vercel.json`).
  * Vercel sends `Authorization: Bearer $CRON_SECRET` automatically; `?secret=`
  * is kept for manual and local runs.
- *  - re-runs inbound messages stuck without processed_at for > 2 min (max 3 attempts)
+ *  - re-runs inbound messages stuck without processed_at for > 2 min (MAX_ATTEMPTS
+ *    genuine failures, or up to RETRY_WINDOW_MS of being rate limited)
  *  - expires quotes past valid_until
  *  - nudges the professional about quotes that went quiet (§6.6)
  *  - reports instance health as last known (§5.5)
@@ -42,14 +43,19 @@ export async function GET(req: NextRequest) {
   }
 
   // 1. stuck inbound messages
+  const now = Date.now();
   const stuck = await db
     .select()
     .from(inboundMessages)
     .where(
       and(
         isNull(inboundMessages.processedAt),
-        lt(inboundMessages.at, new Date(Date.now() - 2 * 60_000)),
-        lt(inboundMessages.attempts, 3),
+        lt(inboundMessages.at, new Date(now - 2 * 60_000)),
+        // A rate limited message gives its attempt back (handler.ts), so this
+        // counter only bounds messages that are actually failing. Time bounds
+        // the rest.
+        gt(inboundMessages.at, new Date(now - RETRY_WINDOW_MS)),
+        lt(inboundMessages.attempts, MAX_ATTEMPTS),
       ),
     )
     .limit(5);
@@ -71,6 +77,19 @@ export async function GET(req: NextRequest) {
       console.error("[cron] reprocess", row.id, e);
     }
   }
+
+  // 1b. Past the retry window and still unprocessed. Without this they would
+  // sit in the partial index forever and keep inflating "waiting messages".
+  const abandoned = await db
+    .update(inboundMessages)
+    .set({ processedAt: new Date(), error: sql`coalesce(${inboundMessages.error}, 'abandoned: retry window elapsed')` })
+    .where(
+      and(
+        isNull(inboundMessages.processedAt),
+        lt(inboundMessages.at, new Date(now - RETRY_WINDOW_MS)),
+      ),
+    )
+    .returning({ id: inboundMessages.id });
 
   // 2. expire quotes
   //
@@ -106,6 +125,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     reprocessed,
+    abandoned: abandoned.length,
     expired: expired.length,
     reminded,
     purgedLinks,

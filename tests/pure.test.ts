@@ -1,17 +1,19 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { parseIbotInbound } from "@/lib/whatsapp/ibot";
-import { calcTotals, formatMoney } from "@/lib/quotes/calc";
+import { calcTotals, formatMoney, qtyLabel } from "@/lib/quotes/calc";
+import { notifications } from "@/lib/conversation/messages";
 import { makeToken, verifyToken, encryptSecret, decryptSecret } from "@/lib/crypto";
 import { matchTemplateName, planAllows } from "@/lib/quotes/template-spec";
 import { formatPhone, isMobile, normalizePhone, waLink } from "@/lib/phone";
 import { applyPriceBook, catalogNames, CATALOG_PROMPT_LIMIT, isLearnable, priceKey } from "@/lib/quotes/price-book";
-import { customerMessageText, daysUntil } from "@/lib/quotes/customer-message";
+import { customerMessageText, daysUntil, questionReplyText } from "@/lib/quotes/customer-message";
 import { daysSince, isQuietHour } from "@/lib/quotes/follow-up";
 import { isPaidPlan, PLAN_OFFERS, priceOf, upgradesFor } from "@/lib/billing/plans";
 import { toVisual } from "@/lib/og-bidi";
 import { isOutOfCredit, isRateLimitError, parseResetSeconds } from "@/lib/ai/limits";
 import { isBot } from "@/lib/bots";
+import { MAX_ATTEMPTS, RETRY_WINDOW_MS } from "@/lib/conversation/handler";
 import { rateLimitWaitMs } from "@/lib/ai/openai";
 import { CLOSED_QUOTE_STATUSES, OPEN_QUOTE_STATUSES, quoteStatusEnum } from "@/lib/db/schema";
 import {
@@ -247,7 +249,40 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert.equal(daysUntil(new Date(Date.now() - 86_400_000), 14), 1);
   assert.equal(daysUntil(new Date(Date.now() + 3 * 86_400_000), 14), 3);
   assert.equal(daysUntil("not-a-date", 9), 9);
+
+  // the answer to a question is drafted into the customer's own chat, with the
+  // question quoted and an empty line waiting for the answer
+  const reply = questionReplyText("  מתי אפשר   להתחיל?  ");
+  assert.equal(reply, `*בקשר לשאלתך:* "מתי אפשר להתחיל?"\n*התשובה שלי היא:*\n`);
+  // a long question is quoted, not dumped - the link still has to fit in a bubble
+  assert(questionReplyText("א".repeat(400)).includes("…"));
+  assert(questionReplyText("א".repeat(400)).length < 260);
+
+  // and the notification carries the tap that opens that chat - short, like the
+  // send link: the raw wa.me URL would fill the bubble with percent-escapes
+  const q = { number: 12, customerName: "דני", customerPhone: "972501234567" } as never;
+  const note = notifications.question(q, "מתי אפשר להתחיל?", "https://quickoffer.co.il/r/ab12cd");
+  assert(note.includes("https://quickoffer.co.il/r/ab12cd"));
+  assert(!note.includes("wa.me"));
+  assert(note.includes('"מתי אפשר להתחיל?"'));
+  // no reachable number → no dead link, and a word on where an answer must go
+  const noPhone = notifications.question({ number: 12, customerName: "דני", customerPhone: null } as never, "מתי?", null);
+  assert(noPhone.includes("לא ללקוח"));
   console.log("CUSTOMER MESSAGE OK");
+}
+
+// ---- the quantity column: a number, plus a unit only when it measures something
+{
+  assert.equal(qtyLabel(80, "מ״ר"), "80 מ״ר");
+  assert.equal(qtyLabel(2.5, "שעה"), "2.5 שעה");
+  assert.equal(qtyLabel(3, "נקודה"), "3 נקודה");
+  // "קומפלט"/"יח׳" say nothing next to the number
+  assert.equal(qtyLabel(1, "קומפלט"), "1");
+  assert.equal(qtyLabel(1, "יח׳"), "1");
+  assert.equal(qtyLabel(4, "יח'"), "4");
+  assert.equal(qtyLabel(1, "  "), "1");
+  assert.equal(qtyLabel(1, null), "1");
+  console.log("QTY LABEL OK");
 }
 
 // ---- follow-up pacing
@@ -522,4 +557,16 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert.equal(isOutOfCredit(null), false);
   assert.equal(isOutOfCredit(new Error("network")), false);
   console.log("OUT OF CREDIT OK");
+}
+
+// ---- the two retry budgets must not be confused with each other
+{
+  // The cron's filter and the handler's constant are the same budget; if they
+  // drift, a retry is either promised and never run or run past its bound.
+  assert.equal(MAX_ATTEMPTS, 3);
+  // Long enough that a provider's congestion clears, short enough that nobody
+  // is still waiting on an answer they have forgotten asking for.
+  assert.equal(RETRY_WINDOW_MS, 2 * 3600_000);
+  assert.ok(RETRY_WINDOW_MS > 5 * 60_000, "the window must outlast at least one cron tick");
+  console.log("RETRY BUDGETS OK");
 }

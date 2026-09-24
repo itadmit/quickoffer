@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   getLLMProvider,
   getTranscriptionProvider,
@@ -60,8 +60,21 @@ import {
 
 const MAX_AUDIO_SECONDS = 180;
 const PROCESSING_NOTICE_AFTER_MS = 3_000;
-/** Must match the cron tick's `attempts < 3` filter, or a retry is promised and never runs. */
-const MAX_ATTEMPTS = 3;
+/**
+ * How many times a message that keeps failing for real is retried before we
+ * give up on it. Rate limits do not spend from this budget - see the catch in
+ * handleInbound - so it only ever counts genuine faults.
+ */
+export const MAX_ATTEMPTS = 3;
+/**
+ * How long a message rate limited by the provider keeps being retried.
+ *
+ * This is the bound on that loop, in place of the attempt counter: congestion
+ * clears on its own, so the question is how long the professional is willing
+ * to wait for an answer, not how many times we were unlucky. Past it we stop
+ * and apologise rather than leave the row unprocessed forever.
+ */
+export const RETRY_WINDOW_MS = 2 * 3600_000;
 
 /** Done with this message: the cron tick only looks at rows still null here. */
 function markProcessed(id: string, error: string | null) {
@@ -96,28 +109,38 @@ export async function handleInbound(msg: InboundMessage): Promise<void> {
     /**
      * A provider rate limit is a queueing problem, not a fault: leave
      * `processed_at` null and the cron tick picks the message back up within
-     * five minutes. `attempts` (capped at 3 by the same query) is what stops
-     * this from looping forever.
+     * five minutes.
      */
     let reply = errors.generic();
     if (isRateLimitError(err)) {
-      // Leave processed_at null so the tick picks it up, and read back the
-      // attempt count the tick maintains.
-      const [row] = await db
-        .update(inboundMessages)
-        .set({ error: run.error })
-        .where(eq(inboundMessages.id, msg.id))
-        .returning({ attempts: inboundMessages.attempts });
-      const attempts = row?.attempts ?? MAX_ATTEMPTS;
-      if (attempts < MAX_ATTEMPTS) {
-        console.error("[handleInbound]", msg.id, `rate limited, attempt ${attempts}`, err);
-        // "I'm busy" once, on the first hit. Silence on the retries in between:
-        // they were already told, and the promise is still good.
-        if (attempts > 1) return;
+      const before = await db.query.inboundMessages.findFirst({
+        where: eq(inboundMessages.id, msg.id),
+      });
+      const ageMs = Date.now() - (before?.at.getTime() ?? Date.now());
+      if (ageMs < RETRY_WINDOW_MS) {
+        /**
+         * Give back the attempt the tick spent on its way in.
+         *
+         * `attempts` is the budget for a message that is genuinely broken -
+         * unparseable, or failing the same way every time - and being turned
+         * away for going too fast is neither. Spending the budget on it meant
+         * a message could be abandoned after fifteen minutes while the
+         * provider had capacity to spare, which at the daily ceiling is
+         * exactly when it would happen. What bounds this loop instead is
+         * time: the tick stops looking after RETRY_WINDOW_MS.
+         */
+        await db
+          .update(inboundMessages)
+          .set({ error: run.error, attempts: sql`greatest(${inboundMessages.attempts} - 1, 0)` })
+          .where(eq(inboundMessages.id, msg.id));
+        console.error("[handleInbound]", msg.id, `rate limited, requeued after ${Math.round(ageMs / 1000)}s`, err);
+        // "I'm busy" once. Silence on every retry after it - they were told,
+        // and the promise still holds.
+        if (before?.error) return;
         reply = errors.busy();
       } else {
-        // Out of retries, so stop the tick from picking it up again.
-        console.error("[handleInbound]", msg.id, "rate limited, giving up", err);
+        // Waited as long as is reasonable. Stop, and say so.
+        console.error("[handleInbound]", msg.id, `rate limited past the ${RETRY_WINDOW_MS / 60_000}min window`, err);
         await markProcessed(msg.id, run.error);
       }
     } else {
