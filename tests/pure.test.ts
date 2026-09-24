@@ -12,6 +12,7 @@ import { isPaidPlan, PLAN_OFFERS, priceOf, upgradesFor } from "@/lib/billing/pla
 import { toVisual } from "@/lib/og-bidi";
 import { parseResetSeconds } from "@/lib/ai/limits";
 import { isBot } from "@/lib/bots";
+import { rateLimitWaitMs } from "@/lib/ai/openai";
 import { CLOSED_QUOTE_STATUSES, OPEN_QUOTE_STATUSES, quoteStatusEnum } from "@/lib/db/schema";
 import {
   isValidJobName,
@@ -468,4 +469,34 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
     "every quote status must be either open or closed",
   );
   console.log("QUOTE STATUS SETS OK");
+}
+
+// ---- how long the provider says to wait, from the headers it really sends
+{
+  const err = (status: number, headers: Record<string, string>) =>
+    Object.assign(new Error("rate limited"), { status, headers: new Headers(headers) });
+
+  // Groq's 429 carries retry-after in seconds
+  assert.equal(rateLimitWaitMs(err(429, { "retry-after": "30" })), 30_000);
+  // millisecond form wins when both are present
+  assert.equal(
+    rateLimitWaitMs(err(429, { "retry-after-ms": "1500", "retry-after": "30" })),
+    1500,
+  );
+  // no retry-after: fall back to when the token bucket refills
+  assert.equal(rateLimitWaitMs(err(429, { "x-ratelimit-reset-tokens": "1m26.4s" })), 86_400);
+  assert.equal(rateLimitWaitMs(err(429, { "x-ratelimit-reset-tokens": "547ms" })), 547);
+  // plain objects, in case a provider's client does not use Headers
+  assert.equal(
+    rateLimitWaitMs({ status: 429, headers: { "Retry-After": "5" } }),
+    5000,
+    "header lookup must be case insensitive",
+  );
+
+  // anything that is not a 429 is not a rate limit, whatever it carries
+  assert.equal(rateLimitWaitMs(err(500, { "retry-after": "30" })), null);
+  assert.equal(rateLimitWaitMs(err(429, {})), null);
+  assert.equal(rateLimitWaitMs(new Error("network")), null);
+  assert.equal(rateLimitWaitMs(null), null);
+  console.log("RATE LIMIT WAIT OK");
 }

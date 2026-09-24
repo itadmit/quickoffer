@@ -1,5 +1,6 @@
 import OpenAI, { toFile } from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
+import { parseResetSeconds } from "./limits";
 import type { z } from "zod";
 import {
   classifySystemPrompt,
@@ -63,9 +64,88 @@ function client(cfg: OpenAIConfig) {
   return new OpenAI({
     apiKey: cfg.apiKey,
     baseURL: cfg.baseURL || undefined,
-    timeout: 60_000,
-    maxRetries: 2,
+    // One request must not be able to spend the whole background budget.
+    timeout: 25_000,
+    // Retrying is done by withRetry below, which knows the budget. Left to the
+    // SDK, a 429 carrying `retry-after: 30` makes it sleep 30s and try again,
+    // twice - past the route's 60s maxDuration, so the function is killed
+    // mid-flight and the wait buys nothing.
+    maxRetries: 0,
   });
+}
+
+/**
+ * How long the provider says to wait, in ms, or null if this was not a rate
+ * limit. Pure, so the header shapes can be tested against what Groq actually
+ * sends: `retry-after` in seconds on a 429, and `x-ratelimit-reset-tokens` in
+ * Go duration form ("1m26.4s", "547ms") on every response.
+ */
+export function rateLimitWaitMs(err: unknown): number | null {
+  if (!err || typeof err !== "object") return null;
+  const e = err as { status?: number; headers?: unknown };
+  if (e.status !== 429) return null;
+  const h = e.headers;
+  // HTTP header names are case insensitive. Headers handles that itself; a
+  // plain object (what some OpenAI-compatible clients hand back) does not, so
+  // fold the keys rather than guessing which casing the provider chose.
+  const folded =
+    h instanceof Headers || !h || typeof h !== "object"
+      ? null
+      : new Map(Object.entries(h as Record<string, string>).map(([k, v]) => [k.toLowerCase(), v]));
+  const get = (name: string): string | null => {
+    if (h instanceof Headers) return h.get(name);
+    return folded?.get(name) ?? null;
+  };
+  // Number(null) is 0, so a missing header must be rejected before parsing or
+  // an absent retry-after reads as "retry immediately" - the one behaviour a
+  // provider that is already turning us away must never see.
+  const num = (name: string): number | null => {
+    const raw = get(name);
+    if (raw === null || raw.trim() === "") return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  };
+  const ms = num("retry-after-ms");
+  if (ms !== null) return ms;
+  const seconds = num("retry-after");
+  if (seconds !== null) return seconds * 1000;
+  const reset = parseResetSeconds(get("x-ratelimit-reset-tokens"));
+  return reset === null ? null : reset * 1000;
+}
+
+/**
+ * Wait out a rate limit in place when it is short enough to be worth it.
+ *
+ * The route has 60 seconds, and the pipeline has already spent some of it
+ * downloading and transcribing, so the budget here is what is left over with
+ * room to still answer. A refill the provider says will take longer than that
+ * is not waited for at all: it is thrown, and `handleInbound` hands the
+ * message to the cron tick instead of holding a serverless function open for
+ * a minute to achieve nothing.
+ */
+const RETRY_BUDGET_MS = 20_000;
+const TRANSIENT_ATTEMPTS = 3;
+
+async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const waitMs = rateLimitWaitMs(err);
+      if (waitMs !== null) {
+        // A rate limit is retried once, and only if the queue in front of us
+        // is short. The small margin covers clock skew against the provider.
+        if (attempt > 1 || waitMs > RETRY_BUDGET_MS) throw err;
+        await new Promise((r) => setTimeout(r, waitMs + 250));
+        continue;
+      }
+      // Transient faults keep the short exponential backoff the SDK used to do.
+      const status = (err as { status?: number }).status;
+      const transient = status === undefined || status >= 500 || status === 408 || status === 409;
+      if (!transient || attempt >= TRANSIENT_ATTEMPTS) throw err;
+      await new Promise((r) => setTimeout(r, 500 * attempt));
+    }
+  }
 }
 
 // ------------------------------------------------------------ transcription
@@ -104,13 +184,15 @@ export function openaiTranscription(cfg: OpenAIConfig): TranscriptionProvider {
       const file = await toFile(audio, uploadName(opts.fileName, opts.mimetype), {
         type: (opts.mimetype ?? "audio/ogg").split(";")[0].trim(),
       });
-      const res = await client(cfg).audio.transcriptions.create({
-        file,
-        model: cfg.model,
-        language: opts.language,
-        prompt: transcriptionPrompt(opts.hints),
-        response_format: "json",
-      });
+      const res = await withRetry(() =>
+        client(cfg).audio.transcriptions.create({
+          file,
+          model: cfg.model,
+          language: opts.language,
+          prompt: transcriptionPrompt(opts.hints),
+          response_format: "json",
+        }),
+      );
       const ms = Date.now() - started;
       // Ogg/Opus from WhatsApp is ~1.2KB/s (verified 5.8KB for 5s); estimate minutes for cost
       const minutes = audio.length / 1200 / 60;
@@ -135,14 +217,16 @@ async function structured<S extends z.ZodTypeAny>(
   name: string,
 ): Promise<WithUsage<z.infer<S>>> {
   const started = Date.now();
-  const completion = await client(cfg).chat.completions.parse({
-    model: cfg.model,
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
-    response_format: zodResponseFormat(schema, name),
-  });
+  const completion = await withRetry(() =>
+    client(cfg).chat.completions.parse({
+      model: cfg.model,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      response_format: zodResponseFormat(schema, name),
+    }),
+  );
   const msg = completion.choices[0]?.message;
   if (!msg?.parsed) {
     throw new Error(
