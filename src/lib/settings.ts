@@ -23,6 +23,18 @@ export const SETTING_KEYS = {
    * separate token buckets (lib/ai/limits.ts).
    */
   "llm.classify_model": { secret: false, env: null, default: "" },
+  /**
+   * Keys held per provider rather than per stage.
+   *
+   * The two stages can sit on different providers and each is switched on its
+   * own, so a key stored only against a stage is lost the moment that stage
+   * moves - which is what turns "switch transcription to Groq" into "switch
+   * transcription off". These are the fallback every stage resolves through
+   * (lib/ai/index.ts), so a provider's key survives any stage moving away
+   * from it and switching back costs nothing.
+   */
+  "ai.key_openai": { secret: true, env: "OPENAI_API_KEY", default: "" },
+  "ai.key_groq": { secret: true, env: "GROQ_API_KEY", default: "" },
   "llm.base_url": { secret: false, env: null, default: "" },
   "ibot.token": { secret: true, env: "IBOT_TOKEN", default: "" },
   "ibot.instance_id": { secret: false, env: "IBOT_INSTANCE_ID", default: "" },

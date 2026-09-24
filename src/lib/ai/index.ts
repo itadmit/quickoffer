@@ -1,4 +1,4 @@
-import { getSettings } from "../settings";
+import { getSetting, getSettings } from "../settings";
 import { openaiLLM, openaiTranscription, type OpenAIConfig } from "./openai";
 import type { LLMProvider, TranscriptionProvider } from "./types";
 
@@ -15,15 +15,22 @@ const KNOWN_BASE_URLS: Record<string, string> = {
   groq: "https://api.groq.com/openai/v1",
 };
 
-// Env fallback per provider when no key is stored in app_settings (dev convenience;
-// production keys belong in /admin).
-const ENV_KEYS: Record<string, string | undefined> = {
-  openai: process.env.OPENAI_API_KEY,
-  groq: process.env.GROQ_API_KEY,
-};
+const PROVIDER_KEY_SETTING = {
+  openai: "ai.key_openai",
+  groq: "ai.key_groq",
+} as const;
 
-function resolveKey(stored: string, provider: string): string {
-  return stored || ENV_KEYS[provider] || "";
+/**
+ * Stage key first, then the provider's own key, then env.
+ *
+ * The middle step is what lets a stage change provider without carrying a key
+ * with it: `ai.key_groq` stays valid whether or not anything is currently
+ * pointed at Groq, so switching back is a provider change and nothing else.
+ */
+async function resolveKey(stored: string, provider: string): Promise<string> {
+  if (stored) return stored;
+  const setting = PROVIDER_KEY_SETTING[provider as keyof typeof PROVIDER_KEY_SETTING];
+  return setting ? await getSetting(setting) : "";
 }
 
 export async function getTranscriptionProvider(): Promise<TranscriptionProvider> {
@@ -33,7 +40,7 @@ export async function getTranscriptionProvider(): Promise<TranscriptionProvider>
     "transcription.api_key",
     "transcription.base_url",
   ]);
-  const apiKey = resolveKey(s["transcription.api_key"], s["transcription.provider"]);
+  const apiKey = await resolveKey(s["transcription.api_key"], s["transcription.provider"]);
   if (!apiKey) {
     throw new Error("Transcription API key not configured (admin → ספקי AI)");
   }
@@ -58,7 +65,7 @@ export async function getLLMProvider(): Promise<LLMProvider> {
     "llm.base_url",
     "llm.classify_model",
   ]);
-  const apiKey = resolveKey(s["llm.api_key"], s["llm.provider"]);
+  const apiKey = await resolveKey(s["llm.api_key"], s["llm.provider"]);
   if (!apiKey) {
     throw new Error("LLM API key not configured (admin → ספקי AI)");
   }

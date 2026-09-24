@@ -13,6 +13,7 @@ import { isPaidPlan, PLAN_OFFERS, priceOf, upgradesFor } from "@/lib/billing/pla
 import { toVisual } from "@/lib/og-bidi";
 import { isOutOfCredit, isRateLimitError, parseResetSeconds } from "@/lib/ai/limits";
 import { isBot } from "@/lib/bots";
+import { TRANSCRIPTION_CHOICES } from "@/lib/ai/transcription-choices";
 import { MAX_ATTEMPTS, RETRY_WINDOW_MS } from "@/lib/conversation/handler";
 import { rateLimitWaitMs } from "@/lib/ai/openai";
 import { CLOSED_QUOTE_STATUSES, OPEN_QUOTE_STATUSES, quoteStatusEnum } from "@/lib/db/schema";
@@ -569,4 +570,21 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert.equal(RETRY_WINDOW_MS, 2 * 3600_000);
   assert.ok(RETRY_WINDOW_MS > 5 * 60_000, "the window must outlast at least one cron tick");
   console.log("RETRY BUDGETS OK");
+}
+
+// ---- the two transcription engines the admin toggles between
+{
+  // The card renders from these, and the switch action writes them, so a typo
+  // here silently points production at a model that does not exist.
+  assert.deepEqual(Object.keys(TRANSCRIPTION_CHOICES).sort(), ["groq", "openai"]);
+  assert.equal(TRANSCRIPTION_CHOICES.groq.model, "whisper-large-v3-turbo");
+  assert.equal(TRANSCRIPTION_CHOICES.openai.model, "whisper-1");
+  // Measured ceiling. The whole point of the toggle is that one side has one
+  // and the other does not.
+  assert.equal(TRANSCRIPTION_CHOICES.groq.dailyLimit, 2000);
+  assert.equal(TRANSCRIPTION_CHOICES.openai.dailyLimit, null);
+  // The cheap one must actually be the cheap one, or the card advises backwards
+  assert.ok(TRANSCRIPTION_CHOICES.groq.agorotPer20s < TRANSCRIPTION_CHOICES.openai.agorotPer20s);
+  assert.ok(TRANSCRIPTION_CHOICES.groq.typicalMs < TRANSCRIPTION_CHOICES.openai.typicalMs);
+  console.log("TRANSCRIPTION CHOICES OK");
 }

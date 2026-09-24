@@ -33,6 +33,10 @@ export default async function AdminAI() {
       </p>
 
       <CapacityCard
+        transcription={{
+          provider: all.find((x) => x.key === "transcription.provider")?.value ?? "",
+          model: all.find((x) => x.key === "transcription.model")?.value ?? "",
+        }}
         today={{
           runs: today?.runs ?? 0,
           llmTokens: Number(today?.llmTokens ?? 0),

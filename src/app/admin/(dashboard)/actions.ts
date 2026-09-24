@@ -3,7 +3,7 @@
 import { and, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getLLMProvider, getTranscriptionProvider } from "@/lib/ai";
-import { probeAiCapacity, STRUCTURE_TOKENS_PER_QUOTE } from "@/lib/ai/limits";
+import { probeAiCapacity, STRUCTURE_TOKENS_PER_QUOTE, TRANSCRIPTION_CHOICES, type TranscriptionChoice } from "@/lib/ai/limits";
 import { requireAdmin } from "@/lib/admin/auth";
 import { handleInbound } from "@/lib/conversation/handler";
 import { db } from "@/lib/db";
@@ -115,6 +115,31 @@ export async function probeAiCapacityAction() {
   if (split) return probeAiCapacity(STRUCTURE_TOKENS_PER_QUOTE);
   const measured = Number(row?.avgTokens ?? 0);
   return probeAiCapacity(measured > 0 ? Math.round(measured) : undefined);
+}
+
+/**
+ * One tap between the two transcription engines (lib/ai/limits.ts).
+ *
+ * The stage key is cleared rather than rewritten: a key stored against the
+ * stage overrides the provider's own, so leaving the old one behind would
+ * call the new provider with the wrong credentials. The provider keys
+ * (ai.key_groq / ai.key_openai) are what both sides resolve through.
+ */
+export async function switchTranscriptionAction(provider: TranscriptionChoice) {
+  await requireAdmin();
+  const choice = TRANSCRIPTION_CHOICES[provider];
+  if (!choice) return { ok: false as const, error: "ספק לא מוכר" };
+  const keyName = provider === "groq" ? "ai.key_groq" : "ai.key_openai";
+  if (!(await getSetting(keyName))) {
+    return { ok: false as const, error: `אין מפתח ${provider} שמור - הזן אותו בשדה המפתח ושמור` };
+  }
+  await setSetting("transcription.provider", provider);
+  await setSetting("transcription.model", choice.model);
+  await setSetting("transcription.base_url", "");
+  await setSetting("transcription.api_key", "");
+  revalidatePath("/admin/ai");
+  revalidatePath("/admin");
+  return { ok: true as const, provider, model: choice.model };
 }
 
 export async function sendTestMessageAction(phone: string) {

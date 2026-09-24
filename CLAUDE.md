@@ -256,9 +256,13 @@ QuickOffer מחובר ל-**Quick Commerce Billing Hub** (`~/Desktop/Projeccts/qu
 
 ### מצב הספקים בפרודקשן (הוחלף 24.9.2026)
 
-`app_settings` ב-Neon: **`llm.provider=openai`, `llm.model=gpt-4o-mini`; `transcription.provider=openai`, `transcription.model=whisper-1`.** אומת קצה-לקצה דרך ההגדרות עצמן. הנימוק: OpenAI Tier 1 נותן 200,000 TPM מול 8,000, האיכות זהה (20/21), והעלות נמוכה יותר כי אין טוקני reasoning. התמלול נשאר ב-Groq כי הוא חינם ועברית שלו מאומתת.
+`app_settings` ב-Neon: **`llm.provider=openai`, `llm.model=gpt-4o-mini`; `transcription.provider=groq`, `transcription.model=whisper-large-v3-turbo`.** אומת קצה-לקצה דרך ההגדרות עצמן. הנימוק: OpenAI Tier 1 נותן 200,000 TPM מול 8,000, האיכות זהה (20/21), והעלות נמוכה יותר כי אין טוקני reasoning. התמלול נשאר ב-Groq כי הוא חינם ועברית שלו מאומתת.
 
-**אין יותר תקרה יומית.** `whisper-1` = 500 RPM, `gpt-4o-mini` = 10,000 RPM / 200,000 TPM, לשניהם אין מכסה יומית. התקרה היחידה שנשארה היא יתרת הקרדיט.
+**מפתחות לפי ספק, לא לפי שלב.** `ai.key_openai` / `ai.key_groq` הם מה ששני השלבים נופלים אליהם (`resolveKey` ב-`lib/ai/index.ts`: מפתח-שלב ← מפתח-ספק ← env). ⚠️ **`transcription.api_key` ו-`llm.api_key` ריקים בכוונה** - מפתח שמור ברמת השלב **גובר** על מפתח הספק, ולכן מפתח ישן שנשאר שם היה שולח לספק החדש את הקרדנשיאלס הלא נכונים. בלי זה כפתור ההחלפה שובר את התמלול.
+
+**כפתור החלפת מנוע תמלול** ב-`/admin → ספקי AI`, עם ניצול יומי מול התקרה (נקרא מ-`processing_runs`, חינם). `TRANSCRIPTION_CHOICES` ב-`lib/ai/transcription-choices.ts` - ⚠️ **קובץ טהור בלי imports בכוונה**, כי הכרטיס הוא `"use client"` וייבוא ערך מ-`limits.ts` גורר את `settings → db → pg` לבאנדל של הדפדפן ומפיל את הבילד על `dns`/`fs`.
+
+**Groq turbo = 0.086 אגורות ו-267ms; whisper-1 = 0.767 ו-1,867ms.** פי 9 במחיר, פי 7 במהירות, תמורת תקרה של 2,000 ליום. מתחת ל-1,500 ביום Groq פשוט עדיף.
 
 **למה `whisper-1` ולא `gpt-4o-mini-transcribe`** (חצי מחיר, פי 20 RPM): בהשוואה מקצה-לקצה על 5 דגימות Carmit + ההקלטה האמיתית מה-Blob, `gpt-4o-mini-transcribe` שמע `"אצל אבי בהרצליה"` כ-**`"אביב"`** - טעות בשם הלקוח, שהוא השדה שמופיע על המסמך שהלקוח רואה. `whisper-1` היה מדויק בשני המקרים והיחיד שתפס `ש״ח` (Groq החזיר `ש״ק`). כולם קלעו 5/6 בהצעה הסופית; ההבדל הוא באיזה שדה הם טועים.
 

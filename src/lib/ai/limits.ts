@@ -1,4 +1,4 @@
-import { getSettings } from "../settings";
+import { getSetting, getSettings } from "../settings";
 
 /**
  * How much AI capacity is left (admin dashboard).
@@ -122,6 +122,18 @@ function readLimits(h: Headers): { requests: RateLimit; tokens: RateLimit } {
 
 const EMPTY: RateLimit = { limit: null, remaining: null, resetSeconds: null };
 
+/**
+ * The same order lib/ai/index.ts resolves in: stage override, then the
+ * provider's own key, then env. Reading only the stage key would report "no
+ * key" for a stage that is working perfectly through the provider key.
+ */
+async function probeKey(stageKey: string, provider: string): Promise<string> {
+  if (stageKey) return stageKey;
+  if (provider === "groq") return await getSetting("ai.key_groq");
+  if (provider === "openai") return await getSetting("ai.key_openai");
+  return "";
+}
+
 const BASE_URLS: Record<string, string> = {
   openai: "https://api.openai.com/v1",
   groq: "https://api.groq.com/openai/v1",
@@ -140,7 +152,7 @@ function endpoint(baseUrl: string, provider: string, path: string): string {
 async function probeLLM(): Promise<ChannelUsage> {
   const s = await getSettings(["llm.provider", "llm.model", "llm.api_key", "llm.base_url"]);
   const provider = s["llm.provider"];
-  const key = s["llm.api_key"] || (provider === "groq" ? process.env.GROQ_API_KEY : process.env.OPENAI_API_KEY) || "";
+  const key = await probeKey(s["llm.api_key"], provider);
   const base = { stage: "llm" as const, provider, model: s["llm.model"] };
   if (!key) return { ...base, ok: false, error: "אין מפתח API", requests: EMPTY, tokens: EMPTY };
   try {
@@ -194,10 +206,7 @@ async function probeTranscription(): Promise<ChannelUsage> {
     "transcription.base_url",
   ]);
   const provider = s["transcription.provider"];
-  const key =
-    s["transcription.api_key"] ||
-    (provider === "groq" ? process.env.GROQ_API_KEY : process.env.OPENAI_API_KEY) ||
-    "";
+  const key = await probeKey(s["transcription.api_key"], provider);
   const base = { stage: "transcription" as const, provider, model: s["transcription.model"] };
   if (!key) return { ...base, ok: false, error: "אין מפתח API", requests: EMPTY, tokens: EMPTY };
   try {
@@ -222,6 +231,11 @@ async function probeTranscription(): Promise<ChannelUsage> {
 
 /** What one voice note costs: 1 transcription + classify + structure. */
 export const REQUESTS_PER_QUOTE = { transcription: 1, llm: 2 } as const;
+
+// TRANSCRIPTION_CHOICES lives in ./transcription-choices, which imports
+// nothing: the admin card is a client component and importing a value from
+// this module would drag the database layer into the browser bundle.
+export * from "./transcription-choices";
 
 /**
  * Tokens for those two LLM calls. Provider dependent, measured 24.9.2026:

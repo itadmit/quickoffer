@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import { AlertTriangle, Gauge, RefreshCw } from "lucide-react";
 import type { AiCapacity, ChannelUsage, RateLimit } from "@/lib/ai/limits";
-import { probeAiCapacityAction } from "../actions";
+import { TRANSCRIPTION_CHOICES, type TranscriptionChoice } from "@/lib/ai/transcription-choices";
+import { probeAiCapacityAction, switchTranscriptionAction } from "../actions";
 
 export type TodayUsage = {
   runs: number;
@@ -18,9 +19,30 @@ const BOTTLENECK_TEXT: Record<NonNullable<AiCapacity["bottleneck"]>, string> = {
   "transcription-requests": "החסם הוא מספר בקשות התמלול ליום.",
 };
 
-export function CapacityCard({ today }: { today: TodayUsage }) {
+export function CapacityCard({
+  today,
+  transcription,
+}: {
+  today: TodayUsage;
+  transcription: { provider: string; model: string };
+}) {
   const [data, setData] = useState<AiCapacity | null>(null);
   const [pending, start] = useTransition();
+  const [switching, startSwitch] = useTransition();
+  const [switchMsg, setSwitchMsg] = useState<string | null>(null);
+
+  const active = (transcription.provider in TRANSCRIPTION_CHOICES
+    ? transcription.provider
+    : null) as TranscriptionChoice | null;
+  const other: TranscriptionChoice | null =
+    active === "groq" ? "openai" : active === "openai" ? "groq" : null;
+  const cap = active ? TRANSCRIPTION_CHOICES[active].dailyLimit : null;
+
+  const swap = (to: TranscriptionChoice) =>
+    startSwitch(async () => {
+      const r = await switchTranscriptionAction(to);
+      setSwitchMsg(r.ok ? `הועבר ל-${TRANSCRIPTION_CHOICES[to].label}` : r.error);
+    });
 
   const probe = () =>
     start(async () => {
@@ -46,10 +68,24 @@ export function CapacityCard({ today }: { today: TodayUsage }) {
 
       <div className="grid sm:grid-cols-4 gap-3">
         <Tile label="הצעות שעובדו היום" value={today.runs} />
-        <Tile label="תמלולים היום" value={today.transcriptions} />
+        <Tile
+          label="תמלולים היום"
+          value={cap ? `${today.transcriptions} / ${cap.toLocaleString("he-IL")}` : today.transcriptions}
+        />
         <Tile label="טוקנים היום" value={today.llmTokens.toLocaleString("he-IL")} />
         <Tile label="עלות AI היום" value={`${today.cost.toFixed(2)} ₪`} />
       </div>
+
+      <TranscriptionEngine
+        active={active}
+        other={other}
+        model={transcription.model}
+        usedToday={today.transcriptions}
+        cap={cap}
+        onSwap={swap}
+        busy={switching}
+        message={switchMsg}
+      />
 
       {data && (
         <div className="space-y-3">
@@ -85,6 +121,82 @@ export function CapacityCard({ today }: { today: TodayUsage }) {
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * The daily ceiling is the one number worth watching while a campaign runs, so
+ * it is shown for free from processing_runs rather than only behind the probe.
+ */
+function TranscriptionEngine({
+  active, other, model, usedToday, cap, onSwap, busy, message,
+}: {
+  active: TranscriptionChoice | null;
+  other: TranscriptionChoice | null;
+  model: string;
+  usedToday: number;
+  cap: number | null;
+  onSwap: (to: TranscriptionChoice) => void;
+  busy: boolean;
+  message: string | null;
+}) {
+  const pct = cap ? Math.min(100, (usedToday / cap) * 100) : 0;
+  const tight = cap !== null && pct >= 75;
+  return (
+    <div className={`rounded-xl border p-3 space-y-3 ${tight ? "border-danger/40 bg-danger/5" : "border-line"}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-semibold">מנוע תמלול</span>
+        <span className="text-xs text-muted" dir="ltr">{active ?? "?"} · {model}</span>
+        {other && (
+          <button
+            type="button"
+            onClick={() => onSwap(other)}
+            disabled={busy}
+            className="btn-secondary text-sm ms-auto"
+          >
+            {busy ? "מעביר…" : `העבר ל-${TRANSCRIPTION_CHOICES[other].label}`}
+          </button>
+        )}
+      </div>
+
+      {cap !== null ? (
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs">
+            <span className="text-muted">נוצלו היום</span>
+            <span dir="ltr">{usedToday.toLocaleString("he-IL")} / {cap.toLocaleString("he-IL")}</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-surface overflow-hidden">
+            <div className={`h-full rounded-full ${tight ? "bg-danger" : pct >= 50 ? "bg-warn-ink" : "bg-ok"}`} style={{ width: `${pct}%` }} />
+          </div>
+          {tight && (
+            <p className="text-xs text-danger">
+              מתקרב לתקרה. מעבר ל-{other ? TRANSCRIPTION_CHOICES[other].label : "OpenAI"} מסיר אותה.
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-muted">אין תקרה יומית אצל הספק הזה.</p>
+      )}
+
+      <div className="grid sm:grid-cols-2 gap-2 text-xs">
+        {(Object.keys(TRANSCRIPTION_CHOICES) as TranscriptionChoice[]).map((k) => {
+          const c = TRANSCRIPTION_CHOICES[k];
+          return (
+            <div key={k} className={`rounded-lg border p-2 ${k === active ? "border-brand/50 bg-brand/5" : "border-line"}`}>
+              <div className="font-medium">
+                {c.label}
+                {k === active && <span className="text-brand"> · פעיל</span>}
+              </div>
+              <div className="text-muted mt-0.5">
+                {c.agorotPer20s} אגורות להקלטה · {c.typicalMs}ms · {c.note}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {message && <p className="text-sm">{message}</p>}
+    </div>
   );
 }
 
