@@ -191,8 +191,18 @@ async function probeTranscription(): Promise<ChannelUsage> {
   }
 }
 
-/** What one voice note costs, measured (§7): 1 transcription + classify + structure. */
+/** What one voice note costs: 1 transcription + classify + structure. */
 export const REQUESTS_PER_QUOTE = { transcription: 1, llm: 2 } as const;
+
+/**
+ * Tokens for those two LLM calls, measured against the real prompts on
+ * 24.9.2026: classify 1737 in + 206 out, structure 2336 in + 984 out.
+ *
+ * Used only until `processing_runs` has enough history to average, because a
+ * guess here is not harmless - it is the divisor under the token ceiling, so
+ * being optimistic shows capacity the account does not have.
+ */
+export const TOKENS_PER_QUOTE = 5263;
 
 export type AiCapacity = {
   llm: ChannelUsage;
@@ -209,7 +219,7 @@ export type AiCapacity = {
  * @param tokensPerQuote measured from processing_runs when we have data,
  *   so the estimate tracks the prompt instead of a constant going stale.
  */
-export async function probeAiCapacity(tokensPerQuote = 2900): Promise<AiCapacity> {
+export async function probeAiCapacity(tokensPerQuote = TOKENS_PER_QUOTE): Promise<AiCapacity> {
   const [llm, transcription] = await Promise.all([probeLLM(), probeTranscription()]);
 
   const byLlm =
