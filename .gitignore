@@ -42,3 +42,6 @@ next-env.d.ts
 
 # drizzle migrations are committed; local snapshots of dev DB are not
 /drizzle/meta/_journal.json.bak
+
+# Local Claude Code state - contains channel tokens
+.claude/
