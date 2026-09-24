@@ -195,7 +195,7 @@ export default async function LandingPage() {
                 </div>
               </div>
               <ul className="anim-fade-up [animation-delay:320ms] flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted pt-2">
-                {["0 התקנות", "0 הרשמות", "0 טפסים", "דקה אחת להצעה"].map((t) => (
+                {["בלי התקנה", "בלי הרשמה", "פחות מדקה להצעת מחיר"].map((t) => (
                   <li key={t} className="inline-flex items-center gap-1.5">
                     <Check className="h-4 w-4 text-brand" /> {t}
                   </li>
