@@ -321,6 +321,11 @@ export const errors = {
       `👉 ${upgradeUrl}`,
     ].join("\n"),
   generic: () => `משהו השתבש אצלי 😕 נסה שוב בעוד רגע.`,
+  /**
+   * The AI provider is rate limited. Sent once, and then the message really is
+   * retried (cron tick) - so this promises something we keep.
+   */
+  busy: () => `יש עומס רגעי 🙏 ההודעה שלך אצלי, אני חוזר אליך תוך כמה דקות. אין צורך לשלוח שוב.`,
 };
 
 /** §6.6 */

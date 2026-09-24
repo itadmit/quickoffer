@@ -7,6 +7,7 @@ import {
   type QuoteJSON,
   type Usage,
 } from "../ai";
+import { isRateLimitError } from "../ai/limits";
 import { db } from "../db";
 import { inboundMessages, processingRuns, quotes, users, type User } from "../db/schema";
 import { editLink, publicLink, sendLink, settingsLink, upgradeLink } from "../quotes/links";
@@ -57,6 +58,16 @@ import {
 
 const MAX_AUDIO_SECONDS = 180;
 const PROCESSING_NOTICE_AFTER_MS = 3_000;
+/** Must match the cron tick's `attempts < 3` filter, or a retry is promised and never runs. */
+const MAX_ATTEMPTS = 3;
+
+/** Done with this message: the cron tick only looks at rows still null here. */
+function markProcessed(id: string, error: string | null) {
+  return db
+    .update(inboundMessages)
+    .set({ processedAt: new Date(), error })
+    .where(eq(inboundMessages.id, id));
+}
 
 /** Entry point for one inbound message, called from the webhook after the 200. */
 export async function handleInbound(msg: InboundMessage): Promise<void> {
@@ -76,19 +87,42 @@ export async function handleInbound(msg: InboundMessage): Promise<void> {
     } else {
       await handleReady(user, msg, run);
     }
-    await db
-      .update(inboundMessages)
-      .set({ processedAt: new Date(), error: null })
-      .where(eq(inboundMessages.id, msg.id));
+    await markProcessed(msg.id, null);
   } catch (err) {
-    console.error("[handleInbound]", msg.id, err);
     run.error = err instanceof Error ? err.message : String(err);
-    await db
-      .update(inboundMessages)
-      .set({ processedAt: new Date(), error: run.error })
-      .where(eq(inboundMessages.id, msg.id));
+    /**
+     * A provider rate limit is a queueing problem, not a fault: leave
+     * `processed_at` null and the cron tick picks the message back up within
+     * five minutes. `attempts` (capped at 3 by the same query) is what stops
+     * this from looping forever.
+     */
+    let reply = errors.generic();
+    if (isRateLimitError(err)) {
+      // Leave processed_at null so the tick picks it up, and read back the
+      // attempt count the tick maintains.
+      const [row] = await db
+        .update(inboundMessages)
+        .set({ error: run.error })
+        .where(eq(inboundMessages.id, msg.id))
+        .returning({ attempts: inboundMessages.attempts });
+      const attempts = row?.attempts ?? MAX_ATTEMPTS;
+      if (attempts < MAX_ATTEMPTS) {
+        console.error("[handleInbound]", msg.id, `rate limited, attempt ${attempts}`, err);
+        // "I'm busy" once, on the first hit. Silence on the retries in between:
+        // they were already told, and the promise is still good.
+        if (attempts > 1) return;
+        reply = errors.busy();
+      } else {
+        // Out of retries, so stop the tick from picking it up again.
+        console.error("[handleInbound]", msg.id, "rate limited, giving up", err);
+        await markProcessed(msg.id, run.error);
+      }
+    } else {
+      console.error("[handleInbound]", msg.id, err);
+      await markProcessed(msg.id, run.error);
+    }
     try {
-      await sendText(msg.from, errors.generic());
+      await sendText(msg.from, reply);
     } catch {
       /* gateway down - nothing more to do */
     }
@@ -465,6 +499,9 @@ async function transcribeInbound(
     }
     return { text, audioUrl };
   } catch (err) {
+    // A rate limit is the one failure worth retrying, so it has to escape this
+    // catch and reach handleInbound instead of becoming "לא הצלחתי לשמוע".
+    if (isRateLimitError(err)) throw err;
     console.error("[transcribe]", err);
     run.error = `transcribe: ${err instanceof Error ? err.message : err}`;
     await sendText(user.phone, errors.transcriptionFailed());

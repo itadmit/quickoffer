@@ -1,11 +1,12 @@
-import { and, isNull, lt, lte, notInArray, sql } from "drizzle-orm";
+import { and, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 import { handleInbound } from "@/lib/conversation/handler";
 import { safeEqual } from "@/lib/crypto";
 import { db } from "@/lib/db";
-import { inboundMessages, quotes } from "@/lib/db/schema";
+import { inboundMessages, OPEN_QUOTE_STATUSES, quotes } from "@/lib/db/schema";
 import { sendFollowUps } from "@/lib/quotes/follow-up";
 import { purgeExpiredLinks } from "@/lib/quotes/links";
+import { purgeOldLogs } from "@/lib/retention";
 import { getSetting } from "@/lib/settings";
 import { gatewayFor, type InboundMessage } from "@/lib/whatsapp";
 
@@ -60,20 +61,28 @@ export async function GET(req: NextRequest) {
       .update(inboundMessages)
       .set({ attempts: sql`${inboundMessages.attempts} + 1` })
       .where(sql`${inboundMessages.id} = ${row.id}`);
-    await handleInbound(parsed.message as InboundMessage);
-    reprocessed++;
+    try {
+      await handleInbound(parsed.message as InboundMessage);
+      reprocessed++;
+    } catch (e) {
+      // handleInbound handles its own failures, so reaching here means its
+      // bookkeeping itself failed. One bad message must not cost this tick its
+      // expiries, nudges and retention sweep.
+      console.error("[cron] reprocess", row.id, e);
+    }
   }
 
   // 2. expire quotes
+  //
+  // Spelled as the statuses that ARE open rather than the ones that are not,
+  // even though the enum makes the two identical: Postgres cannot prove that
+  // `not in (approved, rejected, expired)` implies `in (draft, sent, viewed)`,
+  // so the negated form does not match `quotes_open_valid_until_idx` and falls
+  // back to scanning every quote ever written, every five minutes.
   const expired = await db
     .update(quotes)
     .set({ status: "expired", updatedAt: new Date() })
-    .where(
-      and(
-        lte(quotes.validUntil, new Date()),
-        notInArray(quotes.status, ["approved", "rejected", "expired"]),
-      ),
-    )
+    .where(and(lte(quotes.validUntil, new Date()), inArray(quotes.status, OPEN_QUOTE_STATUSES)))
     .returning({ id: quotes.id });
 
   // 3. nudge the professional about quotes that went quiet
@@ -84,6 +93,13 @@ export async function GET(req: NextRequest) {
 
   const purgedLinks = await purgeExpiredLinks();
 
+  // 4. retention. Bounded per run, and never allowed to fail the tick - the
+  // steps above are what users feel, this one is housekeeping.
+  const purgedLogs = await purgeOldLogs().catch((e) => {
+    console.error("[cron] retention", e);
+    return null;
+  });
+
   const instanceStatus = await getSetting("ibot.instance_status");
   const lastWebhookAt = await getSetting("ibot.last_webhook_at");
 
@@ -93,6 +109,7 @@ export async function GET(req: NextRequest) {
     expired: expired.length,
     reminded,
     purgedLinks,
+    purgedLogs,
     instanceStatus,
     lastWebhookAt,
   });

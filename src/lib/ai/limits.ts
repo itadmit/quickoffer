@@ -19,6 +19,24 @@ import { getSettings } from "../settings";
  * refills the day's allowance on its own.
  */
 
+/**
+ * Did the provider turn us away for going too fast?
+ *
+ * On Groq's free tier this is the expected failure under load, not an
+ * exception: 8000 tokens a minute is about 2.7 quotes, so the third
+ * professional to speak in the same minute hits it. It has to be told apart
+ * from a real fault, because the answer is "wait and retry" rather than
+ * "sorry, something broke".
+ */
+export function isRateLimitError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { status?: unknown; code?: unknown; message?: unknown };
+  if (e.status === 429) return true;
+  if (e.code === "rate_limit_exceeded" || e.code === "insufficient_quota") return true;
+  const message = typeof e.message === "string" ? e.message.toLowerCase() : "";
+  return message.includes("rate limit") || message.includes("429") || message.includes("too many requests");
+}
+
 export type RateLimit = {
   limit: number | null;
   remaining: number | null;
