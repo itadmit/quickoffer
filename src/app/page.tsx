@@ -613,7 +613,9 @@ function ChatMockup() {
                 <Mic className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1 leading-tight">
-                <div className="font-semibold text-[14px] truncate">עופר</div>
+                {/* "הבוט" in the contact name: the reader has to know at a
+                    glance that the voice note went to a bot, not to a person */}
+                <div className="font-semibold text-[14px] truncate">עופר הבוט</div>
                 {/* status flips to "typing" while the bot prepares the quote (1.2s - 4s) */}
                 <div className="relative h-[14px] text-[11px] text-muted">
                   <span className="anim-status-online absolute inset-0">מקוון</span>
