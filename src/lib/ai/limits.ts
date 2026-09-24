@@ -224,12 +224,18 @@ async function probeTranscription(): Promise<ChannelUsage> {
 export const REQUESTS_PER_QUOTE = { transcription: 1, llm: 2 } as const;
 
 /**
- * Tokens for those two LLM calls, measured against the real prompts on
- * 24.9.2026: classify 1737 in + 206 out, structure 2336 in + 984 out.
+ * Tokens for those two LLM calls. Provider dependent, measured 24.9.2026:
  *
- * Used only until `processing_runs` has enough history to average, because a
- * guess here is not harmless - it is the divisor under the token ceiling, so
- * being optimistic shows capacity the account does not have.
+ *   groq openai/gpt-oss-120b  5263  (classify 1737+206, structure 2336+984)
+ *   openai gpt-4o-mini        3963  (classify 1586+27,  structure 2231+119)
+ *
+ * The gap is almost all output: the gpt-oss models spend it on reasoning
+ * tokens, 984 against 119 for the same structured result.
+ *
+ * The higher figure is the fallback, so the estimate errs towards showing less
+ * headroom than the account has rather than more - and it is only a fallback,
+ * since the card averages real runs from `processing_runs` as soon as there
+ * are any.
  */
 export const TOKENS_PER_QUOTE = 5263;
 
