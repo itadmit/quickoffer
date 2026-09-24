@@ -51,7 +51,17 @@ import { formatPhone } from "@/lib/phone";
 import { appUrlBase } from "@/lib/quotes/links";
 import { getSetting } from "@/lib/settings";
 
-export const dynamic = "force-dynamic";
+/**
+ * Cached and revalidated, not rendered per request.
+ *
+ * Nothing on this page varies by visitor - it reads two settings, `bot.phone`
+ * and `telegram.bot_username`, which change about never. Under `force-dynamic`
+ * every click from a paid ad was a function invocation plus a settings read
+ * before a single byte went out; as an ISR page the same click is served from
+ * the CDN. Five minutes is the delay on changing the bot's number in /admin,
+ * which is a fair trade for the traffic a campaign sends here.
+ */
+export const revalidate = 300;
 
 const OG_TITLE = "שלח הודעה קולית. קבל הצעת מחיר. סגור עסקה | QuickOffer";
 const OG_DESCRIPTION = "הצעות מחיר מעוצבות מהודעה קולית ב-WhatsApp, תוך דקה.";

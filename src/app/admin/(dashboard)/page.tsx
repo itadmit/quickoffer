@@ -3,41 +3,57 @@ import { db } from "@/lib/db";
 import { inboundMessages, processingRuns, quotes, users } from "@/lib/db/schema";
 import { getSetting } from "@/lib/settings";
 
+/**
+ * Every counter here is bounded by a date.
+ *
+ * The unbounded versions (all-time sum, all-time percentile over
+ * processing_runs) read the whole table on every load, and this is the page
+ * that gets refreshed most while a campaign is running - so it was the one
+ * query set guaranteed to get slower exactly when attention is highest.
+ * `processing_runs_at_idx` serves the window.
+ */
+const WINDOW_DAYS = 30;
+
 export default async function AdminOverview() {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   const startOfMonth = new Date(startOfDay.getFullYear(), startOfDay.getMonth(), 1);
+  // Derived from startOfDay rather than Date.now(): the window lands on a day
+  // boundary, so the numbers hold still while you are looking at them.
+  const windowStart = new Date(startOfDay);
+  windowStart.setDate(windowStart.getDate() - WINDOW_DAYS);
 
-  const [[today], [month], [usersCount], [ai], [asrFail], [p90row], instanceStatus, lastWebhook, aiKeySet] =
+  const inWindow = gte(processingRuns.at, windowStart);
+
+  const [[today], [month], [usersCount], [ai], [asrFail], [p90row], [unprocessed], instanceStatus, lastWebhook, aiKeySet] =
     await Promise.all([
       db.select({ n: count() }).from(quotes).where(gte(quotes.createdAt, startOfDay)),
       db.select({ n: count() }).from(quotes).where(gte(quotes.createdAt, startOfMonth)),
       db.select({ n: count() }).from(users),
       db
         .select({ cost: sum(processingRuns.costEstimate), avgMs: avg(processingRuns.totalMs), n: count() })
-        .from(processingRuns),
+        .from(processingRuns)
+        .where(inWindow),
       db
         .select({ n: count() })
         .from(processingRuns)
-        .where(and(isNotNull(processingRuns.error), sql`${processingRuns.error} like 'transcribe:%'`)),
+        .where(and(inWindow, isNotNull(processingRuns.error), sql`${processingRuns.error} like 'transcribe:%'`)),
       db
         .select({ p50: sql<number>`percentile_cont(0.5) within group (order by ${processingRuns.totalMs})`, p90: sql<number>`percentile_cont(0.9) within group (order by ${processingRuns.totalMs})` })
         .from(processingRuns)
-        .where(isNotNull(processingRuns.totalMs)),
+        .where(and(inWindow, isNotNull(processingRuns.totalMs))),
+      // Served by inbound_unprocessed_idx, the same partial index the cron uses.
+      db.select({ n: count() }).from(inboundMessages).where(sql`${inboundMessages.processedAt} is null`),
       getSetting("ibot.instance_status"),
       getSetting("ibot.last_webhook_at"),
       getSetting("llm.api_key").then((k) => !!k),
     ]);
-  const [unprocessed] = await db
-    .select({ n: count() })
-    .from(inboundMessages)
-    .where(and(sql`${inboundMessages.processedAt} is null`));
 
   const tiles = [
     ["הצעות היום", today.n],
     ["הצעות החודש", month.n],
     ["משתמשים", usersCount.n],
-    ["עלות AI מצטברת", `${Number(ai.cost ?? 0).toFixed(2)} ₪`],
+    [`עלות AI (${WINDOW_DAYS} יום)`, `${Number(ai.cost ?? 0).toFixed(2)} ₪`],
     ["זמן עיבוד p50 / p90", p90row?.p50 ? `${(p90row.p50 / 1000).toFixed(1)}s / ${(p90row.p90 / 1000).toFixed(1)}s` : "-"],
     ["כשלי תמלול", `${asrFail.n} / ${ai.n}`],
     ["הודעות ממתינות", unprocessed.n],
@@ -55,6 +71,10 @@ export default async function AdminOverview() {
           </div>
         ))}
       </div>
+      <p className="text-xs text-muted">
+        עלות, זמני עיבוד וכשלי תמלול מחושבים על {WINDOW_DAYS} הימים האחרונים. מכסת ה-AI שנותרה נמצאת
+        בלשונית ספקי AI.
+      </p>
 
       <div className="grid md:grid-cols-2 gap-3">
         <Status ok={instanceStatus === "connected"} unknown={instanceStatus === "unknown"} title="iBot instance">
