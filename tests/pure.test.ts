@@ -10,6 +10,7 @@ import { customerMessageText, daysUntil } from "@/lib/quotes/customer-message";
 import { daysSince, isQuietHour } from "@/lib/quotes/follow-up";
 import { isPaidPlan, PLAN_OFFERS, priceOf, upgradesFor } from "@/lib/billing/plans";
 import { toVisual } from "@/lib/og-bidi";
+import { parseResetSeconds } from "@/lib/ai/limits";
 import {
   isValidJobName,
   itemsForJob,
@@ -406,4 +407,20 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
     1,
   );
   console.log("SAVED JOBS OK");
+}
+
+// ---- Groq's rate-limit reset strings, as captured live on 24.9.2026
+{
+  // one request out of 1000/day refills in 86400/1000 = 86.4s
+  assert.equal(parseResetSeconds("1m26.4s"), 86.4);
+  // 73 tokens out of 8000/min refills in 60/8000*73 = 547ms
+  assert.equal(parseResetSeconds("547ms"), 0.547);
+  assert.equal(parseResetSeconds("43.2s"), 43.2);
+  assert.equal(parseResetSeconds("2h30m0s"), 9000);
+  // OpenAI sometimes sends a bare number of seconds
+  assert.equal(parseResetSeconds("60"), 60);
+  // a shape we have never seen must not become a confident zero
+  assert.equal(parseResetSeconds(null), null);
+  assert.equal(parseResetSeconds("soon"), null);
+  console.log("RATE LIMIT PARSE OK");
 }

@@ -1,12 +1,13 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getLLMProvider, getTranscriptionProvider } from "@/lib/ai";
+import { probeAiCapacity } from "@/lib/ai/limits";
 import { requireAdmin } from "@/lib/admin/auth";
 import { handleInbound } from "@/lib/conversation/handler";
 import { db } from "@/lib/db";
-import { inboundMessages, users } from "@/lib/db/schema";
+import { inboundMessages, processingRuns, users } from "@/lib/db/schema";
 import { randomBytes } from "node:crypto";
 import { getSetting, SETTING_KEYS, setSetting, type SettingKey } from "@/lib/settings";
 import { gatewayFor, sendText } from "@/lib/whatsapp";
@@ -83,6 +84,29 @@ export async function testLLMAction() {
   } catch (err) {
     return { ok: false as const, error: err instanceof Error ? err.message : String(err) };
   }
+}
+
+/**
+ * "כמה נשאר" for the AI providers. Costs one request from each daily
+ * allowance, so it is a button rather than something the page does on load
+ * (lib/ai/limits.ts explains why the headers are the only source of truth).
+ */
+export async function probeAiCapacityAction() {
+  await requireAdmin();
+  const [row] = await db
+    .select({
+      avgTokens: sql<number>`avg(coalesce(${processingRuns.llmInputTokens}, 0) + coalesce(${processingRuns.llmOutputTokens}, 0))`,
+    })
+    .from(processingRuns)
+    .where(
+      and(
+        eq(processingRuns.kind, "new_quote"),
+        gte(processingRuns.at, new Date(Date.now() - 7 * 86_400_000)),
+        isNotNull(processingRuns.llmInputTokens),
+      ),
+    );
+  const measured = Number(row?.avgTokens ?? 0);
+  return probeAiCapacity(measured > 0 ? Math.round(measured) : undefined);
 }
 
 export async function sendTestMessageAction(phone: string) {
