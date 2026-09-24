@@ -45,3 +45,4 @@ next-env.d.ts
 
 # Local Claude Code state - contains channel tokens
 .claude/
+.env*.local
