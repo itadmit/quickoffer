@@ -2,6 +2,7 @@ import { and, avg, count, gte, isNotNull, sql, sum } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { inboundMessages, processingRuns, quotes, users } from "@/lib/db/schema";
 import { getSetting } from "@/lib/settings";
+import { keysConfigured } from "@/lib/ai";
 
 /**
  * Every counter here is bounded by a date.
@@ -25,7 +26,7 @@ export default async function AdminOverview() {
 
   const inWindow = gte(processingRuns.at, windowStart);
 
-  const [[today], [month], [usersCount], [ai], [asrFail], [p90row], [unprocessed], [noCredit], instanceStatus, lastWebhook, aiKeySet] =
+  const [[today], [month], [usersCount], [ai], [asrFail], [p90row], [unprocessed], [noCredit], instanceStatus, lastWebhook, keys] =
     await Promise.all([
       db.select({ n: count() }).from(quotes).where(gte(quotes.createdAt, startOfDay)),
       db.select({ n: count() }).from(quotes).where(gte(quotes.createdAt, startOfMonth)),
@@ -57,7 +58,7 @@ export default async function AdminOverview() {
         ),
       getSetting("ibot.instance_status"),
       getSetting("ibot.last_webhook_at"),
-      getSetting("llm.api_key").then((k) => !!k),
+      keysConfigured(),
     ]);
 
   const tiles = [
@@ -91,12 +92,12 @@ export default async function AdminOverview() {
         <Status ok={instanceStatus === "connected"} unknown={instanceStatus === "unknown"} title="iBot instance">
           סטטוס: {instanceStatus} · webhook אחרון: {lastWebhook ? new Date(lastWebhook).toLocaleString("he-IL") : "טרם התקבל"}
         </Status>
-        <Status ok={aiKeySet && noCredit.n === 0} title="מפתחות AI">
+        <Status ok={keys.llm && keys.transcription && noCredit.n === 0} title="מפתחות AI">
           {noCredit.n > 0
             ? `נגמר הקרדיט אצל ספק ה-AI - ${noCredit.n} הצעות נכשלו ב-24 השעות האחרונות. טען יתרה, אין מה לחכות.`
-            : aiKeySet
-              ? "מפתח LLM מוגדר"
-              : "אין מפתח LLM - הגדר בלשונית ספקי AI"}
+            : keys.llm && keys.transcription
+              ? "מפתח LLM ומפתח תמלול מוגדרים"
+              : `חסר מפתח ${[!keys.llm && "LLM", !keys.transcription && "תמלול"].filter(Boolean).join(" ו")} - להגדיר בלשונית ספקי AI`}
         </Status>
       </div>
     </div>

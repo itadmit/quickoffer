@@ -33,6 +33,30 @@ async function resolveKey(stored: string, provider: string): Promise<string> {
   return setting ? await getSetting(setting) : "";
 }
 
+/**
+ * Does each stage have a key it can actually run on?
+ *
+ * Exists so that nothing outside this module re-derives the answer. The admin
+ * overview used to read `llm.api_key` directly and reported "no LLM key" while
+ * the bot was happily answering: that field is deliberately empty, because a
+ * key stored per stage overrides the provider's key and breaks the switch
+ * button. A health light that contradicts the running system is worse than no
+ * light - it teaches you to ignore the lights.
+ */
+export async function keysConfigured(): Promise<{ llm: boolean; transcription: boolean }> {
+  const s = await getSettings([
+    "llm.provider",
+    "llm.api_key",
+    "transcription.provider",
+    "transcription.api_key",
+  ]);
+  const [llm, transcription] = await Promise.all([
+    resolveKey(s["llm.api_key"], s["llm.provider"]),
+    resolveKey(s["transcription.api_key"], s["transcription.provider"]),
+  ]);
+  return { llm: !!llm, transcription: !!transcription };
+}
+
 export async function getTranscriptionProvider(): Promise<TranscriptionProvider> {
   const s = await getSettings([
     "transcription.provider",
