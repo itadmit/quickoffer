@@ -29,18 +29,11 @@ GRAIN="noise=alls=2:allf=t"
 # flag "paper" = no vignette. The quote page is a white document and has to
 # stay paper-white (reel-prompt.md §4).
 EDL=(
-  "live|hf-n1|1.0|0.9|"          # 0.0  he raises the phone
-  "live|hf-d|3.6|0.4|"           # 1.0  holds record and talks
-  "gfx|rec|4.6|7.6|"             # 4.6  the recording screen
-  "live|hf-n2|1.0|1.3|"          # 7.6  finishes, lowers the phone
-  "gfx|chat|8.6|16.2|"           # 8.6  bubble, processing, quote, one-tap send
-  "live|hf-n3|1.2|0.6|"          # 16.2 the customer opens it
-  "gfx|quote|17.4|19.6|paper"    # 17.4 the quote page
-  "live|hf-e|1.2|0.0|"           # 19.6 her thumb signs
-  # 1.9, not the 2.9 the first reel used: the glance and the smile are at
-  # 1.9-3.1 and the phone is pocketed by 3.8. From 2.9 he is already walking off
-  "live|hf-f-full|1.2|1.9|"      # 20.8 his phone buzzes, a small smile
-  "gfx|end|22.0|25.2|"           # 22.0 approved, then the end card
+  "live|hf-n1|1.6|0.4|"          # 0.0  he looks at the phone and raises it
+  "live|hf-d|3.2|0.4|"           # 1.6  holds record and talks
+  "gfx|screens|4.8|24.6|"        # 4.8  list -> עופר -> record -> LISTEN -> quote -> send
+  "live|hf-f-full|1.5|1.9|"      # 24.6 a glance, a small smile  ("איזה פשוט!")
+  "gfx|end|26.1|33.4|"           # 26.1 brand line, then the free offer
 )
 
 slate_body() {
@@ -48,8 +41,6 @@ slate_body() {
     hf-n1) printf '%s\n%s\n' "sits in the van, lifts the phone" "screen turned away" ;;
     hf-d)  printf '%s\n%s\n' "holds the record button" "phone covers his mouth" ;;
     hf-n2) printf '%s\n%s\n' "finishes, lowers the phone" "tight three-quarter profile" ;;
-    hf-n3) printf '%s\n%s\n' "the customer taps the link" "screen faces away" ;;
-    hf-e)  printf '%s\n%s\n' "thumb signing on glass" "real screen already composited" ;;
     hf-f-full) printf '%s\n%s\n' "a glance - a small smile" "back to work" ;;
     *)     printf '%s\n' "$1" ;;
   esac

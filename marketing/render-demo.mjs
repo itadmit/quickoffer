@@ -17,7 +17,7 @@ const OUT = path.join(DIR, ".build-demo", "frames");
 const MP4 = path.join(DIR, "demo-screens.mp4");
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const FPS = 30;
-const DURATION = 25.2;
+const DURATION = 33.4;
 const TOTAL = Math.round(DURATION * FPS);
 
 // A 750-frame render is long enough that "is it stuck or just slow?" is a real
