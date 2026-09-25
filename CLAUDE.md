@@ -144,7 +144,8 @@
 | `components/quote-document.tsx` | רינדור ההצעה - משותף לדף לקוח, תצוגה מקדימה ואדמין. בוחר layout לפי `q.template` |
 | `components/quote-layouts/` | `shared.tsx` (QuoteView + אבני בניין), `classic.tsx`, `modern.tsx`, `minimal.tsx`. `template-thumb.tsx` = תמונה ממוזערת (scale) |
 | `app/admin/(dashboard)/templates` | CRUD תבניות (`quote_templates`: layout + צבע + טקסט תחתית + פעילה/ברירת מחדל + `min_plan`) עם preview חי. המשתמש בוחר ב-`/s` או בצ'אט ("עיצוב" / "תבנית מודרני" - פקודת `template`, `templateName` ב-IntentSchema); `users.template_id` null = ברירת מחדל. תבנית מעל התוכנית = 🔒. ה-snapshot באישור מקפיא גם את התבנית |
-| `tests/` | `pure.test.ts` (ללא DB - כולל טלפונים, קטלוג מחירים, ההודעה ללקוח, קצב התזכורות, חבילות, bidi), `mock-server.mjs`, `seed-local.ts`, `send.sh`, `sent.py`, `approve-flow.ts` |
+| `tests/` | `pure.test.ts` (ללא DB - כולל טלפונים, קטלוג מחירים, ההודעה ללקוח, קצב התזכורות, חבילות, bidi), `mock-server.mjs` (התעבורה) + `mock-llm.js` (התשובות המוכנות, CJS כדי ששני הצדדים יוכלו לייבא), `seed-local.ts`, `send.sh`, `sent.py`, `approve-flow.ts` |
+| | ⚠️ **המוק חייב להחזיר את כל שדות הסכימה, כולל null.** כל קריאה אמיתית עוברת דרך `zodResponseFormat` שמסמן כל שדה כ-`required`, ולכן ספק אמיתי לעולם לא מחזיר תת-קבוצה. `templateName` שרד במוק את השינוי ל-`designName`, ו-`reference`/`customerName` נוספו ל-`IntentSchema` בלעדיו - כך שכל הצעה בזרימה המקומית מתה ב-ZodError שנראה כמו באג במוצר. יש על זה טסט ב-`pure.test.ts` שמריץ את המוק עם הפרומפטים **האמיתיים** |
 
 ## החלטות שנלקחו תוך כדי בנייה (20.9.2026)
 

@@ -1,49 +1,11 @@
 // Dev-only mock of iBot (send-*) and an OpenAI-compatible chat endpoint.
 // Run: node tests/mock-server.mjs   → http://localhost:4001
 // Then in /admin: ibot.base_url=http://localhost:4001/api/v1/, llm.provider=custom, llm.base_url=http://localhost:4001/v1
+// The canned answers live in mock-llm.js, where pure.test.ts checks their shape.
 import http from "node:http";
+import { llmAnswer } from "./mock-llm.js";
 
 const sent = [];
-
-function llmAnswer(system, user) {
-  const msg = user;
-  if (system.includes("מסווג הודעה")) {
-    if (/"""\s*(היי|שלום|תודה)\s*"""/.test(msg)) return { intent: "greeting", command: null, templateName: null };
-    if (/תשנה|תוסיף|תמחק|בלי/.test(msg)) return { intent: "correction", command: null, templateName: null };
-    if (/הצעת מחיר|נקודות|שקל/.test(msg)) return { intent: "new_quote", command: null, templateName: null };
-    return { intent: "unclear", command: null, templateName: null };
-  }
-  if (system.includes("שאלת אונבורדינג")) {
-    if (system.includes("השלב: שם העסק")) {
-      if (/^["\n\s]*כן/.test(msg.split('"""')[1] ?? "")) return { acceptsSuggestedName: true, businessName: null, vatStatus: null, skipLogo: null, looksLikeQuote: false };
-      return { acceptsSuggestedName: false, businessName: (msg.split('"""')[1] ?? "").trim(), vatStatus: null, skipLogo: null, looksLikeQuote: false };
-    }
-    if (system.includes("השלב: סטטוס מע״מ")) return { acceptsSuggestedName: null, businessName: null, vatStatus: /פטור/.test(msg) ? "exempt" : "registered", skipLogo: null, looksLikeQuote: false };
-    return { acceptsSuggestedName: null, businessName: null, vatStatus: null, skipLogo: true, looksLikeQuote: false };
-  }
-  if (system.includes("מעדכן הצעת מחיר קיימת")) {
-    const cur = JSON.parse(user.split("ההצעה הנוכחית:\n")[1].split("\n\nהוראת התיקון")[0]);
-    const items = cur.items.map((i) => (i.description === "ביקור" ? { ...i, unitPrice: 250 } : i));
-    items.push({ description: "שקע כפול", quantity: 1, unit: "יח׳", unitPrice: 120, priceConfidence: "high" });
-    return { quote: { ...cur, items, needsReview: [] }, changes: ["ביקור — 250 ₪ (היה 200)", "+ שקע כפול ×1 — 120 ₪"] };
-  }
-  // structure
-  return {
-    customerName: "דני כהן",
-    customerPhone: null,
-    title: "התקנת גופי תאורה",
-    items: [
-      { description: "התקנת גוף תאורה", quantity: 3, unit: "יח׳", unitPrice: 150, priceConfidence: "high" },
-      { description: "ביקור", quantity: 1, unit: "יח׳", unitPrice: 200, priceConfidence: "high" },
-    ],
-    discount: null,
-    vatIncluded: false,
-    paymentTerms: "50% מקדמה, היתרה בסיום העבודה",
-    validDays: null,
-    notes: [],
-    needsReview: [],
-  };
-}
 
 http
   .createServer(async (req, res) => {

@@ -22,6 +22,20 @@ import { errors, MAX_AUDIO_MINUTES } from "@/lib/conversation/messages";
 import { TRANSCRIPTION_CHOICES } from "@/lib/ai/transcription-choices";
 import { MAX_ATTEMPTS, RETRY_WINDOW_MS } from "@/lib/conversation/handler";
 import { rateLimitWaitMs } from "@/lib/ai/openai";
+import {
+  CorrectionResultSchema,
+  IntentSchema,
+  OnboardingAnswerSchema,
+  QuoteJSONSchema,
+  type BusinessProfile,
+} from "@/lib/ai/types";
+import {
+  classifySystemPrompt,
+  correctionSystemPrompt,
+  onboardingSystemPrompt,
+  structureSystemPrompt,
+} from "@/lib/ai/prompts";
+import { llmAnswer } from "./mock-llm.js";
 import { CLOSED_QUOTE_STATUSES, OPEN_QUOTE_STATUSES, quoteStatusEnum } from "@/lib/db/schema";
 import {
   isValidJobName,
@@ -744,4 +758,56 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert.equal(findPhoneFor("שרון", book), null);
   assert.equal(findPhoneFor(null, book), null);
   console.log("CONTACTS OK");
+}
+
+/**
+ * The local mock (tests/mock-server.mjs) stands in for the LLM in the flow the
+ * README documents. It is only useful while it answers in the shape the real
+ * provider does: every call goes through zodResponseFormat, which marks all
+ * properties required, so a live model always returns the whole object with
+ * nulls - never a subset.
+ *
+ * Nothing used to hold the mock to that. `templateName` survived the rename to
+ * `designName` here, and `reference`/`customerName` were added to IntentSchema
+ * without it, so every quote in the local flow died on a ZodError that looked
+ * like a product bug. Driving the mock with the *real* prompts also means a
+ * reworded prompt that stops matching its branch fails here instead of silently
+ * falling through to the structure answer.
+ */
+{
+  const profile: BusinessProfile = {
+    businessName: "יוגב חשמל",
+    vatStatus: "registered",
+    defaultPaymentTerms: null,
+    defaultValidDays: 14,
+    defaultNotes: [],
+    catalog: [],
+  };
+  const classify = classifySystemPrompt({
+    hasActiveDraft: false,
+    draftCustomer: null,
+    designNames: [],
+    jobNames: [],
+  });
+
+  for (const text of ["היי", "תשנה ביקור ל-250", "הצעת מחיר לדני כהן 3 נקודות 180 שקל", "בלה בלה"])
+    IntentSchema.parse(llmAnswer(classify, `"""${text}"""`));
+
+  for (const step of ["name", "vat", "logo"] as const)
+    OnboardingAnswerSchema.parse(
+      llmAnswer(onboardingSystemPrompt(step, "יוגב אביטן"), `"""כן"""`),
+    );
+
+  QuoteJSONSchema.parse(llmAnswer(structureSystemPrompt(profile), `"""שלוש נקודות 180 שקל"""`));
+
+  const current = QuoteJSONSchema.parse(
+    llmAnswer(structureSystemPrompt(profile), `"""שלוש נקודות"""`),
+  );
+  CorrectionResultSchema.parse(
+    llmAnswer(
+      correctionSystemPrompt(profile),
+      `ההצעה הנוכחית:\n${JSON.stringify(current)}\n\nהוראת התיקון: תשנה ביקור ל-250`,
+    ),
+  );
+  console.log("MOCK SERVER SHAPE OK");
 }
