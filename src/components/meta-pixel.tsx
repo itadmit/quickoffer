@@ -17,13 +17,31 @@ declare global {
  * button we listen once for clicks on those and report a Contact. What happens
  * inside the chat is reported server-side (lib/meta/capi.ts).
  */
+/** Every shape of chat link the page can render - wa.me today, api.whatsapp.com if lib/phone.ts ever changes. */
+const CHAT_LINK = /^https:\/\/(wa\.me|t\.me|api\.whatsapp\.com)\//;
+
+/**
+ * `fbq` is defined by the snippet below, which next/script runs afterInteractive -
+ * that can land later than this component's effect. On mobile the sticky CTA is
+ * the first thing in reach, so a bare `window.fbq?.()` drops exactly the fastest,
+ * highest-intent clicks. Wait up to 2s for the snippet instead of losing them.
+ */
+function track(name: string, data: Record<string, string>, tries = 20) {
+  if (window.fbq) {
+    window.fbq("track", name, data);
+    return;
+  }
+  // Out of tries means the pixel was blocked, not slow. Nothing to report to.
+  if (tries > 0) setTimeout(() => track(name, data, tries - 1), 100);
+}
+
 export function MetaPixel({ pixelId }: { pixelId: string }) {
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const a = (e.target as Element | null)?.closest?.("a[href]");
       const href = a?.getAttribute("href") ?? "";
-      if (/^https:\/\/(wa\.me|t\.me)\//.test(href)) {
-        window.fbq?.("track", "Contact", { content_name: href.includes("t.me") ? "telegram" : "whatsapp" });
+      if (CHAT_LINK.test(href)) {
+        track("Contact", { content_name: href.includes("t.me") ? "telegram" : "whatsapp" });
       }
     };
     document.addEventListener("click", onClick, { capture: true });
