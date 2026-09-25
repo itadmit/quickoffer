@@ -793,6 +793,14 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   for (const text of ["היי", "תשנה ביקור ל-250", "הצעת מחיר לדני כהן 3 נקודות 180 שקל", "בלה בלה"])
     IntentSchema.parse(llmAnswer(classify, `"""${text}"""`));
 
+  // Giving the customer's phone is a correction, so the local flow can reach
+  // the one-tap send link instead of looping on "לתקן או חדש?".
+  for (const said of ["הטלפון של דני כהן 0542284283", "המספר שלה 054-228-4283"])
+    assert.equal(
+      IntentSchema.parse(llmAnswer(classify, `"""${said}"""`)).intent,
+      "correction",
+    );
+
   for (const step of ["name", "vat", "logo"] as const)
     OnboardingAnswerSchema.parse(
       llmAnswer(onboardingSystemPrompt(step, "יוגב אביטן"), `"""כן"""`),
@@ -809,5 +817,18 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
       `ההצעה הנוכחית:\n${JSON.stringify(current)}\n\nהוראת התיקון: תשנה ביקור ל-250`,
     ),
   );
+
+  // The mock must hand back the phone in the local form it was said in -
+  // "0542284283", not "972542284283". Normalising inside the mock would hide
+  // the conversion the send link depends on.
+  const withPhone = CorrectionResultSchema.parse(
+    llmAnswer(
+      correctionSystemPrompt(profile),
+      `ההצעה הנוכחית:\n${JSON.stringify(current)}\n\nהוראת התיקון: הטלפון של דני כהן 0542284283`,
+    ),
+  );
+  assert.equal(withPhone.quote.customerPhone, "0542284283");
+  assert.equal(normalizePhone(withPhone.quote.customerPhone), "972542284283");
+  assert(waLink(withPhone.quote.customerPhone, "x").startsWith("https://wa.me/972542284283?"));
   console.log("MOCK SERVER SHAPE OK");
 }
