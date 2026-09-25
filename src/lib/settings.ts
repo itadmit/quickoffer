@@ -70,6 +70,12 @@ export const SETTING_KEYS = {
   "meta.capi_token": { secret: true, env: "META_CAPI_TOKEN", default: "" },
   /** Events Manager → Test events. Set while testing, clear before going live. */
   "meta.test_event_code": { secret: false, env: null, default: "" },
+  /**
+   * The activity bubbles on the landing page. "off" removes them without a
+   * deploy - the one control worth having over generated social proof
+   * (lib/marketing/activity-feed.ts). Takes up to 5 minutes, the page's ISR.
+   */
+  "marketing.activity": { secret: false, env: null, default: "on" },
 } as const;
 
 export type SettingKey = keyof typeof SETTING_KEYS;

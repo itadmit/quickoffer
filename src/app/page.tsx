@@ -42,6 +42,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
+import { ActivityToast } from "@/components/activity-toast";
 import { Reveal } from "@/components/reveal";
 import { HowItWorks } from "@/components/how-it-works";
 import { NotificationToast } from "@/components/notification-toast";
@@ -49,6 +50,7 @@ import { StickyCta } from "@/components/sticky-cta";
 import { MetaPixel } from "@/components/meta-pixel";
 import { PLAN_OFFERS } from "@/lib/billing/plans";
 import { OPENING_LINE } from "@/lib/conversation/messages";
+import { TRADES, type Trade } from "@/lib/marketing/trades";
 import { formatPhone } from "@/lib/phone";
 import { appUrlBase } from "@/lib/quotes/links";
 import { getSetting } from "@/lib/settings";
@@ -111,6 +113,7 @@ export default async function LandingPage() {
   const tg = tgUser ? `https://t.me/${tgUser}` : null;
   const channels = tg ? "WhatsApp או טלגרם" : "WhatsApp";
   const pixelId = await getSetting("meta.pixel_id");
+  const showActivity = (await getSetting("marketing.activity")) !== "off";
 
   return (
     // `clip`, not `hidden`: overflow-x:hidden turns <main> into a scroll
@@ -222,12 +225,15 @@ export default async function LandingPage() {
               <div className="text-sm text-muted">כל מי שנותן הצעת מחיר מהרכב או מהאתר</div>
             </div>
             <ul className="flex flex-wrap gap-2.5">
-              {TRADES.map(({ label, icon: Icon }) => (
-                <li key={label} className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-3.5 py-2 text-sm">
-                  <Icon className="h-4 w-4 text-brand" />
-                  {label}
-                </li>
-              ))}
+              {TRADES.map((label) => {
+                const Icon = TRADE_ICONS[label];
+                return (
+                  <li key={label} className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-3.5 py-2 text-sm">
+                    <Icon className="h-4 w-4 text-brand" />
+                    {label}
+                  </li>
+                );
+              })}
             </ul>
           </Reveal>
         </div>
@@ -411,33 +417,39 @@ export default async function LandingPage() {
       {/* Mobile only, and only between the end of the film and the closing CTA,
           so it never covers the sticky stage or doubles the button below it. */}
       <StickyCta href={wa} />
+      {showActivity && <ActivityToast />}
       {/^\d+$/.test(pixelId) && <MetaPixel pixelId={pixelId} />}
     </main>
   );
 }
 
-const TRADES: { label: string; icon: LucideIcon }[] = [
-  { label: "חשמל", icon: Zap },
-  { label: "אינסטלציה", icon: Droplets },
-  { label: "מיזוג אוויר", icon: Snowflake },
-  { label: "שיפוצים", icon: Hammer },
-  { label: "אלומיניום", icon: PanelTop },
-  { label: "גינון", icon: Leaf },
-  { label: "התקנות", icon: Wrench },
-  { label: "צבע", icon: PaintRoller },
-  { label: "ריצוף", icon: Grid2x2 },
-  { label: "גבס", icon: Layers },
-  { label: "נגרות", icon: Ruler },
-  { label: "מנעולנות", icon: KeyRound },
-  { label: "דלתות", icon: DoorOpen },
-  { label: "איטום וגגות", icon: House },
-  { label: "מטבחים", icon: Refrigerator },
-  { label: "תריסים", icon: Blinds },
-  { label: "גדרות ופרגולות", icon: Fence },
-  { label: "מצלמות ואזעקה", icon: Cctv },
-  { label: "טכנאי מכשירים", icon: WashingMachine },
-  { label: "הדברה", icon: Bug },
-];
+/**
+ * The labels live in lib/marketing/trades.ts, because the activity bubbles
+ * read the same list. Typing the map by `Trade` means a trade added there
+ * fails the build here until it has an icon.
+ */
+const TRADE_ICONS: Record<Trade, LucideIcon> = {
+  "חשמל": Zap,
+  "אינסטלציה": Droplets,
+  "מיזוג אוויר": Snowflake,
+  "שיפוצים": Hammer,
+  "אלומיניום": PanelTop,
+  "גינון": Leaf,
+  "התקנות": Wrench,
+  "צבע": PaintRoller,
+  "ריצוף": Grid2x2,
+  "גבס": Layers,
+  "נגרות": Ruler,
+  "מנעולנות": KeyRound,
+  "דלתות": DoorOpen,
+  "איטום וגגות": House,
+  "מטבחים": Refrigerator,
+  "תריסים": Blinds,
+  "גדרות ופרגולות": Fence,
+  "מצלמות ואזעקה": Cctv,
+  "טכנאי מכשירים": WashingMachine,
+  "הדברה": Bug,
+};
 
 const FAQ = [
   {

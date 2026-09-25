@@ -5,6 +5,8 @@ import { contactKey, findPhoneFor, isLearnableContact } from "@/lib/quotes/conta
 import { calcTotals, formatMoney, qtyLabel } from "@/lib/quotes/calc";
 import { activation, notifications, tradeExample } from "@/lib/conversation/messages";
 import { MAX_ACTIVATION_NUDGES } from "@/lib/conversation/activation";
+import { buildFeed } from "@/lib/marketing/activity-feed";
+import { TRADES } from "@/lib/marketing/trades";
 import { makeToken, verifyToken, encryptSecret, decryptSecret } from "@/lib/crypto";
 import { matchTemplateName, planAllows } from "@/lib/quotes/template-spec";
 import { formatPhone, isMobile, normalizePhone, waLink } from "@/lib/phone";
@@ -545,6 +547,29 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
     assert.ok(!text.includes("—"), "no em dash in bot copy");
   }
   console.log("ACTIVATION NUDGE OK");
+}
+
+// ---- the landing page's activity bubbles
+{
+  // a seeded sequence, so "distinct within a run" is asserted and not hoped for
+  let seed = 7;
+  const rand = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+
+  const feed = buildFeed(6, rand);
+  assert.equal(feed.length, 6);
+  assert.equal(new Set(feed.map((f) => f.trade)).size, 6, "a trade must not come round twice");
+  assert.equal(new Set(feed.map((f) => f.name)).size, 6, "nor a pair of initials");
+  for (const f of feed) {
+    // one letter, three stars, twice - the censored shape, not a real name
+    assert.match(f.name, /^.\*\*\* .\*\*\*$/);
+    assert.ok(TRADES.includes(f.trade));
+  }
+
+  // asking for more bubbles than there are trades yields every trade once,
+  // never a repeat - the run just ends sooner
+  assert.equal(buildFeed(100, rand).length, TRADES.length);
+  assert.deepEqual(buildFeed(0, rand), []);
+  console.log("ACTIVITY FEED OK");
 }
 
 // ---- how long the provider says to wait, from the headers it really sends
