@@ -1,5 +1,6 @@
 import { and, gt, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
+import { sendActivationNudges } from "@/lib/conversation/activation";
 import { handleInbound, MAX_ATTEMPTS, RETRY_WINDOW_MS } from "@/lib/conversation/handler";
 import { safeEqual } from "@/lib/crypto";
 import { db } from "@/lib/db";
@@ -21,6 +22,7 @@ export const maxDuration = 60;
  *    genuine failures, or up to RETRY_WINDOW_MS of being rate limited)
  *  - expires quotes past valid_until
  *  - nudges the professional about quotes that went quiet (§6.6)
+ *  - nudges whoever finished setup and never wrote a first quote
  *  - reports instance health as last known (§5.5)
  *
  * Every step is reconciliation-based ("expire everything already past due")
@@ -110,6 +112,12 @@ export async function GET(req: NextRequest) {
     return 0;
   });
 
+  // 3b. nudge whoever finished setup and never wrote a first quote
+  const activated = await sendActivationNudges().catch((e) => {
+    console.error("[cron] activation", e);
+    return 0;
+  });
+
   const purgedLinks = await purgeExpiredLinks();
 
   // 4. retention. Bounded per run, and never allowed to fail the tick - the
@@ -128,6 +136,7 @@ export async function GET(req: NextRequest) {
     abandoned: abandoned.length,
     expired: expired.length,
     reminded,
+    activated,
     purgedLinks,
     purgedLogs,
     instanceStatus,

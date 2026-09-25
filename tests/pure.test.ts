@@ -3,7 +3,8 @@ import { createHmac } from "node:crypto";
 import { parseIbotInbound } from "@/lib/whatsapp/ibot";
 import { contactKey, findPhoneFor, isLearnableContact } from "@/lib/quotes/contacts";
 import { calcTotals, formatMoney, qtyLabel } from "@/lib/quotes/calc";
-import { notifications } from "@/lib/conversation/messages";
+import { activation, notifications, tradeExample } from "@/lib/conversation/messages";
+import { MAX_ACTIVATION_NUDGES } from "@/lib/conversation/activation";
 import { makeToken, verifyToken, encryptSecret, decryptSecret } from "@/lib/crypto";
 import { matchTemplateName, planAllows } from "@/lib/quotes/template-spec";
 import { formatPhone, isMobile, normalizePhone, waLink } from "@/lib/phone";
@@ -517,6 +518,33 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
     "every quote status must be either open or closed",
   );
   console.log("QUOTE STATUS SETS OK");
+}
+
+// ---- the activation nudge: right example, bounded count
+{
+  // users_activation_idx is declared as `activation_nudges < 2`. Raising the
+  // constant here without touching the index drops everyone past the second
+  // nudge out of the sweep's reach, silently.
+  assert.equal(MAX_ACTIVATION_NUDGES, 2, "must match the users_activation_idx predicate");
+
+  // the example has to be from their own trade - that is the whole reason the
+  // nudge is not one fixed sentence
+  assert.match(tradeExample("הובלה נעימה"), /הובלה מדירת 3 חדרים/);
+  assert.match(tradeExample("מור חשמל ותקשורת"), /נקודות חשמל/);
+  assert.match(tradeExample("א.ב. אינסטלציה ושרברבות"), /פתיחת סתימה/);
+  // a business we cannot place still gets a concrete sentence, not a blank
+  assert.match(tradeExample("פיקס מדיה"), /הצעת מחיר לדני כהן/);
+  assert.match(tradeExample(null), /הצעת מחיר לדני כהן/);
+
+  const first = activation.first("הובלה נעימה");
+  assert.ok(first.includes("הובלה מדירת 3 חדרים"));
+  // the last nudge has to say it is the last one, or it reads as a drip
+  assert.ok(activation.last().includes("האחרונה"));
+  // house style: bot copy uses a plain hyphen, never an em dash
+  for (const text of [first, activation.last()]) {
+    assert.ok(!text.includes("—"), "no em dash in bot copy");
+  }
+  console.log("ACTIVATION NUDGE OK");
 }
 
 // ---- how long the provider says to wait, from the headers it really sends

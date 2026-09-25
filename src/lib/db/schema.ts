@@ -130,13 +130,26 @@ export const users = pgTable("users", {
   templateId: uuid("template_id").references(() => quoteTemplates.id, {
     onDelete: "set null",
   }),
+  // Activation nudges (lib/conversation/activation.ts): finished setup, never
+  // wrote a quote. Bounded by the counter so a user who is simply not
+  // interested is asked twice and then left alone.
+  activationNudges: integer("activation_nudges").notNull().default(0),
+  activationNudgeAt: timestamp("activation_nudge_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
   lastActiveAt: timestamp("last_active_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (t) => [
+  // The cron's activation sweep, every five minutes forever. Partial, because
+  // the users it can ever touch are the ones who finished setup and still owe
+  // the counter a nudge - a set that empties itself as people either start
+  // quoting or get their two messages.
+  index("users_activation_idx")
+    .on(t.lastActiveAt)
+    .where(sql`${t.onboardingState} = 'done' and ${t.blocked} = false and ${t.activationNudges} < 2`),
+]);
 
 export const quotes = pgTable(
   "quotes",

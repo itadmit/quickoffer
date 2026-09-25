@@ -71,6 +71,66 @@ export const onboarding = {
   logoSaved: () => `הלוגו נשמר 👌`,
 };
 
+/**
+ * One example sentence in the trade the professional actually works in. The
+ * business name is the only thing we know about them at this point, and a
+ * moving company reading an electrician's example learns nothing about itself.
+ * Keys are substrings of the name, first match wins, so the more specific ones
+ * come first.
+ */
+const TRADE_EXAMPLE: [string, string][] = [
+  ["הובל", `הצעת מחיר לדני כהן - הובלה מדירת 3 חדרים ברמת גן לתל אביב, קומה 2 בלי מעלית, 1800 שקל`],
+  ["מנוף", `הצעת מחיר לדני כהן - מנוף ליום עבודה 2400 שקל, שעה נוספת 350`],
+  ["מזגן", `הצעת מחיר לדני כהן - התקנת מזגן עילי 900 שקל, צנרת 3 מטר 240`],
+  ["מיזוג", `הצעת מחיר לדני כהן - התקנת מזגן עילי 900 שקל, צנרת 3 מטר 240`],
+  ["אינסטלצ", `הצעת מחיר לדני כהן - פתיחת סתימה במטבח 350 שקל, החלפת סיפון 120`],
+  ["שרברב", `הצעת מחיר לדני כהן - פתיחת סתימה במטבח 350 שקל, החלפת סיפון 120`],
+  ["צבע", `הצעת מחיר לדני כהן - צביעת סלון 45 מ״ר 38 שקל למ״ר, שפכטל 1200`],
+  ["שיפוצ", `הצעת מחיר לדני כהן - צביעת דירה 80 מ״ר 35 שקל למ״ר, שפכטל 1200`],
+  ["ריצוף", `הצעת מחיר לדני כהן - ריצוף 60 מ״ר 90 שקל למ״ר, פירוק ריצוף ישן 2500`],
+  ["גבס", `הצעת מחיר לדני כהן - תקרת גבס 25 מ״ר 180 שקל למ״ר, ניש 900`],
+  ["אלומיניום", `הצעת מחיר לדני כהן - חלון אלומיניום 2 כנפיים 2400 שקל, רשת 300`],
+  ["גינון", `הצעת מחיר לדני כהן - דשא סינטטי 40 מ״ר 120 שקל למ״ר, גיזום 450`],
+  ["ניקיון", `הצעת מחיר לדני כהן - ניקוי דירה אחרי שיפוץ 4 חדרים 900 שקל, חלונות 250`],
+  ["מנעול", `הצעת מחיר לדני כהן - החלפת צילינדר 280 שקל, ביקור 150`],
+  ["חשמל", `הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200`],
+];
+
+export function tradeExample(businessName: string | null): string {
+  const name = businessName ?? "";
+  const hit = TRADE_EXAMPLE.find(([key]) => name.includes(key));
+  // The electrician line is also the one onboarding ends with, so a
+  // professional we cannot place keeps seeing the same shape of sentence.
+  return hit?.[1] ?? TRADE_EXAMPLE[TRADE_EXAMPLE.length - 1][1];
+}
+
+/**
+ * Finished setup, never sent a quote (lib/conversation/activation.ts). The
+ * whole product is one sentence away, and the only thing standing between the
+ * two is that nobody said it out loud yet - so the nudge shows the sentence
+ * rather than asking whether they are still interested. Twice, then never.
+ */
+export const activation = {
+  first: (businessName: string | null) =>
+    [
+      `היי 👋 בא לך לשלוח הצעת מחיר?`,
+      `פשוט להקליט לי או לכתוב, ואני מכין לך. למשל:`,
+      `🎤 "${tradeExample(businessName)}"`,
+      ``,
+      `תוך דקה חוזרת הצעה מעוצבת עם קישור מוכן להעברה ללקוח.`,
+    ].join("\n"),
+
+  /** The last one. Saying so is what keeps it a nudge and not a drip. */
+  last: () =>
+    [
+      `עוד לא יצא לך לנסות 🙂 אני עדיין כאן.`,
+      `משפט אחד על עבודה שאתה מתמחר היום - שם הלקוח, מה העבודה וכמה - ואני מחזיר הצעה מוכנה.`,
+      `לא בטוח מה להגיד? לכתוב "עזרה" ואני אסביר.`,
+      ``,
+      `זו התזכורת האחרונה שלי, מכאן אני מחכה להודעה ממך.`,
+    ].join("\n"),
+};
+
 export const processing = () => `⏳ מעבד...`;
 
 function itemLine(it: QuoteItem): string {
