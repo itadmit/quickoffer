@@ -5,7 +5,7 @@ import { contactKey, findPhoneFor, isLearnableContact } from "@/lib/quotes/conta
 import { calcTotals, formatMoney, qtyLabel } from "@/lib/quotes/calc";
 import { activation, notifications, tradeExample } from "@/lib/conversation/messages";
 import { MAX_ACTIVATION_NUDGES } from "@/lib/conversation/activation";
-import { buildFeed } from "@/lib/marketing/activity-feed";
+import { buildFeed, relativeTime } from "@/lib/marketing/activity-feed";
 import { TRADES } from "@/lib/marketing/trades";
 import { makeToken, verifyToken, encryptSecret, decryptSecret } from "@/lib/crypto";
 import { matchTemplateName, planAllows } from "@/lib/quotes/template-spec";
@@ -559,11 +559,25 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert.equal(feed.length, 6);
   assert.equal(new Set(feed.map((f) => f.trade)).size, 6, "a trade must not come round twice");
   assert.equal(new Set(feed.map((f) => f.name)).size, 6, "nor a pair of initials");
+  assert.equal(new Set(feed.map((f) => f.minutesAgo)).size, 6, "nor the same minute twice");
   for (const f of feed) {
     // one letter, three stars, twice - the censored shape, not a real name
     assert.match(f.name, /^.\*\*\* .\*\*\*$/);
     assert.ok(TRADES.includes(f.trade));
+    // coarse and recent: whole minutes, inside the quarter hour the file promises
+    assert.ok(Number.isInteger(f.minutesAgo) && f.minutesAgo >= 0 && f.minutesAgo < 15);
   }
+
+  // Hebrew counts one and two apart from the rest; a bare number there is what
+  // gives away that nobody wrote the sentence
+  assert.equal(relativeTime(0), "ברגע זה");
+  assert.equal(relativeTime(1), "לפני דקה");
+  assert.equal(relativeTime(2), "לפני שתי דקות");
+  assert.equal(relativeTime(9), "לפני 9 דקות");
+
+  // a full-length run outgrows the 15-minute window, and still must not repeat
+  const long = buildFeed(TRADES.length, rand);
+  assert.equal(new Set(long.map((f) => f.minutesAgo)).size, TRADES.length);
 
   // asking for more bubbles than there are trades yields every trade once,
   // never a repeat - the run just ends sooner

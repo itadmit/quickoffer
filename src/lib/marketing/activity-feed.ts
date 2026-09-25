@@ -9,10 +9,13 @@
  *  - Nothing identifies a real person. The name is two Hebrew letters picked at
  *    random, which is not an initial of anybody in particular, and no customer
  *    of any professional on the platform is described.
- *  - Nothing states a time. The bubble says a quote was created, not that it
- *    happened this minute, because that is the claim we could not stand behind.
+ *  - The "ברגע זה / לפני X דקות" line is generated with the rest of the item.
+ *    It is the piece that claims the most and can be defended the least, so it
+ *    stays coarse - whole minutes inside a quarter of an hour, never a clock
+ *    time, never a date, and never tied to a row anybody could go looking for.
  *  - `marketing.activity` = "off" in `app_settings` removes the whole thing
- *    without a deploy.
+ *    without a deploy, and it is the switch to reach for rather than editing
+ *    the copy if the claim ever needs to stop.
  *
  * The honest version of this widget reads the last few rows of `quotes`,
  * anonymised, and it is the one to move to once the volume carries it: the
@@ -24,7 +27,26 @@
 
 import { TRADES, type Trade } from "./trades";
 
-export type ActivityItem = { name: string; trade: Trade };
+export type ActivityItem = { name: string; trade: Trade; minutesAgo: number };
+
+/**
+ * How far back the bubbles are allowed to reach. Fifteen minutes because the
+ * run itself is about two: a page that keeps announcing quotes from an hour ago
+ * is describing a quiet morning, which is the opposite of the point.
+ */
+const MINUTES_WINDOW = 15;
+
+/**
+ * The line on the left of the bubble. Hebrew counts one and two apart from the
+ * rest, and "לפני 2 דקות" is the kind of phrasing that tells a visitor a
+ * machine wrote the sentence.
+ */
+export function relativeTime(minutesAgo: number): string {
+  if (minutesAgo <= 0) return "ברגע זה";
+  if (minutesAgo === 1) return "לפני דקה";
+  if (minutesAgo === 2) return "לפני שתי דקות";
+  return `לפני ${minutesAgo} דקות`;
+}
 
 /**
  * Initials shown as `<letter>***`. Hebrew letters that actually open names,
@@ -53,7 +75,15 @@ function shuffled<T>(xs: readonly T[], rand: () => number): T[] {
 export function buildFeed(count: number, rand: () => number = Math.random): ActivityItem[] {
   const trades = shuffled(TRADES, rand).slice(0, Math.max(0, Math.min(count, TRADES.length)));
   const used = new Set<string>();
-  return trades.map((trade) => {
+  // Drawn from a pool rather than one at a time, for the same reason as the
+  // trades: two bubbles that both say "לפני 6 דקות" read as one template with
+  // the words swapped. The pool grows if the run is longer than the window, so
+  // distinctness never quietly depends on how many bubbles were asked for.
+  const minutes = shuffled(
+    Array.from({ length: Math.max(trades.length, MINUTES_WINDOW) }, (_, i) => i),
+    rand,
+  );
+  return trades.map((trade, i) => {
     let name = "";
     // 400 pairs against at most 16 draws, so this settles on the first or
     // second try. Bounded anyway: a widget must not be able to hang a tab.
@@ -63,6 +93,6 @@ export function buildFeed(count: number, rand: () => number = Math.random): Acti
       if (!used.has(name)) break;
     }
     used.add(name);
-    return { name, trade };
+    return { name, trade, minutesAgo: minutes[i] };
   });
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FileText } from "lucide-react";
-import { buildFeed, type ActivityItem } from "@/lib/marketing/activity-feed";
+import { buildFeed, relativeTime, type ActivityItem } from "@/lib/marketing/activity-feed";
 
 /**
  * The bubble that slides in at the side of the page while you scroll: someone
@@ -97,10 +97,20 @@ export function ActivityToast() {
               <FileText className="h-4 w-4" />
               <span className="absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full bg-[var(--ok)] ring-2 ring-card" />
             </span>
-            <div className="text-[12.5px] leading-snug">
+            <div className="min-w-0 text-[12.5px] leading-snug">
               <p className="font-semibold">נוצרה הצעת מחיר עבור {item.name}</p>
               <p className="text-muted mt-0.5">תחום העסק: {item.trade}</p>
             </div>
+            {/*
+              Far side of the card, centred against both lines - where a chat
+              app puts a timestamp, so it is read as one and not as part of the
+              sentence. `ms-auto` holds it at the edge on the short strings too,
+              and `nowrap` keeps "לפני 12 דקות" from breaking across two lines
+              in a card this narrow.
+            */}
+            <span className="ms-auto self-center shrink-0 whitespace-nowrap text-[11px] text-muted">
+              {relativeTime(item.minutesAgo)}
+            </span>
           </>
         )}
       </div>
