@@ -1,6 +1,6 @@
 # QuickOffer — הקשר לפיתוח (CLAUDE.md)
 
-קובץ זה נטען אוטומטית בכל session. הוא מסכם **מה נלמד ומה הוחלט** עד 20.9.2026, כדי שאפשר יהיה להמשיך בלי לשחזר את השיחה.
+קובץ זה נטען אוטומטית בכל session. הוא מסכם **מה נלמד ומה הוחלט** עד 25.9.2026, כדי שאפשר יהיה להמשיך בלי לשחזר את השיחה.
 
 ## מה זה הפרויקט
 
@@ -18,7 +18,7 @@
 
 ## מצב הפרויקט
 
-- **MVP בנוי ועובד מקצה לקצה מקומית (20.9.2026).** כל 11 סעיפי ה-MVP ב-PRODUCT.md §12 קיימים חוץ מ-PDF (נדחה במכוון). נבדק נגד מוק של iBot + LLM (ראה README) — **עדיין לא נבדק מול iBot אמיתי ו-OpenAI אמיתי.** זה השלב הבא.
+- **MVP בנוי ו-חי בפרודקשן מקצה לקצה (25.9.2026).** כל 11 סעיפי ה-MVP ב-PRODUCT.md §12 קיימים חוץ מ-PDF (נדחה במכוון). **החיבור האמיתי הושלם ופועל:** iBot מחובר (`ibot.instance_status=connected`), webhook אמיתי מגיע (`ibot.last_webhook_at` מתעדכן, נראה 25.9 בבוקר), 12 מיגרציות רצו על Neon (כולל `price_book`+עמודות התזכורות), והמפתחות מוזנים ב-`app_settings` מוצפנים. **תנועה אמיתית נמדדה 25.9.2026:** 7 משתמשים, 11 הצעות (8 לא-טיוטה), 68 הודעות נכנסות. השלב הבא הוא כוונון מול השימוש האמיתי, לא חיבור.
 - **Git:** `origin` = https://github.com/itadmit/quickoffer.git (ריפו חדש שנוצר עם השינוי ל-QuickOffer; הריפו quickvoice נמחק), ענף `main`. לא לדחוף בלי שהמשתמש מבקש.
 - **סביבה מקומית:** Postgres 15 מקומי (`quickoffer_dev`), `.env.local` קיים (gitignored). `npm run dev` / `npm run mock` / `npm run seed:local`.
 - **התיקייה המקומית נקראת `VoiceQuote`** (השם הישן). השם הנכון הוא QuickOffer. המשתמש ישנה כשנוח לו.
@@ -162,7 +162,7 @@
 - **יחידות בעמודת הכמות** (`qtyLabel` ב-`calc.ts`): "קומפלט" ו"יח׳" לא מודדות כלום ולכן לא מודפסות ("1 קומפלט" נראה כמו באג); מ״ר / מ״א / שעה / יום / נקודה כן - שם היחידה היא מה שהמחיר לפיו.
 - **אורך מזהים = 6 תווים** (בקשת המשתמש: קישורים קצרים ונעימים בהודעות). אלפבית 55 תווים בלי דומים ⇒ 2.8×10¹⁰ צירופים. אין rate limit על `/q` ו-`/e` כרגע - אם יהיה חשש לניחוש, להוסיף לפני שמקצרים עוד.
 - מקומית `waitUntil` הוא no-op — ה-Promise רץ ממילא. בפרודקשן חובה `maxDuration=60` על ה-route (קיים).
-- אין OPENAI_API_KEY בסביבת המשתמש — מפתחות יוזנו דרך `/admin`.
+- ~~אין OPENAI_API_KEY בסביבת המשתמש~~ — **כבר לא נכון (25.9.2026):** `.env.local` מחזיק גם `OPENAI_API_KEY` וגם `GROQ_API_KEY`, והמפתחות גם מוזנים ב-`app_settings` מוצפנים (`ai.key_openai` 266 תווים, `ai.key_groq` 122 תווים). `llm.api_key`/`transcription.api_key` ריקים בכוונה (§"מצב הספקים").
 - **דף הבית = דף נחיתה** עם CTA ל-`wa.me/<bot.phone>?text=היי`. המספר ב-`app_settings["bot.phone"]` (עריכה ב-`/admin → iBot`). **המספר הרשמי של QuickOffer: 053-370-7533 = `972533707533`** (24.9.2026, החליף את המספר הזמני של Quick Shop). מקור אמת אחד - הוא מזין את ה-CTA, את השבב בהירו, את הפוטר ואת קישור השדרוג הידני ב-`/u`.
 
 ## סבב "מספר אחד בתחום" (22.9.2026)
@@ -204,11 +204,11 @@ QuickOffer מחובר ל-**Quick Commerce Billing Hub** (`~/Desktop/Projeccts/qu
 - redirect `www` → apex ב-`next.config.ts` (בקוד ולא בדשבורד, כדי שישרוד יצירה מחדש של הפרויקט).
 - `metadataBase` ב-`/q/[publicId]` נגזר מ-`app.url` בזמן ריצה — כרטיס התצוגה ב-WhatsApp עוקב אחרי הקישורים ולא מפגר.
 
-**סטטוס ה-endpoints על הדומיין החדש:** `/api/webhooks/telegram` → 401 בלי סוד תקין (חי) · `/api/cron/tick` → 401 בלי secret (חי) · `/api/webhooks/ibot` → **503**, וזה תקין: `ibot.webhook_token` ריק, והראוט מחזיר 503 מפורש כשהוא לא מוגדר (route.ts:31). יהפוך ל-401 ברגע שיוזן טוקן iBot אמיתי.
+**סטטוס ה-endpoints על הדומיין החדש (עודכן 25.9.2026):** `/api/webhooks/telegram` → 401 בלי סוד תקין (חי) · `/api/cron/tick` → 401 בלי secret (חי) · `/api/webhooks/ibot` → **401** בלי טוקן תקין - כלומר `ibot.webhook_token` **הוזן** וה-webhook חי (היה 503 כשהיה ריק). `ibot.token` מוזן גם הוא, ו-`ibot.instance_status=connected`.
 
 **נותר ידנית:**
 1. ~~ה-pinger החיצוני (cron-job.org)~~ — **הוחלף ב-Vercel Cron** (24.9). `vercel.json` → `/api/cron/tick` כל 5 דק׳. ה-team `itadmit-gmailcoms-projects` בתוכנית **Pro** (חשבון המשתמש עצמו hobby, אבל הבעלים הוא ה-team) ולכן תדירות של עד פעם בדקה מותרת. **אפשר לכבות את ה-pinger ב-cron-job.org.**
-2. ⏳ טוקן iBot — טרם הוזן. עד אז `/api/webhooks/ibot` מחזיר 503.
+2. ~~טוקן iBot — טרם הוזן~~ — **הוזן (24.9.2026 14:46-14:52).** `ibot.token` + `ibot.webhook_token` מוצפנים ב-`app_settings`, `/api/webhooks/ibot` מחזיר 401 (חי), וה-instance מחובר. ⚠️ עדיין לאמת ב-webhook.site שה-`X-Webhook-Token` באמת מגיע ב-header (החלטה פתוחה §15).
 3. ~~`APP_URL` ל-Preview~~ — **לא צריך.** Preview חולק את אותו `DATABASE_URL` (ולכן אותו `app_settings`), אז `app.url` מה-DB גובר ממילא וה-env הזה לעולם לא נקרא שם. ה-CLI גם מסרב להוסיף אותו ללא prompt.
 
 ## סבב הקשחה לפרודקשן וקמפיין (24.9.2026)
@@ -293,10 +293,19 @@ QuickOffer מחובר ל-**Quick Commerce Billing Hub** (`~/Desktop/Projeccts/qu
 
 ⚠️ **2.7 הצעות בדקה הוא הקיר של הקמפיין.** הקוד כבר לא שובר את המשתמש כשזה קורה (סעיף 2), אבל התור מתארך. Groq Dev tier או OpenAI ל-LLM לפני תנועה ממומנת רצינית.
 
+## מעקב פאנל Meta - Pixel + CAPI (25.9.2026)
+
+מדידת הפאנל של הקמפיין מקצה לקצה, בגלל שהבעיה שנצפתה היא "מודעות מביאות נרשמים אבל אף אחד לא כותב הצעה ראשונה" - צריך לראות איפה בפאנל זה נשבר.
+
+- **Client pixel** (`components/meta-pixel.tsx`) - **רק בדף הנחיתה**, לא בדפי ההצעה (הם שייכים ללקוחות של בעל המקצוע, לא הגיעו מהמודעות שלנו). מאזין פעם אחת לקליקים על קישורי `wa.me`/`t.me`/`api.whatsapp.com` ומדווח `Contact`. מחכה עד 2 שניות ל-`fbq` (next/script afterInteractive עלול לאחר, וה-CTA הדביק במובייל הוא הקליק המהיר ביותר).
+- **Server CAPI** (`lib/meta/capi.ts`) - האירועים שה-pixel לא רואה כי הם קורים מחוץ לאתר (בצ׳אט ובשדרוג): `Lead` (התחיל לדבר עם הבוט, `handler.ts:100`), `CompleteRegistration` (סיים אונבורדינג, `handler.ts:241/317/332`), `Subscribe` (השלים סליקה עם `value`+`plan`, `subscription.ts:64`).
+- **התאמה:** phone מוצפן SHA-256 ל-WhatsApp (WhatsApp נותן אותו בחינם), `external_id` = hash של `user.id` לטלגרם (אין טלפון). `event_id` יציב לכל משתמש+אירוע ⇒ retry של webhook לא נספר פעמיים. `action_source: "chat"`.
+- **מעולם לא עולה הודעה:** כל כשל נבלע (timeout 4 שניות, `console.error` בלבד). מעקב לא שווה תשובה שלא יצאה.
+- **הגדרות:** `meta.pixel_id` (=`1071647615854904`), `meta.capi_token`, אופציונלי `meta.test_event_code`. עריכה ב-`/admin/meta`. אם אחד מהם ריק - CAPI לא שולח (fail-open).
+
 ## מה הלאה (לפי סדר)
-1. **חיבור אמיתי:** Neon DB + Vercel deploy + מפתח OpenAI ב-`/admin` + webhook token ב-iBot → הודעה קולית אמיתית מהטלפון של המשתמש. לאמת ש-`X-Webhook-Token` באמת מגיע.
-   ⚠️ מיגרציה `0005` (price_book + עמודות התזכורות) **טרם הורצה על Neon** - `vercel-build` מריץ `drizzle-kit migrate` אוטומטית בדיפלוי הבא. אומתה מקומית על `quickoffer_dev`.
-2. eval של 20–30 הקלטות אמיתיות (PRODUCT.md §7.5) — לבחור מנוע תמלול, לכוונן `STRUCTURE_RULES`.
+1. ~~**חיבור אמיתי**~~ — **הושלם (25.9.2026).** Neon + Vercel + מפתחות ב-`app_settings` + iBot token + webhook - הכול חי, 12 מיגרציות רצו (כולל 0005 price_book), ותנועה אמיתית מגיעה (68 הודעות נכנסות, 7 משתמשים). נותר רק לאמת ב-webhook.site שה-`X-Webhook-Token` באמת מגיע ב-header.
+2. eval של 20–30 הקלטות אמיתיות (PRODUCT.md §7.5) — לבחור מנוע תמלול, לכוונן `STRUCTURE_RULES`. **עכשיו יש חומר גלם אמיתי:** ההקלטות ב-`inbound_messages`/`processing_runs` בפרודקשן (עד retention של 90 יום).
 3. Vercel Blob (`BLOB_READ_WRITE_TOKEN`) — בלעדיו לוגו/חתימה/אודיו לא נשמרים (הקוד מחזיר null ולא נופל).
 4. סליקה אמיתית: חשבון Grow/PayPlus → URL לכל חבילה ב-`/admin → תשלומים`.
 5. תמונת ההצעה בצ׳אט (`send-image`) - בעל המקצוע עדיין לא רואה את המסמך שלו. PDF (§8.3).
