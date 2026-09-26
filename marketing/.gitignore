@@ -14,6 +14,7 @@ audio/
 shots/
 node_modules/
 render-demo.log
+render-captions.log
 *.mp4
 *.mov
 *.wav

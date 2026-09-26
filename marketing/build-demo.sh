@@ -29,20 +29,20 @@ GRAIN="noise=alls=2:allf=t"
 # flag "paper" = no vignette. The quote page is a white document and has to
 # stay paper-white (reel-prompt.md §4).
 EDL=(
-  "live|hf-n1|1.6|0.4|"          # 0.0  he looks at the phone and raises it
-  "live|hf-d|3.2|0.4|"           # 1.6  holds record and talks
-  "gfx|screens|4.8|24.6|"        # 4.8  list -> עופר -> record -> LISTEN -> quote -> send
-  "live|hf-f-full|1.5|1.9|"      # 24.6 a glance, a small smile  ("איזה פשוט!")
-  "gfx|end|26.1|33.4|"           # 26.1 brand line, then the free offer
+  # One continuous take for the whole opening. It used to be two clips - a
+  # glance and then a separate recording shot - and the cut between them bought
+  # nothing: it is one gesture, and Kling gives 5s, so it fits in one.
+  "live|hf-open|4.8|0.15|"       # 0.0  glances at the phone, raises it, records
+  "gfx|screens|4.8|26.6|"        # 4.8  list -> עופר -> record -> LISTEN -> quote -> send -> the document
+  "live|hf-smile|1.5|2.5|"       # 26.6 a glance, a small smile  ("איזה פשוט!")
+  "gfx|end|28.1|35.0|"           # 28.1 brand line, then the free offer
 )
 
 slate_body() {
   case "$1" in
-    hf-n1) printf '%s\n%s\n' "sits in the van, lifts the phone" "screen turned away" ;;
-    hf-d)  printf '%s\n%s\n' "holds the record button" "phone covers his mouth" ;;
-    hf-n2) printf '%s\n%s\n' "finishes, lowers the phone" "tight three-quarter profile" ;;
-    hf-f-full) printf '%s\n%s\n' "a glance - a small smile" "back to work" ;;
-    *)     printf '%s\n' "$1" ;;
+    hf-open)  printf '%s\n%s\n' "in the van: glances, raises, records" "screen turned away" ;;
+    hf-smile) printf '%s\n%s\n' "a glance - a small smile" "back to work" ;;
+    *)        printf '%s\n' "$1" ;;
   esac
 }
 
@@ -96,7 +96,21 @@ drawbox=x=0:y=ih-12:w=iw*t/$a:h=12:color=0x2dd4bf@0.9:t=fill" \
   echo "file '$(basename "$seg")'" >> "$WORK/concat.txt"
 done
 
-ffmpeg -nostdin -loglevel error -y -f concat -safe 0 -i "$WORK/concat.txt" -c copy "$OUT"
+CAPS="$WORK/caps"
+if [ -d "$CAPS" ] && [ -n "$(ls -A "$CAPS" 2>/dev/null)" ]; then
+  # Captions are a transparent PNG sequence rather than a subtitle track: they
+  # have to sit over the Higgsfield shots as well as the graphics, and burning
+  # them here means one file ships. This is the only re-encode of the picture -
+  # everything above was built so the concat itself stays -c copy.
+  echo "  [cc] burning captions from $CAPS"
+  ffmpeg -nostdin -loglevel error -y -f concat -safe 0 -i "$WORK/concat.txt" \
+    -framerate 30 -i "$CAPS/%05d.png" \
+    -filter_complex "[0:v][1:v]overlay=0:0:format=auto,fps=30[v]" \
+    -map "[v]" "${ENC[@]}" "$OUT"
+else
+  echo "  [cc] no caption frames - run: node render-captions.mjs"
+  ffmpeg -nostdin -loglevel error -y -f concat -safe 0 -i "$WORK/concat.txt" -c copy "$OUT"
+fi
 
 dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$OUT")
 echo

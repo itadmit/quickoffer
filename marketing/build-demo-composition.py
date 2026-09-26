@@ -34,6 +34,7 @@ PING_BOLD = b64(ROOT / "public/fonts/ping-bold.woff2")
 PLONI_MED = b64(ROOT / "public/fonts/ploni-medium.woff2")
 PLONI_DEMI = b64(ROOT / "public/fonts/ploni-demibold.woff2")
 OG_PNG = b64(SHOTS / "og-card.png")
+QUOTE_PNG = b64(SHOTS / "scr-quote916.png")
 
 HTML = r"""<!doctype html>
 <html lang="he" dir="rtl" style="overflow:hidden; margin:0">
@@ -161,9 +162,10 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#000;color:#fff;
   background:var(--wa-panel);border-radius:34px;padding:22px 32px;min-height:88px}
 #recdot{width:22px;height:22px;border-radius:50%;background:var(--wa-rec);flex:none}
 #rectime{font-size:40px;color:var(--wa-text);font-variant-numeric:tabular-nums;min-width:110px}
-/* justify-content:flex-end - the bars sit against the timer on the right and
-   the gap falls next to "החלק לביטול", which is how the real bar looks. */
-#recwave{flex:1;display:flex;align-items:center;justify-content:flex-end;gap:5px;
+/* justify-content:center - the bars sit in the middle of the bar, with the
+   timer on the right and "החלק לביטול" on the left. Verified against a
+   screenshot of a real handset. */
+#recwave{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;
   height:48px;direction:ltr}
 #recwave i{display:block;width:5px;border-radius:3px;background:var(--wa-dim)}
 #recslide{font-size:32px;color:var(--wa-dim);direction:rtl;white-space:nowrap}
@@ -172,6 +174,11 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#000;color:#fff;
   transform:translate(-50%,-50%) scale(0);opacity:.8;pointer-events:none;z-index:9}
 .lp{background:rgba(0,0,0,.22);border-radius:16px;overflow:hidden;margin-bottom:12px}
 .lp img{display:block;width:100%}
+
+/* ───────── the quote itself ───────── */
+/* captured from the running product at the ad's own 9:16, so it fills the
+   frame with no crop and no letterbox - shots/scr-quote916.png */
+#qimg{position:absolute;top:0;left:0;width:1080px;height:1919px;display:block}
 
 /* ───────── end card ───────── */
 #end{background:var(--ink-black)}
@@ -193,7 +200,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#000;color:#fff;
 </head>
 <body>
 <div id="main" data-composition-id="main" data-width="1080" data-height="1920"
-     data-start="0" data-duration="33.4">
+     data-start="0" data-duration="35.0">
 
 <!-- ══ CHAT LIST : 4.8 - 7.2 ════════════════════════════════════════════
      "נכנס לוואטסאפ, בוחר בעופר הבוט". דני יושב מעל עופר ברשימה כדי שהסיבה
@@ -362,6 +369,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#000;color:#fff;
         </div>
       </div>
       <div class="tap" id="tap2"></div>
+      <div class="tap" id="tap3"></div>
     </div>
     <div class="composer">
       <div class="inputpill filled" id="dpill">שלום דני, מצורפת הצעת מחיר מיוסי חשמל ותאורה:
@@ -372,11 +380,19 @@ quickoffer.co.il/q/A3f9Qd
   </div>
 </div>
 
-<!-- ══ END CARD : 26.1 - 33.4 ═══════════════════════════════════════════
+<!-- ══ THE QUOTE : 24.6 - 26.6 ═══════════════════════════════════════
+     Opened by tapping the preview card in דני's chat. This is the one thing
+     the product actually makes, and the ad had stopped showing it. -->
+<div class="scene" id="quote" data-start="24.6" data-duration="2.0" data-track-index="0"
+     style="visibility:hidden;background:#f6f7f9">
+  <img id="qimg" src="data:image/png;base64,__QUOTE__" alt="" />
+</div>
+
+<!-- ══ END CARD : 28.1 - 35.0 ═══════════════════════════════════════════
      One scene, not two: the brand line and the offer are one continuous
      thought, and a hard cut onto a static card in the last seconds reads as
      the ad ending twice. -->
-<div class="scene" id="end" data-start="26.1" data-duration="7.3" data-track-index="0"
+<div class="scene" id="end" data-start="28.1" data-duration="6.9" data-track-index="0"
      style="visibility:hidden">
   <div class="inner">
     <div id="endmark"><span class="m">__MIC_LG__</span><span class="w">QuickOffer</span></div>
@@ -424,12 +440,14 @@ var hide = function (s, t) { tl.set(s, { autoAlpha: 0 }, t); };
    4.8-7.2    list                         ("נכנס לוואטסאפ, בוחר בעופר הבוט")
    7.2-23.4   chat                         (record, LISTEN, quote, one-tap send)
   23.4-24.6   dani                         ("...להעביר את זה ללקוח")
-  24.6-26.1   live: his smile              ("איזה פשוט!")
-  26.1-33.4   end card                     (brand line, then the offer)        */
+  24.6-26.6   quote                        the document, opened from the card
+  26.6-28.1   live: his smile              ("איזה פשוט!")
+  28.1-35.0   end card                     (brand line, then the offer)        */
 show("#list", 4.8);  hide("#list", 7.2);
 show("#chat", 7.2);  hide("#chat", 23.4);
 show("#dani", 23.4); hide("#dani", 24.6);
-show("#end", 26.1);
+show("#quote", 24.6); hide("#quote", 26.6);
+show("#end", 28.1);
 
 /* ═══ LIST 4.8-7.2 ════════════════════════════════════════════════════ */
 tl.from("#list .crow", { autoAlpha: 0, y: 26, duration: .34, ease: "power2.out",
@@ -510,23 +528,34 @@ tl.to("#dpill", { autoAlpha: 1, y: 0, duration: .12 }, 23.98);
 tl.set("#m-cust", { display: "flex" }, 23.86);
 tl.from("#m-cust", { y: 150, autoAlpha: 0, scale: .9, transformOrigin: "left bottom",
   duration: .42, ease: "power3.out" }, 23.86);
+/* tap the preview card - measured at x 62-885, y 936-1357, so its centre is
+   473,1146. This is what opens the quote in the next scene. */
+tl.set("#tap3", { left: 473, top: 1146 }, 24.38);
+tl.fromTo("#tap3", { scale: 0, opacity: .55 },
+  { scale: 4.2, opacity: 0, duration: .5, ease: "power2.out" }, 24.4);
 
-/* ═══ END CARD 26.1-33.4 ══════════════════════════════════════════════
+/* ═══ THE QUOTE 24.6-26.6 ═════════════════════════════════════════════ */
+/* a slow settle, no pan: the document has to be readable, not cinematic */
+tl.from("#qimg", { scale: 1.05, transformOrigin: "50% 28%", duration: 2.0,
+  ease: "sine.out" }, 24.6);
+tl.from("#quote", { autoAlpha: 0, duration: .2, ease: "power1.out" }, 24.6);
+
+/* ═══ END CARD 28.1-35.0 ══════════════════════════════════════════════
    Reveals are pinned to the narration: the brand line lands under
-   "ככה שולחים הצעות מחיר היום" (26.1-28.7) and the offer under
-   "קחו חמש הצעות ללא תשלום" (31.5-33.4). */
-tl.from("#endmark", { scale: .84, autoAlpha: 0, duration: .5, ease: "back.out(1.6)" }, 26.2);
-tl.from("#endline", { y: 34, autoAlpha: 0, duration: .46, ease: "power3.out" }, 26.8);
-tl.from("#endrule", { scaleX: 0, autoAlpha: 0, duration: .5, ease: "power2.out" }, 29.55);
+   "ככה שולחים הצעות מחיר היום" (28.1-30.7) and the offer under
+   "קחו חמש הצעות ללא תשלום" (33.1-34.95). */
+tl.from("#endmark", { scale: .84, autoAlpha: 0, duration: .5, ease: "back.out(1.6)" }, 28.2);
+tl.from("#endline", { y: 34, autoAlpha: 0, duration: .46, ease: "power3.out" }, 28.8);
+tl.from("#endrule", { scaleX: 0, autoAlpha: 0, duration: .5, ease: "power2.out" }, 31.15);
 tl.from("#offer", { y: 40, autoAlpha: 0, scale: .9, duration: .55,
-  ease: "back.out(1.5)" }, 29.85);
+  ease: "back.out(1.5)" }, 31.45);
 tl.to("#offer", { scale: 1.035, duration: .26, ease: "back.out(2.2)",
-  yoyo: true, repeat: 1 }, 31.55);
-tl.from("#offersub", { autoAlpha: 0, y: 18, duration: .42, ease: "power2.out" }, 30.7);
-tl.from("#enddom", { autoAlpha: 0, y: 20, duration: .45, ease: "power3.out" }, 32.0);
+  yoyo: true, repeat: 1 }, 33.15);
+tl.from("#offersub", { autoAlpha: 0, y: 18, duration: .42, ease: "power2.out" }, 32.30);
+tl.from("#enddom", { autoAlpha: 0, y: 20, duration: .45, ease: "power3.out" }, 33.60);
 
 /* hold the last frame so the timeline matches data-duration */
-tl.to({}, { duration: .1 }, 33.3);
+tl.to({}, { duration: .1 }, 34.9);
 
 window.__timelines["main"] = tl;
 </script>
@@ -582,7 +611,7 @@ def ticks(double, tid=""):
 out = (HTML
        .replace("__PING_HEAVY__", PING_HEAVY).replace("__PING_BOLD__", PING_BOLD)
        .replace("__PLONI_MED__", PLONI_MED).replace("__PLONI_DEMI__", PLONI_DEMI)
-       .replace("__OG__", OG_PNG)
+       .replace("__OG__", OG_PNG).replace("__QUOTE__", QUOTE_PNG)
        .replace("__SIGNAL__", SIGNAL).replace("__BACK__", BACK)
        .replace("__CAM__", CAM).replace("__SEARCH__", SEARCH).replace("__DOTS__", DOTS)
        .replace("__MIC_SM__", mic(46)).replace("__MIC_LG__", mic(52)).replace("__MIC__", mic(44))

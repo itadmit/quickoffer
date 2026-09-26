@@ -22,7 +22,7 @@ insert into users (id, phone, channel, display_name, business_name, logo_url,
                    next_quote_number, plan, onboarding_state)
 values ('11111111-1111-1111-1111-111111111111', '972501112233', 'whatsapp',
         'יוסי', 'יוסי חשמל ותאורה', 'http://localhost:3100/tmp-logo-yossi.png',
-        '050-111-2233', 'registered', 14, 13, 'pro', 'done');
+        '050-111-2233', 'registered', 14, 2, 'pro', 'done');
 
 -- status 'sent' with sent_at set: /q refuses to register a view on a draft
 -- that never left the chat, and would 404 the customer on an unsent quote.
@@ -31,7 +31,7 @@ insert into quotes (id, public_id, user_id, number, status, customer_name,
                     payment_terms, valid_until, subtotal, vat_amount, total,
                     transcript, sent_at)
 values ('22222222-2222-2222-2222-222222222222', 'A3f9Qd',
-        '11111111-1111-1111-1111-111111111111', 12, 'sent', 'דני כהן',
+        '11111111-1111-1111-1111-111111111111', 1, 'sent', 'דני כהן',
         '0501234567', false, 0.18, 0,
         'שוטף 30', now() + interval '14 days', 740, 133.20, 873.20,
         'עופר, תכין הצעה לדני כהן. שלוש נקודות חשמל, 180 ליחידה. ביקור 200. לפני מע״מ.',
