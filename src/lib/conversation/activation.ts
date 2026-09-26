@@ -1,4 +1,4 @@
-import { and, asc, eq, lt, or, sql } from "drizzle-orm";
+import { and, asc, eq, gt, lt, ne, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import { users } from "../db/schema";
 import { isQuietHour } from "../quotes/follow-up";
@@ -67,6 +67,7 @@ export async function sendActivationNudges(now = new Date()): Promise<number> {
     .limit(BATCH);
 
   let sent = 0;
+  sent += await nudgeStalledOnboarding(now);
   for (const user of due) {
     try {
       const text =
@@ -82,6 +83,49 @@ export async function sendActivationNudges(now = new Date()): Promise<number> {
       sent++;
     } catch (err) {
       console.error("[activation]", user.id, err);
+    }
+  }
+  return sent;
+}
+
+/**
+ * Never finished setup. Both of the first ad-driven signups (26.9.2026) sent
+ * one message, got the first question, and went quiet - and the sweep above
+ * cannot see them, because it waits for `onboarding_state = 'done'`.
+ *
+ * One message, sharing the counter with the sweep above so nobody gets more
+ * than two nudges in total. Only for people who went quiet in the last few
+ * days: someone who said "היי" a month ago is not a lead to wake up.
+ */
+const ONBOARDING_LOOKBACK_MS = 3 * 24 * 60 * 60_000;
+
+async function nudgeStalledOnboarding(now: Date): Promise<number> {
+  const due = await db
+    .select()
+    .from(users)
+    .where(
+      and(
+        ne(users.onboardingState, "done"),
+        eq(users.blocked, false),
+        eq(users.activationNudges, 0),
+        lt(users.lastActiveAt, new Date(now.getTime() - FIRST_AFTER_MS)),
+        gt(users.lastActiveAt, new Date(now.getTime() - ONBOARDING_LOOKBACK_MS)),
+      ),
+    )
+    .orderBy(asc(users.lastActiveAt))
+    .limit(BATCH);
+
+  let sent = 0;
+  for (const user of due) {
+    try {
+      await sendText(user.phone, activation.onboarding(user.businessName ?? user.displayName));
+      await db
+        .update(users)
+        .set({ activationNudgeAt: now, activationNudges: 1 })
+        .where(eq(users.id, user.id));
+      sent++;
+    } catch (err) {
+      console.error("[activation] onboarding", user.id, err);
     }
   }
   return sent;

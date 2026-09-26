@@ -55,6 +55,7 @@ import {
   customerMessage,
   errors,
   MAX_AUDIO_MINUTES,
+  META_AD_DEFAULT_LINES,
   onboarding as ob,
   OPENING_LINE,
   quoteSummary,
@@ -264,6 +265,14 @@ async function handleOnboarding(
     return;
   }
 
+  // "What is this?" before they have told us anything. Not an answer to the
+  // name question, and it deserves an answer of its own before being asked
+  // one. No LLM call: Meta's ad default is the bulk of these.
+  if (user.onboardingState === "name" && isInfoRequest(msg.text)) {
+    await sendText(user.phone, ob.intro(suggested));
+    return;
+  }
+
   // Very first message from a new user - greet, don't interpret it as an answer,
   // unless it already looks like a quote.
   const llm = await getLLMProvider();
@@ -377,6 +386,12 @@ async function handleReady(user: User, msg: InboundMessage, run: RunLog) {
       return;
     }
   }
+
+  // The logo step's "דלג", arriving after setup already finished - typed twice,
+  // or overtaken by the answer before it. The classifier reads it as "cancel",
+  // and "אין טיוטה פעילה לביטול" straight after "✅ הכול מוכן" is the first
+  // thing a new user sees go wrong (seen live 24.9.2026). Nothing to say.
+  if (msg.type === "text" && isLeftoverSkip(text)) return;
 
   const draft = await getActiveDraft(user.id);
   const llm = await getLLMProvider();
@@ -501,6 +516,24 @@ const GREETINGS = new Set([
 
 function isGreeting(text: string): boolean {
   return GREETINGS.has(text.trim().toLowerCase().replace(/[.!?,]+$/g, ""));
+}
+
+const LEFTOVER_SKIPS = new Set(["דלג", "דלגי", "תדלג", "דלג על הלוגו", "בלי לוגו", "אין לוגו", "אין לי לוגו"]);
+
+export function isLeftoverSkip(text: string): boolean {
+  return LEFTOVER_SKIPS.has(text.trim().replace(/[.!?,]+$/g, ""));
+}
+
+/**
+ * Asking what the product is, rather than answering or trying it. Short
+ * messages only: a longer one mentioning "פרטים" is more likely a job
+ * description ("פרטים של העבודה...") and belongs to the LLM.
+ */
+const INFO_REQUEST = /מידע|פרטים|מה זה|מה זאת|איך (זה )?עובד|במה מדובר|כמה (זה )?עולה|מה המחיר/;
+
+export function isInfoRequest(text: string): boolean {
+  const t = text.trim();
+  return META_AD_DEFAULT_LINES.includes(t) || (t.length <= 60 && INFO_REQUEST.test(t));
 }
 
 function exactCommand(text: string): Command | null {

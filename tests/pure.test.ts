@@ -3,7 +3,7 @@ import { createHmac } from "node:crypto";
 import { parseIbotInbound } from "@/lib/whatsapp/ibot";
 import { contactKey, findPhoneFor, isLearnableContact } from "@/lib/quotes/contacts";
 import { calcTotals, formatMoney, qtyLabel } from "@/lib/quotes/calc";
-import { activation, notifications, tradeExample } from "@/lib/conversation/messages";
+import { activation, notifications, onboarding, tradeExample } from "@/lib/conversation/messages";
 import { MAX_ACTIVATION_NUDGES } from "@/lib/conversation/activation";
 import { buildFeed, relativeTime } from "@/lib/marketing/activity-feed";
 import { TRADES } from "@/lib/marketing/trades";
@@ -20,7 +20,7 @@ import { isBot } from "@/lib/bots";
 import { audioDurationSeconds, audioSeconds } from "@/lib/audio";
 import { errors, MAX_AUDIO_MINUTES } from "@/lib/conversation/messages";
 import { TRANSCRIPTION_CHOICES } from "@/lib/ai/transcription-choices";
-import { MAX_ATTEMPTS, RETRY_WINDOW_MS } from "@/lib/conversation/handler";
+import { isInfoRequest, isLeftoverSkip, MAX_ATTEMPTS, RETRY_WINDOW_MS } from "@/lib/conversation/handler";
 import { rateLimitWaitMs } from "@/lib/ai/openai";
 import {
   CorrectionResultSchema,
@@ -561,6 +561,44 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
     assert.ok(!text.includes("—"), "no em dash in bot copy");
   }
   console.log("ACTIVATION NUDGE OK");
+}
+
+// ---- ad traffic: "what is this?" gets an answer before a question
+{
+  // Meta's default click-to-WhatsApp line - every ad signup so far opened with it
+  assert.ok(isInfoRequest("שלום! אפשר לקבל מידע נוסף על זה?"));
+  assert.ok(isInfoRequest("Hello! Can I get more info on this?"));
+  assert.ok(isInfoRequest("מה זה?"));
+  assert.ok(isInfoRequest("כמה זה עולה"));
+  assert.ok(isInfoRequest("איך זה עובד?"));
+  // answers to the name question, and quotes, are not
+  assert.ok(!isInfoRequest("כן"));
+  assert.ok(!isInfoRequest("מור חשמל ותקשורת"));
+  assert.ok(!isInfoRequest("היי"));
+  assert.ok(
+    !isInfoRequest("הצעת מחיר לדני כהן - הנה הפרטים: שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200 ופירוק"),
+    "a long message is a job, not a question",
+  );
+
+  const intro = onboarding.intro("יהודה אביב איתור נזילות וליקויי בנייה");
+  assert.ok(intro.includes("איתור נזילה"), "the example is from their trade");
+  assert.ok(intro.includes("איך קוראים לעסק"), "and it still ends on the first question");
+  assert.ok(intro.includes("בחינם"));
+
+  const stalled = activation.onboarding("רביד לוי");
+  assert.ok(stalled.includes("לא חייבים"), "tells them the questions can be skipped");
+
+  for (const text of [intro, stalled, activation.last()]) {
+    assert.ok(!text.includes("—"), "no em dash in bot copy");
+    // house rule: no gendered second person (Mor got "שאתה מתמחר")
+    assert.ok(!/אתה|בטוח מה/.test(text), `gendered copy: ${text}`);
+  }
+
+  // the logo step's "דלג" arriving after setup finished is swallowed, not "cancel"
+  assert.ok(isLeftoverSkip("דלג"));
+  assert.ok(isLeftoverSkip("דלג."));
+  assert.ok(!isLeftoverSkip("בטל"));
+  console.log("AD TRAFFIC ONBOARDING OK");
 }
 
 // ---- the landing page's activity bubbles

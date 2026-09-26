@@ -149,6 +149,10 @@ export const users = pgTable("users", {
   index("users_activation_idx")
     .on(t.lastActiveAt)
     .where(sql`${t.onboardingState} = 'done' and ${t.blocked} = false and ${t.activationNudges} < 2`),
+  // Its sibling for people who stopped mid-setup: one nudge, so `= 0`.
+  index("users_onboarding_nudge_idx")
+    .on(t.lastActiveAt)
+    .where(sql`${t.onboardingState} <> 'done' and ${t.blocked} = false and ${t.activationNudges} = 0`),
 ]);
 
 export const quotes = pgTable(

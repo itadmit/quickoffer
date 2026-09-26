@@ -1,0 +1,1 @@
+CREATE INDEX "users_onboarding_nudge_idx" ON "users" USING btree ("last_active_at") WHERE "users"."onboarding_state" <> 'done' and "users"."blocked" = false and "users"."activation_nudges" = 0;

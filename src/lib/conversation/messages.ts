@@ -40,11 +40,43 @@ export const OPENING_LINE = "אני רוצה הצעת מחיר מעוצבת";
  */
 export const MAX_AUDIO_MINUTES = 3;
 
+/**
+ * The line Meta puts in the mouth of anyone who taps "Send message" on a
+ * click-to-WhatsApp ad, unless the ad overrides it. It is a request for
+ * information, not a greeting, and the campaign's traffic arrives with it.
+ */
+export const META_AD_DEFAULT_LINES = [
+  "שלום! אפשר לקבל מידע נוסף על זה?",
+  "Hello! Can I get more info on this?",
+];
+
+const nameQuestion = (suggested: string | null) =>
+  `1️⃣ איך קוראים לעסק?${
+    suggested ? ` (לפי WhatsApp: "${suggested}" - לכתוב "כן" או שם אחר)` : ""
+  }`;
+
 export const onboarding = {
   askName: (suggested: string | null) =>
-    `היי, אני עופר 👋 מדברים - ואני כותב את ההצעה.\nשתי שאלות ומתחילים.\n1️⃣ איך קוראים לעסק?${
-      suggested ? ` (לפי WhatsApp: "${suggested}" - לכתוב "כן" או שם אחר)` : ""
-    }`,
+    `היי, אני עופר 👋 מדברים - ואני כותב את ההצעה.\nשתי שאלות ומתחילים.\n${nameQuestion(suggested)}`,
+  /**
+   * Someone who asked what this is. Answering with "איך קוראים לעסק?" asks
+   * them to sign up for something nobody has described yet - both of the
+   * first ad-driven signups stopped right there (26.9.2026). So: what it
+   * does, one sentence in their trade, what it costs, and only then the
+   * question - with trying it straight away offered as the shorter path.
+   */
+  intro: (suggested: string | null) =>
+    [
+      `היי, אני עופר 👋`,
+      `מקליטים לי הודעה קולית על עבודה (או כותבים), ואני מחזיר הצעת מחיר מעוצבת תוך דקה. למשל:`,
+      `🎤 "${tradeExample(suggested)}"`,
+      ``,
+      `ההצעה מגיעה עם קישור מוכן להעברה ללקוח - נפתחת בטלפון, מאושרת ונחתמת שם, ומגיעה התראה לכאן.`,
+      `5 הצעות ראשונות בחינם, בלי כרטיס אשראי.`,
+      ``,
+      `רוצה לנסות? אפשר לשלוח כבר עכשיו עבודה אמיתית, או להתחיל משתי שאלות קצרות:`,
+      nameQuestion(suggested),
+    ].join("\n"),
   askVat: () => `2️⃣ עוסק פטור, עוסק מורשה או חברה בע״מ?\n(מורשה/בע״מ = ההצעות יכללו מע״מ 18%)`,
   askLogo: () => `מעולה. יש לוגו? אפשר לשלוח אותו כתמונה, או לכתוב "דלג".`,
   /**
@@ -93,6 +125,8 @@ const TRADE_EXAMPLE: [string, string][] = [
   ["גינון", `הצעת מחיר לדני כהן - דשא סינטטי 40 מ״ר 120 שקל למ״ר, גיזום 450`],
   ["ניקיון", `הצעת מחיר לדני כהן - ניקוי דירה אחרי שיפוץ 4 חדרים 900 שקל, חלונות 250`],
   ["מנעול", `הצעת מחיר לדני כהן - החלפת צילינדר 280 שקל, ביקור 150`],
+  ["נזיל", `הצעת מחיר לדני כהן - איתור נזילה במקלחת 650 שקל, פתיחה ואיטום 1400`],
+  ["איטום", `הצעת מחיר לדני כהן - איטום גג 40 מ״ר 85 שקל למ״ר, ביריעות 2200`],
   ["חשמל", `הצעת מחיר לדני כהן - שלוש נקודות חשמל 180 שקל ליחידה, ביקור 200`],
 ];
 
@@ -120,12 +154,27 @@ export const activation = {
       `תוך דקה חוזרת הצעה מעוצבת עם קישור מוכן להעברה ללקוח.`,
     ].join("\n"),
 
+  /**
+   * Stopped halfway through setup. The questions are what they stalled on, so
+   * the nudge says they can be skipped - a quote sent during onboarding
+   * finishes it with defaults (handler.ts). Uses the first of the two slots:
+   * someone who then finishes setup and still never quotes gets `last`.
+   */
+  onboarding: (name: string | null) =>
+    [
+      `היי 👋 לא חייבים לענות על השאלות כדי להתחיל.`,
+      `אפשר פשוט להקליט לי או לכתוב עבודה שמתמחרים היום, ואני מחזיר הצעת מחיר מעוצבת תוך דקה. למשל:`,
+      `🎤 "${tradeExample(name)}"`,
+      ``,
+      `את שם העסק והלוגו מסדרים אחר כך.`,
+    ].join("\n"),
+
   /** The last one. Saying so is what keeps it a nudge and not a drip. */
   last: () =>
     [
       `עוד לא יצא לך לנסות 🙂 אני עדיין כאן.`,
-      `משפט אחד על עבודה שאתה מתמחר היום - שם הלקוח, מה העבודה וכמה - ואני מחזיר הצעה מוכנה.`,
-      `לא בטוח מה להגיד? לכתוב "עזרה" ואני אסביר.`,
+      `משפט אחד על עבודה שמתמחרים היום - שם הלקוח, מה העבודה וכמה - ואני מחזיר הצעה מוכנה.`,
+      `לא ברור מה להגיד? לכתוב "עזרה" ואני אסביר.`,
       ``,
       `זו התזכורת האחרונה שלי, מכאן אני מחכה להודעה ממך.`,
     ].join("\n"),
