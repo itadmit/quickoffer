@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   BadgeCheck,
   Ban,
@@ -402,6 +403,12 @@ export default async function LandingPage() {
           <span className="grid place-items-center h-7 w-7 rounded-lg bg-brand text-brand-ink"><Mic className="h-3.5 w-3.5" /></span>
           QuickOffer
         </span>
+        {/* The crawler reaches /blog from here. A sitemap alone gets the pages
+            discovered; a link from the one page that already has authority is
+            what passes any of it on. */}
+        <Link href="/blog" className="hover:text-ink transition-colors">
+          מדריכים להצעות מחיר
+        </Link>
         <a
           href={wa}
           target="_blank"
