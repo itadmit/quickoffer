@@ -126,11 +126,21 @@ export async function publicLink(publicId: string): Promise<string> {
   return `${await appUrl()}/q/${publicId}`;
 }
 
+/**
+ * The settings code on its own, for linking between the professional's own
+ * screens. A same-origin `/s/{code}` beats the absolute URL there: the link
+ * keeps whichever host they arrived on instead of bouncing them to the
+ * canonical one mid-edit.
+ */
+export async function settingsCode(userId: string): Promise<string> {
+  return codeFor("s", userId, SETTINGS_TTL_MS);
+}
+
 export async function settingsLink(userId: string): Promise<string> {
-  return `${await appUrl()}/s/${await codeFor("s", userId, SETTINGS_TTL_MS)}`;
+  return `${await appUrl()}/s/${await settingsCode(userId)}`;
 }
 
 /** The upgrade screen. Shares the settings code - same subject, same lifetime. */
 export async function upgradeLink(userId: string): Promise<string> {
-  return `${await appUrl()}/u/${await codeFor("s", userId, SETTINGS_TTL_MS)}`;
+  return `${await appUrl()}/u/${await settingsCode(userId)}`;
 }

@@ -4,7 +4,7 @@ import { LinkExpired } from "@/components/link-expired";
 import { UNITS } from "@/lib/ai/types";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { publicLink, resolveLink } from "@/lib/quotes/links";
+import { publicLink, resolveLink, settingsCode } from "@/lib/quotes/links";
 import { contactPhone, getQuote } from "@/lib/quotes/service";
 import { getTemplateForUser } from "@/lib/quotes/templates";
 import { QuoteEditor } from "./quote-editor";
@@ -26,6 +26,9 @@ export default async function EditQuotePage({ params }: { params: Promise<{ toke
   return (
     <QuoteEditor
       token={token}
+      // Reuses the user's existing settings code when one is still valid, so
+      // this is a single indexed lookup per load, not a new link every time.
+      settingsHref={`/s/${await settingsCode(user.id)}`}
       quote={{
         number: q.number,
         status: q.status,

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Link2, MessageCircle, Trash2, TriangleAlert, Wrench } from "lucide-react";
+import { Check, Link2, MessageCircle, Settings, Trash2, TriangleAlert, Wrench } from "lucide-react";
 import { UNITS } from "@/lib/ai/types";
 import { formatPhone, isMobile, normalizePhone, waLink } from "@/lib/phone";
 import { calcTotals, formatMoney } from "@/lib/quotes/calc";
@@ -14,6 +14,8 @@ import type { QuoteForm } from "./schema";
 
 type Props = {
   token: string;
+  /** Same-origin `/s/{code}` - the way out of this screen to the business settings. */
+  settingsHref: string;
   quote: {
     number: number;
     status: "draft" | "sent" | "viewed" | "approved" | "rejected" | "expired";
@@ -36,7 +38,7 @@ const emptyItem = (): Item => ({ description: "", details: null, quantity: 1, un
 /** The markup hint, in the one place the professional types this text. */
 const MARKUP_HINT = 'שורה לכל פסקה. כותרת: "## כותרת". פריט ברשימה: "- פריט".';
 
-export function QuoteEditor({ token, quote, initial }: Props) {
+export function QuoteEditor({ token, settingsHref, quote, initial }: Props) {
   const locked = quote.status === "approved" || quote.status === "rejected";
   const [form, setForm] = useState<QuoteForm>(initial);
   const [saveState, setSaveState] = useState<"saved" | "dirty" | "saving" | "error">("saved");
@@ -199,6 +201,15 @@ export function QuoteEditor({ token, quote, initial }: Props) {
             תצוגה
           </button>
         </div>
+        {/*
+          The way out. These screens are reached one magic link at a time, so
+          wanting the business settings while editing a quote used to mean
+          going back to the chat and asking for a second link. The header is
+          sticky, so it is reachable from anywhere in a long form.
+        */}
+        <a href={settingsHref} className="btn-ghost shrink-0" aria-label="הגדרות העסק" title="הגדרות העסק">
+          <Settings className="h-5 w-5" />
+        </a>
       </header>
 
       {locked && (
