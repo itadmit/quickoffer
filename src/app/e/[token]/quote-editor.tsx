@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Link2, MessageCircle, Trash2, TriangleAlert, Wrench } from "lucide-react";
+import { Check, Link2, MessageCircle, Trash2, TriangleAlert, Wrench } from "lucide-react";
 import { UNITS } from "@/lib/ai/types";
 import { formatPhone, isMobile, normalizePhone, waLink } from "@/lib/phone";
 import { calcTotals, formatMoney } from "@/lib/quotes/calc";
@@ -67,16 +67,20 @@ export function QuoteEditor({ token, quote, initial }: Props) {
 
   // Auto-save, debounced 800ms (§8.1). Every edit goes through `change`.
   const latest = useRef(form);
+  /** Write now, cancelling any pending debounce. The save button calls this too. */
+  const flush = () => {
+    if (locked) return;
+    if (timer.current) clearTimeout(timer.current);
+    setSaveState("saving");
+    const f = latest.current;
+    const cleaned: QuoteForm = { ...f, items: f.items.filter((i) => i.description.trim()) };
+    return saveQuoteAction(token, cleaned).then((r) => setSaveState(r.ok ? "saved" : "error"));
+  };
   const scheduleSave = () => {
     if (locked) return;
     setSaveState("dirty");
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      setSaveState("saving");
-      const f = latest.current;
-      const cleaned: QuoteForm = { ...f, items: f.items.filter((i) => i.description.trim()) };
-      saveQuoteAction(token, cleaned).then((r) => setSaveState(r.ok ? "saved" : "error"));
-    }, 800);
+    timer.current = setTimeout(flush, 800);
   };
   const change = (updater: (f: QuoteForm) => QuoteForm) => {
     setForm((prev) => {
@@ -363,6 +367,34 @@ export function QuoteEditor({ token, quote, initial }: Props) {
                 />
               </label>
             </section>
+
+            {/*
+              The form has saved itself every 800ms since the first keystroke,
+              and the state badge at the top says so - but someone who scrolls
+              to the end of a long form and finds no save button does not
+              believe it, and the only button down there that says "שמור" saves
+              a job template, which is a different thing entirely. So: an
+              explicit control that flushes the pending write and then stands
+              as the receipt.
+            */}
+            <button
+              type="button"
+              onClick={() => void flush()}
+              disabled={saveState === "saving"}
+              className="btn-secondary w-full"
+            >
+              {saveState === "saving" ? (
+                "שומר…"
+              ) : saveState === "error" ? (
+                <span className="text-danger">השמירה נכשלה - ללחוץ לניסיון נוסף</span>
+              ) : saveState === "saved" ? (
+                <>
+                  <Check className="h-4 w-4" /> השינויים נשמרו
+                </>
+              ) : (
+                "שמור שינויים"
+              )}
+            </button>
 
             {quote.transcript && (
               <details className="text-sm text-muted">
