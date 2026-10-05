@@ -1,6 +1,7 @@
 import { BadgeCheck, TriangleAlert } from "lucide-react";
 import { formatPhone } from "@/lib/phone";
 import { formatMoney, qtyLabel } from "@/lib/quotes/calc";
+import { parseRichText } from "@/lib/quotes/rich-text";
 import type { QuoteTemplateSpec } from "@/lib/quotes/template-spec";
 
 // Building blocks shared by the quote layouts. Each layout arranges these
@@ -10,10 +11,14 @@ export type QuoteView = {
   number: number;
   customerName: string | null;
   title: string | null;
+  /** The opening block above the items (lib/quotes/rich-text.ts). Absent on pre-description snapshots. */
+  description?: string | null;
   createdAt: Date;
   validUntil: Date | null;
   items: {
     description: string;
+    /** Prose under this row. Same markup as the quote description. */
+    details?: string | null;
     quantity: number;
     unit: string;
     unitPrice: number;
@@ -84,6 +89,60 @@ export function BusinessMeta({ q, plain, className = "text-sm text-muted" }: { q
   );
 }
 
+/**
+ * A description block - the quote's opening text, or one item's. Renders the
+ * three forms lib/quotes/rich-text.ts parses and nothing else.
+ *
+ * `accent` tints the headings, which is what makes a long scoped quote
+ * scannable; layouts that keep their headings neutral just omit it.
+ */
+export function RichText({
+  text,
+  className = "",
+  headingClassName = "font-semibold",
+  accent,
+}: {
+  text: string | null | undefined;
+  className?: string;
+  headingClassName?: string;
+  accent?: string;
+}) {
+  const blocks = parseRichText(text);
+  if (!blocks.length) return null;
+  return (
+    <div className={className}>
+      {blocks.map((b, i) =>
+        b.kind === "heading" ? (
+          // h3: every layout already spends h1 on the business and h2 on the quote.
+          <h3 key={i} className={headingClassName} style={accent ? { color: accent } : undefined}>
+            {b.text}
+          </h3>
+        ) : b.kind === "list" ? (
+          <ul key={i} className="list-disc ps-5 space-y-0.5">
+            {b.items.map((item, j) => (
+              <li key={j}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p key={i}>{b.text}</p>
+        ),
+      )}
+    </div>
+  );
+}
+
+/** The quote's opening block, between the header and the price table. */
+export function Description({ q, accent, className = "" }: { q: QuoteView; accent?: string; className?: string }) {
+  return (
+    <RichText
+      text={q.description}
+      className={`space-y-2 text-sm leading-relaxed text-muted ${className}`}
+      headingClassName="font-semibold text-ink pt-2 first:pt-0"
+      accent={accent}
+    />
+  );
+}
+
 export function ItemsTable({ q, showReviewFlags, headless = false }: { q: QuoteView; showReviewFlags: boolean; headless?: boolean }) {
   return (
     <table className="w-full text-sm">
@@ -101,15 +160,18 @@ export function ItemsTable({ q, showReviewFlags, headless = false }: { q: QuoteV
       <tbody>
         {q.items.map((it, i) => (
           <tr key={i} className={`border-b border-line/60 ${showReviewFlags && it.needsReview ? "bg-warn" : ""}`}>
-            <td className="py-2.5 pe-2">
+            <td className="py-2.5 pe-2 align-top">
               {it.description}
               {showReviewFlags && it.needsReview && <TriangleAlert className="inline h-3.5 w-3.5 ms-1 text-warn-ink" />}
+              <RichText text={it.details} className="mt-1 space-y-1 text-xs leading-relaxed text-muted" />
             </td>
-            <td className="py-2.5 ps-3 text-center text-muted whitespace-nowrap">
+            {/* align-top throughout: once a row carries a paragraph, a price
+                floating in its vertical middle no longer reads as that line's. */}
+            <td className="py-2.5 ps-3 align-top text-center text-muted whitespace-nowrap">
               {qtyLabel(it.quantity, it.unit)}
             </td>
-            <td className="py-2.5 ps-3 text-end whitespace-nowrap">{formatMoney(it.unitPrice)}</td>
-            <td className="py-2.5 ps-3 text-end font-medium whitespace-nowrap">{formatMoney(it.lineTotal)}</td>
+            <td className="py-2.5 ps-3 align-top text-end whitespace-nowrap">{formatMoney(it.unitPrice)}</td>
+            <td className="py-2.5 ps-3 align-top text-end font-medium whitespace-nowrap">{formatMoney(it.lineTotal)}</td>
           </tr>
         ))}
       </tbody>

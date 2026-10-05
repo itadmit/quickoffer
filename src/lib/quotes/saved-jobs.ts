@@ -19,6 +19,8 @@ import { priceKey } from "./price-book";
 
 export type SavedJobItemInput = {
   description: string;
+  /** Prose under the line, carried so reusing a job keeps its wording (rich-text.ts). */
+  details?: string | null;
   quantity: number;
   unit: string;
   unitPrice: number;
@@ -68,12 +70,13 @@ export function isValidJobName(name: string): boolean {
  * job whose price changes per site - but an empty description is not.
  */
 export function itemsForJob(
-  items: { description: string; quantity: number; unit: string; unitPrice: number }[],
+  items: { description: string; details?: string | null; quantity: number; unit: string; unitPrice: number }[],
 ): SavedJobItemInput[] {
   return items
     .filter((it) => it.description.trim().length >= 2)
     .map((it) => ({
       description: it.description.trim(),
+      details: it.details?.trim() || null,
       quantity: it.quantity > 0 ? it.quantity : 1,
       unit: it.unit,
       unitPrice: Math.max(0, it.unitPrice),
@@ -105,8 +108,10 @@ export function jobToQuoteJSON(
     customerName,
     customerPhone: null,
     title: job.name,
+    description: null,
     items: job.items.map((it) => ({
       description: it.description,
+      details: it.details ?? null,
       quantity: it.quantity,
       unit: safeUnit(it.unit),
       unitPrice: it.unitPrice,

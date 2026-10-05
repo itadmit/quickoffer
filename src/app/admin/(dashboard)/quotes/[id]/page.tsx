@@ -33,7 +33,7 @@ export default async function AdminQuoteDebug({ params }: { params: Promise<{ id
           {q.audioUrl && <audio controls src={q.audioUrl} className="mt-3 w-full" />}
         </Box>
         <Box title="מצב נוכחי (אחרי עריכות)">
-          <Pre data={{ items: q.items.map(({ description, quantity, unit, unitPrice, lineTotal, needsReview }) => ({ description, quantity, unit, unitPrice, lineTotal, needsReview })), subtotal: q.subtotal, vatAmount: q.vatAmount, total: q.total, vatIncluded: q.vatIncluded, discount: q.discountAmount, paymentTerms: q.paymentTerms, notes: q.notes }} />
+          <Pre data={{ description: q.description, items: q.items.map(({ description, details, quantity, unit, unitPrice, lineTotal, needsReview }) => ({ description, details, quantity, unit, unitPrice, lineTotal, needsReview })), subtotal: q.subtotal, vatAmount: q.vatAmount, total: q.total, vatIncluded: q.vatIncluded, discount: q.discountAmount, paymentTerms: q.paymentTerms, notes: q.notes }} />
         </Box>
       </div>
 

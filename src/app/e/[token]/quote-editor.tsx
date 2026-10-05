@@ -31,7 +31,10 @@ type Props = {
 
 type Item = QuoteForm["items"][number];
 
-const emptyItem = (): Item => ({ description: "", quantity: 1, unit: "יח׳", unitPrice: 0, needsReview: false });
+const emptyItem = (): Item => ({ description: "", details: null, quantity: 1, unit: "יח׳", unitPrice: 0, needsReview: false });
+
+/** The markup hint, in the one place the professional types this text. */
+const MARKUP_HINT = 'שורה לכל פסקה. כותרת: "## כותרת". פריט ברשימה: "- פריט".';
 
 export function QuoteEditor({ token, quote, initial }: Props) {
   const locked = quote.status === "approved" || quote.status === "rejected";
@@ -104,6 +107,7 @@ export function QuoteEditor({ token, quote, initial }: Props) {
     number: quote.number,
     customerName: form.customerName,
     title: form.title,
+    description: form.description,
     createdAt: new Date(quote.createdAt),
     validUntil: form.validUntil ? new Date(form.validUntil) : null,
     items: form.items
@@ -223,6 +227,17 @@ export function QuoteEditor({ token, quote, initial }: Props) {
                 <span className="label">כותרת העבודה</span>
                 <input className="input" value={form.title ?? ""} onChange={(e) => update("title", e.target.value)} placeholder="התקנת גופי תאורה" />
               </label>
+              <label className="col-span-2">
+                <span className="label">תיאור ההצעה (לא חובה)</span>
+                <textarea
+                  className="input"
+                  rows={5}
+                  value={form.description ?? ""}
+                  onChange={(e) => update("description", e.target.value)}
+                  placeholder={"בהמשך לשיחה, נציע להקים שני דפי נחיתה ייעודיים.\n## היקף העבודה\n- כתיבת תוכן שיווקי לכל דף\n- התאמה למחשב ולנייד"}
+                />
+                <span className="text-xs text-muted">מופיע מעל טבלת המחירים. {MARKUP_HINT}</span>
+              </label>
             </section>
 
             {/* items */}
@@ -269,6 +284,33 @@ export function QuoteEditor({ token, quote, initial }: Props) {
                       </label>
                       <button type="button" onClick={() => removeItem(i)} className="btn-ghost text-danger" aria-label="מחק">✕</button>
                     </div>
+                    {/* Open-ness is read off the data, not kept in component
+                        state: an empty string is an open empty box, null is a
+                        closed one, and reordering or deleting a line can't
+                        leave the box attached to the wrong item. The server
+                        stores an empty string as null, so an untouched box
+                        closes again on the next load. */}
+                    {it.details === null || it.details === undefined ? (
+                      <button type="button" onClick={() => updateItem(i, { details: "" })} className="text-sm text-muted hover:underline">
+                        + תיאור לפריט
+                      </button>
+                    ) : (
+                      <label className="block">
+                        {/* "תיאור מורחב" and not "תיאור הפריט": the short name
+                            field right above already prompts with "תיאור הפריט",
+                            and two fields reading the same invite typing the
+                            paragraph into the table cell. */}
+                        <span className="label">תיאור מורחב</span>
+                        <textarea
+                          className="input"
+                          rows={3}
+                          value={it.details}
+                          onChange={(e) => updateItem(i, { details: e.target.value })}
+                          placeholder={"הדף יפנה לבעלי עסקים שרוצים להבין את מצבם הפיננסי."}
+                        />
+                        <span className="text-xs text-muted">מופיע מתחת לשורה בטבלה. {MARKUP_HINT}</span>
+                      </label>
+                    )}
                     <div className="text-end text-sm text-muted">
                       סה״כ שורה: <span className="font-medium text-ink">{formatMoney(Math.round(it.quantity * it.unitPrice * 100) / 100)}</span>
                     </div>

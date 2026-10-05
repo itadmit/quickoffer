@@ -1,4 +1,4 @@
-import { Approval, BusinessMeta, dateFmt, Footer, ItemsTable, Logo, TermsAndNotes, Totals, type LayoutProps } from "./shared";
+import { Approval, BusinessMeta, dateFmt, Description, Footer, ItemsTable, Logo, TermsAndNotes, Totals, type LayoutProps } from "./shared";
 
 /** The original design: business header, table, totals. */
 export function ClassicLayout({ q, t, showReviewFlags, plain }: LayoutProps) {
@@ -24,6 +24,8 @@ export function ClassicLayout({ q, t, showReviewFlags, plain }: LayoutProps) {
           {q.validUntil && ` · בתוקף עד ${dateFmt.format(q.validUntil)}`}
         </p>
       </section>
+
+      <Description q={q} className="px-5 pb-4" />
 
       <section className="px-5">
         <ItemsTable q={q} showReviewFlags={showReviewFlags} />

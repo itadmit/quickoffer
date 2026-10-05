@@ -48,6 +48,7 @@ export async function saveQuoteAction(token: string, form: QuoteForm) {
       customerName: f.customerName || null,
       customerPhone: f.customerPhone || null,
       title: f.title || null,
+      description: f.description || null,
       discountAmount: f.discountAmount,
       vatIncluded: f.vatIncluded,
       paymentTerms: f.paymentTerms || null,

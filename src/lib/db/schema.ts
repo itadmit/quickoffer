@@ -168,6 +168,13 @@ export const quotes = pgTable(
     customerName: text("customer_name"),
     customerPhone: text("customer_phone"),
     title: text("title"),
+    /**
+     * The opening block, between the title and the price table: what the job
+     * is, what it includes, what it does not. Headings and bullets per
+     * lib/quotes/rich-text.ts. Null on a quote that is just a priced list,
+     * which is most of them.
+     */
+    description: text("description"),
     vatIncluded: boolean("vat_included").notNull().default(false),
     vatRate: numeric("vat_rate", { precision: 4, scale: 2, mode: "number" })
       .notNull()
@@ -224,6 +231,13 @@ export const quoteItems = pgTable(
       .references(() => quotes.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
     description: text("description").notNull(),
+    /**
+     * What this line actually covers, under its row in the table. Same markup
+     * as `quotes.description`. Null for the short priced lines a voice note
+     * produces - prose here is only ever what the professional said, never
+     * written for them.
+     */
+    details: text("details"),
     quantity: numeric("quantity", { precision: 10, scale: 2, mode: "number" })
       .notNull()
       .default(1),
@@ -482,6 +496,12 @@ export const savedJobItems = pgTable(
       .references(() => savedJobs.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
     description: text("description").notNull(),
+    /**
+     * Carried along with the line so reusing a job keeps the wording that went
+     * with it. Dropping it here would silently empty the prose every time a
+     * saved job is started, which reads as the feature losing data.
+     */
+    details: text("details"),
     quantity: numeric("quantity", { precision: 10, scale: 2, mode: "number" })
       .notNull()
       .default(1),

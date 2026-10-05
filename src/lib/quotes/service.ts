@@ -14,6 +14,7 @@ import { newPublicId } from "../ids";
 import type { QuoteJSON } from "../ai/types";
 import { calcTotals, lineTotal, VAT_RATE } from "./calc";
 import { applyPriceBook, type FilledFromBook } from "./price-book";
+import { carryOverDetails } from "./rich-text";
 import { learnFromItems, loadPriceBook } from "./price-book-store";
 import { findPhoneFor, type ContactEntry } from "./contacts";
 import { learnContact, loadContacts } from "./contacts-store";
@@ -122,6 +123,8 @@ export async function addEvent(
 
 type ItemInput = {
   description: string;
+  /** Prose under the line (lib/quotes/rich-text.ts). Optional, so callers that don't carry it compile. */
+  details?: string | null;
   quantity: number;
   unit: string;
   unitPrice: number;
@@ -150,6 +153,7 @@ export async function replaceItemsAndRecalc(
         quoteId,
         position: i,
         description: it.description,
+        details: it.details?.trim() || null,
         quantity: it.quantity,
         unit: it.unit,
         unitPrice: it.unitPrice,
@@ -173,6 +177,7 @@ export async function replaceItemsAndRecalc(
 function itemsFromJSON(json: QuoteJSON): ItemInput[] {
   return json.items.map((it) => ({
     description: it.description,
+    details: it.details,
     quantity: it.quantity > 0 ? it.quantity : 1,
     unit: it.unit,
     unitPrice: Math.max(0, it.unitPrice),
@@ -216,6 +221,7 @@ export async function createQuoteFromJSON(
       customerName: json.customerName,
       customerPhone: json.customerPhone ?? known?.phone ?? null,
       title: json.title,
+      description: json.description?.trim() || null,
       vatIncluded,
       vatRate,
       discountAmount: json.discount ?? 0,
@@ -260,6 +266,10 @@ export async function applyJSONToQuote(
       customerName: json.customerName ?? quote.customerName,
       customerPhone: json.customerPhone ?? quote.customerPhone,
       title: json.title ?? quote.title,
+      // Keep-on-null, like the fields around it: the professional wrote this
+      // text by hand, and a model that forgot to echo it must not be able to
+      // delete it. Clearing it is done in the editor.
+      description: json.description?.trim() || quote.description,
       vatIncluded,
       discountAmount: json.discount ?? 0,
       paymentTerms: json.paymentTerms ?? quote.paymentTerms,
@@ -275,7 +285,7 @@ export async function applyJSONToQuote(
     phone: json.customerPhone ?? quote.customerPhone,
   });
   const { items, filled } = applyPriceBook(
-    itemsFromJSON(json),
+    carryOverDetails(itemsFromJSON(json), quote.items),
     await loadPriceBook(quote.userId),
   );
   await replaceItemsAndRecalc(quote.id, items, {
@@ -294,8 +304,10 @@ export function quoteToJSON(q: QuoteWithItems): QuoteJSON {
     customerName: q.customerName,
     customerPhone: q.customerPhone,
     title: q.title,
+    description: q.description,
     items: q.items.map((it) => ({
       description: it.description,
+      details: it.details,
       quantity: it.quantity,
       unit: it.unit as QuoteJSON["items"][number]["unit"],
       unitPrice: it.unitPrice,

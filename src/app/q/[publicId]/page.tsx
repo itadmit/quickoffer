@@ -71,6 +71,7 @@ export default async function CustomerQuotePage({ params }: Props) {
         number: q.number,
         customerName: q.customerName,
         title: q.title,
+        description: q.description,
         createdAt: q.createdAt,
         validUntil: q.validUntil,
         items: q.items,
@@ -138,6 +139,8 @@ function snapshotToView(s: Snapshot): QuoteView {
     number: qq.number,
     customerName: qq.customerName,
     title: qq.title,
+    // Snapshots frozen before descriptions existed simply have none.
+    description: qq.description ?? null,
     createdAt: new Date(qq.createdAt),
     validUntil: qq.validUntil ? new Date(qq.validUntil) : null,
     items: s.items,

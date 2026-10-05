@@ -10,6 +10,7 @@ import {
   type SavedJobItemInput,
   type SavedJobSummary,
 } from "./saved-jobs";
+import { carryOverDetails } from "./rich-text";
 
 /** DB side of §6.8 saved jobs. Matching/shaping logic is in ./saved-jobs.ts. */
 
@@ -61,6 +62,7 @@ export async function listSavedJobsWithItems(
     .select({
       jobId: savedJobItems.jobId,
       description: savedJobItems.description,
+      details: savedJobItems.details,
       quantity: savedJobItems.quantity,
       unit: savedJobItems.unit,
       unitPrice: savedJobItems.unitPrice,
@@ -79,6 +81,7 @@ export async function listSavedJobsWithItems(
     const list = byJob.get(r.jobId) ?? [];
     list.push({
       description: r.description,
+      details: r.details,
       quantity: r.quantity,
       unit: r.unit,
       unitPrice: r.unitPrice,
@@ -105,6 +108,7 @@ async function loadJobItems(jobId: string): Promise<SavedJobItemInput[]> {
   return db
     .select({
       description: savedJobItems.description,
+      details: savedJobItems.details,
       quantity: savedJobItems.quantity,
       unit: savedJobItems.unit,
       unitPrice: savedJobItems.unitPrice,
@@ -124,7 +128,7 @@ async function loadJobItems(jobId: string): Promise<SavedJobItemInput[]> {
 export async function saveJob(
   userId: string,
   rawName: string,
-  items: { description: string; quantity: number; unit: string; unitPrice: number }[],
+  items: { description: string; details?: string | null; quantity: number; unit: string; unitPrice: number }[],
 ): Promise<{ job: SavedJob; items: SavedJobItemInput[]; replaced: boolean } | null> {
   const name = normalizeJobName(rawName);
   const key = jobKey(name);
@@ -154,6 +158,7 @@ export async function saveJob(
       jobId: job.id,
       position: i,
       description: it.description,
+      details: it.details ?? null,
       quantity: it.quantity,
       unit: it.unit,
       unitPrice: it.unitPrice,
@@ -221,12 +226,17 @@ export async function replaceJobItems(
     .where(and(eq(savedJobs.userId, userId), eq(savedJobs.id, jobId)))
     .limit(1);
   if (!job) return false;
+  // The settings form edits descriptions and prices and never shows `details`,
+  // so a price fix here must not delete prose the professional cannot see from
+  // this screen. Same guard as a chat correction.
+  const kept = carryOverDetails(rows, await loadJobItems(jobId));
   await db.delete(savedJobItems).where(eq(savedJobItems.jobId, jobId));
   await db.insert(savedJobItems).values(
-    rows.map((it, i) => ({
+    kept.map((it, i) => ({
       jobId,
       position: i,
       description: it.description,
+      details: it.details ?? null,
       quantity: it.quantity,
       unit: it.unit,
       unitPrice: it.unitPrice,

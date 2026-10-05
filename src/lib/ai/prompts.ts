@@ -99,6 +99,14 @@ export const STRUCTURE_RULES = `
 ## לקוח
 customerName בלי מילות יחס: "לדני כהן"→"דני כהן", "עבור משפחת לוי"→"משפחת לוי", "אצל אבי"→"אבי", "ללקוח בשם X"→X. שם פרטי לבד תקין. תיאור בלי שם ("לבן אדם מרחוב הרצל") → null + הכתובת ב-notes. לא נאמר → null; אל תמציא ואל תשתמש בשם העסק. customerPhone: רק אם נאמר, ספרות 05XXXXXXXX.
 
+## תיאורים (description, details) - רק כשנאמרו
+מי שאומר "שלוש נקודות 180" לא כתב תיאור, ואסור להמציא לו אחד: description null וגם details null בכל הפריטים. זה המצב הרגיל ברוב ההצעות.
+כשההודעה **כן** מכילה טקסט מוסבר - בדרך כלל הצעה מוקלדת או מועתקת עם פסקאות, כותרות ורשימות, נפוץ אצל נותני שירות (מעצבים, יועצים, בוני אתרים):
+- description = פסקת הפתיחה והיקף העבודה המשותף, בלשון המקור. שורה אחת לכל פסקה. כותרת פנימית → שורה שמתחילה ב-"## ". פריט ברשימה → שורה שמתחילה ב-"- ".
+- details של פריט = ההסבר שנאמר על אותו פריט בלבד. לא לחזור על התיאור הקצר ולא על מה שכבר ב-description.
+- להעביר את מה שנאמר: לא לכתוב מחדש, לא לקצר לסיסמאות, לא להוסיף משפטי שיווק.
+- מה שבא **אחרי** טבלת המחירים (תנאי תשלום, מה לא כלול, אחריות, תוקף) נשאר ב-paymentTerms וב-notes כמו קודם - לא ב-description.
+
 ## תשלום / תוקף / הערות
 paymentTerms נקי: "חמישים אחוז מקדמה"→"50% מקדמה, היתרה בסיום העבודה"; "תשלום בסיום"→"תשלום מלא בסיום העבודה"; "שוטף פלוס 30"→"שוטף + 30"; "מזומן"→"תשלום במזומן"; לא נאמר → null.
 validDays רק אם נאמר ("לשבוע" 7, "לחודש" 30), אחרת null.
@@ -109,10 +117,13 @@ needsReview: תיאורי פריטים (בדיוק כמו ב-items) עם מחי�
 export const STRUCTURE_EXAMPLES = `
 ## דוגמאות
 תמלול: "לרונית מהקומה השלישית נזילה מתחת לכיור החלפת סיפון ותיקון הצנרת הכל ביחד ארבע מאות שח כולל מעם לא כולל חלקים אם צריך"
-פלט: {"customerName":"רונית","customerPhone":null,"title":"תיקון נזילה מתחת לכיור","items":[{"description":"תיקון נזילה מתחת לכיור - החלפת סיפון ותיקון צנרת","quantity":1,"unit":"קומפלט","unitPrice":400,"priceConfidence":"high"}],"discount":null,"vatIncluded":true,"paymentTerms":null,"validDays":null,"notes":["לא כולל חלקים במידת הצורך"],"needsReview":[]}
+פלט: {"customerName":"רונית","customerPhone":null,"title":"תיקון נזילה מתחת לכיור","description":null,"items":[{"description":"תיקון נזילה מתחת לכיור - החלפת סיפון ותיקון צנרת","details":null,"quantity":1,"unit":"קומפלט","unitPrice":400,"priceConfidence":"high"}],"discount":null,"vatIncluded":true,"paymentTerms":null,"validDays":null,"notes":["לא כולל חלקים במידת הצורך"],"needsReview":[]}
 
 תמלול: "צביעת דירה של משפחת לוי שמונים מטר קירות ותקרה שלושים וחמש שקל למטר שפכטל איפה שצריך אני עוד לא יודע כמה"
-פלט: {"customerName":"משפחת לוי","customerPhone":null,"title":"צביעת דירה","items":[{"description":"צביעת קירות ותקרה","quantity":80,"unit":"מ״ר","unitPrice":35,"priceConfidence":"high"},{"description":"שפכטל במידת הצורך","quantity":1,"unit":"קומפלט","unitPrice":0,"priceConfidence":"missing"}],"discount":null,"vatIncluded":null,"paymentTerms":null,"validDays":null,"notes":[],"needsReview":["שפכטל במידת הצורך"]}
+פלט: {"customerName":"משפחת לוי","customerPhone":null,"title":"צביעת דירה","description":null,"items":[{"description":"צביעת קירות ותקרה","details":null,"quantity":80,"unit":"מ״ר","unitPrice":35,"priceConfidence":"high"},{"description":"שפכטל במידת הצורך","details":null,"quantity":1,"unit":"קומפלט","unitPrice":0,"priceConfidence":"missing"}],"discount":null,"vatIncluded":null,"paymentTerms":null,"validDays":null,"notes":[],"needsReview":["שפכטל במידת הצורך"]}
+
+הודעה מוקלדת עם טקסט מוסבר: "הצעת מחיר לעיצוב לוגו ומיתוג לכיוון פיננסי בע״מ. בהמשך לשיחה, נעצב זהות חזותית שתתאים לקהל של בעלי עסקים. עיצוב לוגו - שלוש הצעות ראשוניות וסבב תיקונים אחד, 2500 ש״ח. מיתוג בסיסי - כרטיס ביקור ותבנית מסמך בוורד, 1200 ש״ח. לא כולל צילום."
+פלט: {"customerName":"כיוון פיננסי בע״מ","customerPhone":null,"title":"עיצוב לוגו ומיתוג","description":"בהמשך לשיחה, נעצב זהות חזותית שתתאים לקהל של בעלי עסקים.","items":[{"description":"עיצוב לוגו","details":"שלוש הצעות ראשוניות וסבב תיקונים אחד.","quantity":1,"unit":"קומפלט","unitPrice":2500,"priceConfidence":"high"},{"description":"מיתוג בסיסי","details":"כרטיס ביקור ותבנית מסמך בוורד.","quantity":1,"unit":"קומפלט","unitPrice":1200,"priceConfidence":"high"}],"discount":null,"vatIncluded":null,"paymentTerms":null,"validDays":null,"notes":["לא כולל צילום"],"needsReview":[]}
 `.trim();
 
 export function structureSystemPrompt(profile: BusinessProfile) {
@@ -133,7 +144,9 @@ export function correctionSystemPrompt(profile: BusinessProfile) {
   return `אתה מעדכן הצעת מחיר קיימת (JSON) לפי הוראת תיקון של בעל מקצוע ישראלי, בעברית מדוברת או מתומללת (עם אותן שגיאות תמלול אפשריות).
 
 החזר את ההצעה המעודכנת במלואה (כל הפריטים, גם אלה שלא שונו, באותו סדר) ורשימת changes - שורה קצרה בעברית לכל שינוי, בפורמט:
-"ביקור - 250 ₪ (היה 200)" · "+ שקע כפול ×1 - 120 ₪" · "הוסר: ביקור" · "שם הלקוח: דני כהן" · "מע״מ: כולל" · "כמות: נקודת חשמל ×4 (היה 3)" · "הנחה: 100 ₪" · "תנאי תשלום: 30% מקדמה"
+"ביקור - 250 ₪ (היה 200)" · "+ שקע כפול ×1 - 120 ₪" · "הוסר: ביקור" · "שם הלקוח: דני כהן" · "מע״מ: כולל" · "כמות: נקודת חשמל ×4 (היה 3)" · "הנחה: 100 ₪" · "תנאי תשלום: 30% מקדמה" · "תיאור ההצעה עודכן" · "תיאור: עיצוב לוגו"
+
+⚠️ description ו-details הם טקסט שבעל המקצוע כתב בעצמו. **להחזיר אותם כפי שהם** בכל תיקון שלא נגע בהם - לשנות או לרוקן אותם מעצמך זה למחוק לו את העבודה. פריט חדש שנוסף בתיקון: details null, אלא אם נאמר הסבר.
 
 פירוש הוראות:
 - "תשנה/תעדכן/תשים את X ל-Y" → מחיר Y לפריט X. אם X הוא הלקוח → שם. אם X הוא "כמות"/"מספר" → quantity.
@@ -144,6 +157,9 @@ export function correctionSystemPrompt(profile: BusinessProfile) {
 - "הנחה של X"/"תוריד X שקל מהסה״כ" → discount. "תעגל ל-X" → discount = סה״כ הפריטים מינוס X.
 - "השם הוא X"/"זה ל-X"/"הלקוח X" → customerName.
 - "תוסיף הערה X"/"תכתוב ש-X" → notes.
+- "תוסיף תיאור X"/"תכתוב בתיאור ש-X"/"בפתיחה תכתוב X" → description (להוסיף שורה לקיים, לא להחליף אותו).
+- "תוסיף תיאור ל-X: …"/"תסביר מה כולל X" → details של הפריט X בלבד.
+- "תמחק את התיאור"/"בלי התיאור" → description null. ביקש להסיר תיאור של פריט → details null באותו פריט.
 - "תוקף שבוע" → validDays 7.
 - הוראה שנוגעת לפריט ב-needsReview ומציינת מחיר → לעדכן מחיר, priceConfidence "high", ולהסיר מ-needsReview.
 - התאמת פריטים: "ביקור" תואם "ביקור", "ביקור טכנאי", "הגעה". "הנקודות" תואם "נקודת חשמל". בחר את הפריט הקרוב ביותר; אם אין פריט מתאים ונאמר מחיר → הוסף פריט חדש.

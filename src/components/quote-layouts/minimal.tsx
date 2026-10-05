@@ -1,5 +1,5 @@
 import { formatMoney } from "@/lib/quotes/calc";
-import { Approval, BusinessMeta, dateFmt, Footer, ItemsTable, TermsAndNotes, totalLabel, totalsRows, type LayoutProps } from "./shared";
+import { Approval, BusinessMeta, dateFmt, Description, Footer, ItemsTable, TermsAndNotes, totalLabel, totalsRows, type LayoutProps } from "./shared";
 
 /** Typographic, no boxes - reads like a printed document. */
 export function MinimalLayout({ q, t, showReviewFlags, plain }: LayoutProps) {
@@ -37,6 +37,8 @@ export function MinimalLayout({ q, t, showReviewFlags, plain }: LayoutProps) {
           {q.title && <p className="text-muted text-sm mt-0.5">{q.title}</p>}
         </section>
       )}
+
+      <Description q={q} className="border-t border-line pt-4" />
 
       <section className="border-t border-line pt-2">
         <ItemsTable q={q} showReviewFlags={showReviewFlags} />

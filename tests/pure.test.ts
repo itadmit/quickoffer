@@ -17,6 +17,7 @@ import { isPaidPlan, PLAN_OFFERS, priceOf, upgradesFor } from "@/lib/billing/pla
 import { toVisual } from "@/lib/og-bidi";
 import { isOutOfCredit, isRateLimitError, parseResetSeconds } from "@/lib/ai/limits";
 import { isBot } from "@/lib/bots";
+import { carryOverDetails, parseRichText } from "@/lib/quotes/rich-text";
 import { audioDurationSeconds, audioSeconds } from "@/lib/audio";
 import { errors, MAX_AUDIO_MINUTES } from "@/lib/conversation/messages";
 import { TRANSCRIPTION_CHOICES } from "@/lib/ai/transcription-choices";
@@ -869,4 +870,125 @@ import { parseTelegramInbound } from "@/lib/whatsapp/telegram";
   assert.equal(normalizePhone(withPhone.quote.customerPhone), "972542284283");
   assert(waLink(withPhone.quote.customerPhone, "x").startsWith("https://wa.me/972542284283?"));
   console.log("MOCK SERVER SHAPE OK");
+}
+
+// ---- the description markup: structure survives, and nothing else is invented
+{
+  assert.deepEqual(parseRichText(null), []);
+  assert.deepEqual(parseRichText("   \n\n  "), []);
+
+  // One line per paragraph, because the text arrives pasted from Google Docs
+  // and WhatsApp where a paragraph is a line and blank lines are not reliable.
+  assert.deepEqual(parseRichText("שורה ראשונה\nשורה שנייה"), [
+    { kind: "paragraph", text: "שורה ראשונה" },
+    { kind: "paragraph", text: "שורה שנייה" },
+  ]);
+  // Blank lines between them change nothing - same two paragraphs either way.
+  assert.deepEqual(
+    parseRichText("שורה ראשונה\n\n\nשורה שנייה"),
+    parseRichText("שורה ראשונה\nשורה שנייה"),
+  );
+
+  // Consecutive bullets are one list, so the gap between them is list spacing.
+  assert.deepEqual(parseRichText("## היקף\n- כתיבה\n- עיצוב\nוזה הכל"), [
+    { kind: "heading", text: "היקף" },
+    { kind: "list", items: ["כתיבה", "עיצוב"] },
+    { kind: "paragraph", text: "וזה הכל" },
+  ]);
+  // A bullet after a paragraph starts a new list, not a continuation.
+  assert.deepEqual(parseRichText("- א\nפסקה\n- ב"), [
+    { kind: "list", items: ["א"] },
+    { kind: "paragraph", text: "פסקה" },
+    { kind: "list", items: ["ב"] },
+  ]);
+
+  // All three hash depths land as a heading: a model asked for "## " will
+  // sometimes emit "#" or "###", and a literal hash on the customer's
+  // document is worse than a heading at the wrong level.
+  for (const hashes of ["#", "##", "###"])
+    assert.deepEqual(parseRichText(`${hashes} כותרת`), [{ kind: "heading", text: "כותרת" }]);
+  // Without the space it is prose - "#1 בתחום" is not a heading.
+  assert.deepEqual(parseRichText("#1 בתחום"), [{ kind: "paragraph", text: "#1 בתחום" }]);
+
+  // Bullet markers a person or a model actually types.
+  for (const marker of ["-", "–", "—", "•", "*"])
+    assert.deepEqual(parseRichText(`${marker} פריט`), [{ kind: "list", items: ["פריט"] }]);
+  // A dash with no space opens a sentence, not a list.
+  assert.deepEqual(parseRichText("-200 ש״ח הנחה"), [{ kind: "paragraph", text: "-200 ש״ח הנחה" }]);
+
+  // Emphasis is stripped rather than rendered: bold is not one of the three
+  // forms, and raw asterisks on a document the customer reads are worse than
+  // losing the emphasis.
+  assert.deepEqual(parseRichText("זה **חשוב** מאוד"), [{ kind: "paragraph", text: "זה חשוב מאוד" }]);
+  assert.deepEqual(parseRichText("## __כותרת__"), [{ kind: "heading", text: "כותרת" }]);
+  // A lone marker is left alone - it is not an unclosed pair to repair.
+  assert.deepEqual(parseRichText("2 ** 3"), [{ kind: "paragraph", text: "2 ** 3" }]);
+
+  // Markers with nothing after them produce no empty block.
+  assert.deepEqual(parseRichText("##\n-\nטקסט"), [{ kind: "paragraph", text: "טקסט" }]);
+
+  // The real thing: the quote that prompted the feature, shortened.
+  const real = parseRichText(
+    [
+      "בהמשך לשיחה ולמידע שהעברתם, נציע להקים שני דפי נחיתה ייעודיים.",
+      "## ייעוץ אסטרטגי ואפיון",
+      "התהליך יכלול עד שתי פגישות עבודה.",
+      "במסגרת התהליך נגדיר:",
+      "- קהל יעד מרכזי לכל שירות.",
+      "- הבידול והיתרונות שחשוב להבליט.",
+    ].join("\n"),
+  );
+  assert.equal(real.length, 5);
+  assert.equal(real.filter((b) => b.kind === "heading").length, 1);
+  assert.deepEqual(
+    real.filter((b) => b.kind === "list").flatMap((b) => (b.kind === "list" ? b.items : [])),
+    ["קהל יעד מרכזי לכל שירות.", "הבידול והיתרונות שחשוב להבליט."],
+  );
+  console.log("RICH TEXT OK");
+}
+
+/**
+ * The prose a professional wrote by hand must survive a correction that never
+ * mentioned it. A chat fix returns the whole quote, and the model is told to
+ * echo `details` on lines it did not touch - but it is not reliable about it,
+ * and "תשנה את המחיר ל-6000" quietly deleting two paragraphs is the worst
+ * failure this feature can have. So the carry-over happens in code.
+ */
+{
+  const existing = [
+    { description: "עיצוב לוגו", details: "שלוש הצעות ראשוניות." },
+    { description: "ביקור", details: null },
+  ];
+
+  // The model dropped the prose: it comes back.
+  const dropped = carryOverDetails(
+    [{ description: "עיצוב לוגו", details: null }, { description: "ביקור", details: null }],
+    existing,
+  );
+  assert.equal(dropped[0].details, "שלוש הצעות ראשוניות.");
+  assert.equal(dropped[1].details, null);
+
+  // Matching is priceKey, the same identity the price book uses - so a
+  // re-worded "עיצוב הלוגו" is still the same line.
+  assert.equal(carryOverDetails([{ description: "עיצוב הלוגו", details: null }], existing)[0].details,
+    "שלוש הצעות ראשוניות.");
+
+  // An explicit new wording wins - this only ever restores, never overwrites.
+  assert.equal(
+    carryOverDetails([{ description: "עיצוב לוגו", details: "ארבע הצעות." }], existing)[0].details,
+    "ארבע הצעות.",
+  );
+  // Whitespace is not a wording.
+  assert.equal(
+    carryOverDetails([{ description: "עיצוב לוגו", details: "   " }], existing)[0].details,
+    "שלוש הצעות ראשוניות.",
+  );
+
+  // A line that never had prose does not acquire any, and a genuinely new
+  // line stays bare.
+  assert.equal(carryOverDetails([{ description: "שקע כפול", details: null }], existing)[0].details, null);
+  // Nothing to carry: the input is handed back untouched.
+  const bare = [{ description: "ביקור", details: null }];
+  assert.equal(carryOverDetails(bare, [{ description: "ביקור", details: null }]), bare);
+  console.log("DETAILS CARRY-OVER OK");
 }

@@ -225,6 +225,13 @@ export function quoteSummary(
     ...totalsLines(q),
   ];
   if (q.paymentTerms) lines.push(`תשלום: ${q.paymentTerms}`);
+  // The prose itself never goes in the summary - a pasted service quote runs to
+  // a thousand characters and would bury the prices. But someone who just sent
+  // all that text has to be told it survived, or the short summary reads as the
+  // bot having thrown it away.
+  if (q.description || q.items.some((it) => it.details)) {
+    lines.push(`📝 התיאורים שכתבת נשמרו - הם מופיעים בהצעה שהלקוח רואה`);
+  }
   lines.push(...priceBookLines(filled));
   const missing = q.items.filter((it) => it.needsReview && it.unitPrice === 0);
   if (missing.length) {

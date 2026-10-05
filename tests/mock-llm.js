@@ -53,7 +53,7 @@ function llmAnswer(system, user) {
     if (said)
       return { quote: { ...cur, customerPhone: said }, changes: [`טלפון - ${said}`] };
     const items = cur.items.map((i) => (i.description === "ביקור" ? { ...i, unitPrice: 250 } : i));
-    items.push({ description: "שקע כפול", quantity: 1, unit: "יח׳", unitPrice: 120, priceConfidence: "high" });
+    items.push({ description: "שקע כפול", details: null, quantity: 1, unit: "יח׳", unitPrice: 120, priceConfidence: "high" });
     return { quote: { ...cur, items, needsReview: [] }, changes: ["ביקור — 250 ₪ (היה 200)", "+ שקע כפול ×1 — 120 ₪"] };
   }
   // structure
@@ -61,9 +61,12 @@ function llmAnswer(system, user) {
     customerName: "דני כהן",
     customerPhone: null,
     title: "התקנת גופי תאורה",
+    // null, like a real voice note: the model is told never to write prose the
+    // professional did not say, and the mock has to exercise that same path.
+    description: null,
     items: [
-      { description: "התקנת גוף תאורה", quantity: 3, unit: "יח׳", unitPrice: 150, priceConfidence: "high" },
-      { description: "ביקור", quantity: 1, unit: "יח׳", unitPrice: 200, priceConfidence: "high" },
+      { description: "התקנת גוף תאורה", details: null, quantity: 3, unit: "יח׳", unitPrice: 150, priceConfidence: "high" },
+      { description: "ביקור", details: null, quantity: 1, unit: "יח׳", unitPrice: 200, priceConfidence: "high" },
     ],
     discount: null,
     vatIncluded: false,

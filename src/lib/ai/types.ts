@@ -5,6 +5,13 @@ export const UNITS = ["יח׳", "מ״ר", "מ״א", "שעה", "יום", "קומ�
 
 export const QuoteItemSchema = z.object({
   description: z.string(),
+  /**
+   * What this line covers, in the professional's own words - rendered under
+   * its row. Null unless they actually explained the line; the model never
+   * writes prose they did not say, for the same reason it never guesses a
+   * price. Markup per lib/quotes/rich-text.ts.
+   */
+  details: z.string().nullable(),
   quantity: z.number(),
   unit: z.enum(UNITS),
   /** 0 when the price was not said. Never guessed. */
@@ -16,6 +23,12 @@ export const QuoteJSONSchema = z.object({
   customerName: z.string().nullable(),
   customerPhone: z.string().nullable(),
   title: z.string().nullable(),
+  /**
+   * The opening block above the price table (headings + bullets allowed). Null
+   * for the one-line voice notes that make up most quotes - see
+   * `QuoteItemSchema.details`.
+   */
+  description: z.string().nullable(),
   items: z.array(QuoteItemSchema),
   discount: z.number().nullable(),
   /** null = not said → use the business default */

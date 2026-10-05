@@ -48,8 +48,10 @@ export default async function EditQuotePage({ params }: { params: Promise<{ toke
         customerName: q.customerName,
         customerPhone: q.customerPhone,
         title: q.title,
+        description: q.description,
         items: q.items.map((it) => ({
           description: it.description,
+          details: it.details,
           quantity: it.quantity,
           unit: (UNITS as readonly string[]).includes(it.unit) ? (it.unit as (typeof UNITS)[number]) : "יח׳",
           unitPrice: it.unitPrice,

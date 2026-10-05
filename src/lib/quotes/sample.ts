@@ -8,11 +8,22 @@ export function sampleQuoteView(template?: QuoteTemplateSpec, opts: { approved?:
     number: 1042,
     customerName: "דני כהן",
     title: "התקנת תאורה בסלון",
+    // One line each, on purpose: the design picker renders this at thumbnail
+    // size, and a full scoped quote here would leave the prices off the card.
+    description: "בהמשך לביקור, להלן הצעה להתקנת תאורה בסלון ובפינת האוכל.",
     createdAt,
     validUntil: new Date(createdAt.getTime() + 14 * 86_400_000),
     items: [
-      { description: "התקנת גוף תאורה", quantity: 3, unit: "יח׳", unitPrice: 150, lineTotal: 450, needsReview: false },
-      { description: "ביקור", quantity: 1, unit: "יח׳", unitPrice: 200, lineTotal: 200, needsReview: false },
+      {
+        description: "התקנת גוף תאורה",
+        details: "כולל חיווט, חיבור למפסק קיים ובדיקת תקינות.",
+        quantity: 3,
+        unit: "יח׳",
+        unitPrice: 150,
+        lineTotal: 450,
+        needsReview: false,
+      },
+      { description: "ביקור", details: null, quantity: 1, unit: "יח׳", unitPrice: 200, lineTotal: 200, needsReview: false },
     ],
     subtotal: 650,
     discountAmount: 0,

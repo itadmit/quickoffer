@@ -1,6 +1,6 @@
 import { TriangleAlert } from "lucide-react";
 import { formatMoney, qtyLabel } from "@/lib/quotes/calc";
-import { Approval, BusinessMeta, dateFmt, Footer, Logo, TermsAndNotes, totalLabel, totalsRows, type LayoutProps } from "./shared";
+import { Approval, BusinessMeta, dateFmt, Description, Footer, Logo, RichText, TermsAndNotes, totalLabel, totalsRows, type LayoutProps } from "./shared";
 
 /** Accent band on top, items as cards, one big total. */
 export function ModernLayout({ q, t, showReviewFlags, plain }: LayoutProps) {
@@ -30,10 +30,15 @@ export function ModernLayout({ q, t, showReviewFlags, plain }: LayoutProps) {
 
       <section className="p-4 space-y-2">
         {q.title && <p className="px-1 pb-1 text-muted">{q.title}</p>}
+
+        <Description q={q} accent={t.accent} className="px-1 pb-2" />
+
         {q.items.map((it, i) => (
           <div
             key={i}
-            className={`rounded-2xl border px-4 py-3 flex items-center gap-3 ${showReviewFlags && it.needsReview ? "bg-warn border-warn-ink/20" : "bg-surface/60 border-line/70"}`}
+            // items-start, not items-center: a card with a paragraph in it is
+            // tall, and the line total belongs beside the name, not halfway down.
+            className={`rounded-2xl border px-4 py-3 flex items-start gap-3 ${showReviewFlags && it.needsReview ? "bg-warn border-warn-ink/20" : "bg-surface/60 border-line/70"}`}
           >
             <div className="min-w-0 flex-1">
               <div className="font-medium">
@@ -43,6 +48,7 @@ export function ModernLayout({ q, t, showReviewFlags, plain }: LayoutProps) {
               <div className="text-xs text-muted">
                 {qtyLabel(it.quantity, it.unit)} × {formatMoney(it.unitPrice)}
               </div>
+              <RichText text={it.details} className="mt-1.5 space-y-1 text-xs leading-relaxed text-muted" />
             </div>
             <div className="font-semibold whitespace-nowrap">{formatMoney(it.lineTotal)}</div>
           </div>
