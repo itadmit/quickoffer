@@ -36,21 +36,26 @@ export function ModernLayout({ q, t, showReviewFlags, plain }: LayoutProps) {
         {q.items.map((it, i) => (
           <div
             key={i}
-            // items-start, not items-center: a card with a paragraph in it is
-            // tall, and the line total belongs beside the name, not halfway down.
-            className={`rounded-2xl border px-4 py-3 flex items-start gap-3 ${showReviewFlags && it.needsReview ? "bg-warn border-warn-ink/20" : "bg-surface/60 border-line/70"}`}
+            className={`rounded-2xl border px-4 py-3 ${showReviewFlags && it.needsReview ? "bg-warn border-warn-ink/20" : "bg-surface/60 border-line/70"}`}
           >
-            <div className="min-w-0 flex-1">
-              <div className="font-medium">
-                {it.description}
-                {showReviewFlags && it.needsReview && <TriangleAlert className="inline h-3.5 w-3.5 ms-1 text-warn-ink" />}
+            {/* items-start, not items-center: once the card carries a
+                paragraph it is tall, and the line total belongs beside the
+                name rather than halfway down. */}
+            <div className="flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="font-medium">
+                  {it.description}
+                  {showReviewFlags && it.needsReview && <TriangleAlert className="inline h-3.5 w-3.5 ms-1 text-warn-ink" />}
+                </div>
+                <div className="text-xs text-muted">
+                  {qtyLabel(it.quantity, it.unit)} × {formatMoney(it.unitPrice)}
+                </div>
               </div>
-              <div className="text-xs text-muted">
-                {qtyLabel(it.quantity, it.unit)} × {formatMoney(it.unitPrice)}
-              </div>
-              <RichText text={it.details} className="mt-1.5 space-y-1 text-xs leading-relaxed text-muted" />
+              <div className="font-semibold whitespace-nowrap">{formatMoney(it.lineTotal)}</div>
             </div>
-            <div className="font-semibold whitespace-nowrap">{formatMoney(it.lineTotal)}</div>
+            {/* Outside the flex row, so the prose runs the width of the card
+                instead of stopping short of the price. */}
+            <RichText text={it.details} className="mt-2 space-y-1 text-xs leading-relaxed text-muted" />
           </div>
         ))}
       </section>

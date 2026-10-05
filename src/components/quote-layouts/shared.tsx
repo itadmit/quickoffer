@@ -1,7 +1,8 @@
 import { BadgeCheck, TriangleAlert } from "lucide-react";
 import { formatPhone } from "@/lib/phone";
 import { formatMoney, qtyLabel } from "@/lib/quotes/calc";
-import { parseRichText } from "@/lib/quotes/rich-text";
+import { Fragment } from "react";
+import { parseRichText, type RichBlock } from "@/lib/quotes/rich-text";
 import type { QuoteTemplateSpec } from "@/lib/quotes/template-spec";
 
 // Building blocks shared by the quote layouts. Each layout arranges these
@@ -98,16 +99,31 @@ export function BusinessMeta({ q, plain, className = "text-sm text-muted" }: { q
  */
 export function RichText({
   text,
-  className = "",
-  headingClassName = "font-semibold",
-  accent,
+  ...rest
 }: {
   text: string | null | undefined;
   className?: string;
   headingClassName?: string;
   accent?: string;
 }) {
-  const blocks = parseRichText(text);
+  return <RichBlocks blocks={parseRichText(text)} {...rest} />;
+}
+
+/**
+ * The same thing for a caller that already parsed - the items table has to
+ * know whether there are any blocks before it decides to emit a row for them.
+ */
+export function RichBlocks({
+  blocks,
+  className = "",
+  headingClassName = "font-semibold",
+  accent,
+}: {
+  blocks: RichBlock[];
+  className?: string;
+  headingClassName?: string;
+  accent?: string;
+}) {
   if (!blocks.length) return null;
   return (
     <div className={className}>
@@ -158,22 +174,41 @@ export function ItemsTable({ q, showReviewFlags, headless = false }: { q: QuoteV
         </tr>
       </thead>
       <tbody>
-        {q.items.map((it, i) => (
-          <tr key={i} className={`border-b border-line/60 ${showReviewFlags && it.needsReview ? "bg-warn" : ""}`}>
-            <td className="py-2.5 pe-2 align-top">
-              {it.description}
-              {showReviewFlags && it.needsReview && <TriangleAlert className="inline h-3.5 w-3.5 ms-1 text-warn-ink" />}
-              <RichText text={it.details} className="mt-1 space-y-1 text-xs leading-relaxed text-muted" />
-            </td>
-            {/* align-top throughout: once a row carries a paragraph, a price
-                floating in its vertical middle no longer reads as that line's. */}
-            <td className="py-2.5 ps-3 align-top text-center text-muted whitespace-nowrap">
-              {qtyLabel(it.quantity, it.unit)}
-            </td>
-            <td className="py-2.5 ps-3 align-top text-end whitespace-nowrap">{formatMoney(it.unitPrice)}</td>
-            <td className="py-2.5 ps-3 align-top text-end font-medium whitespace-nowrap">{formatMoney(it.lineTotal)}</td>
-          </tr>
-        ))}
+        {q.items.map((it, i) => {
+          const details = parseRichText(it.details);
+          const warn = showReviewFlags && it.needsReview ? "bg-warn" : "";
+          const rule = "border-b border-line/60";
+          return (
+            <Fragment key={i}>
+              {/* The prose gets a row of its own spanning the table, not a
+                  corner of the "פירוט" cell: squeezed into the one narrow
+                  column it broke a few words per line while the three number
+                  columns sat empty beside it. The rule between items moves to
+                  whichever of the two rows comes last, so the line still
+                  separates items rather than a line from its own description. */}
+              <tr className={`${details.length ? "" : rule} ${warn}`}>
+                {/* align-top: a long item name wraps on a phone, and the price
+                    belongs beside its first line. */}
+                <td className="py-2.5 pe-2 align-top">
+                  {it.description}
+                  {showReviewFlags && it.needsReview && <TriangleAlert className="inline h-3.5 w-3.5 ms-1 text-warn-ink" />}
+                </td>
+                <td className="py-2.5 ps-3 align-top text-center text-muted whitespace-nowrap">
+                  {qtyLabel(it.quantity, it.unit)}
+                </td>
+                <td className="py-2.5 ps-3 align-top text-end whitespace-nowrap">{formatMoney(it.unitPrice)}</td>
+                <td className="py-2.5 ps-3 align-top text-end font-medium whitespace-nowrap">{formatMoney(it.lineTotal)}</td>
+              </tr>
+              {details.length > 0 && (
+                <tr className={`${rule} ${warn}`}>
+                  <td colSpan={4} className="pb-3 pe-2">
+                    <RichBlocks blocks={details} className="space-y-1 text-xs leading-relaxed text-muted" />
+                  </td>
+                </tr>
+              )}
+            </Fragment>
+          );
+        })}
       </tbody>
     </table>
   );
