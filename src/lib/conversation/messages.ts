@@ -386,7 +386,13 @@ export const commands = {
   cancelled: (q: Quote) => `🗑️ הצעה #${q.number} בוטלה.`,
   nothingToCancel: () => `אין טיוטה פעילה לביטול.`,
   newContext: () => `👌 מוכן להצעה חדשה - בהקלטה או בכתב.`,
-  settings: (url: string) => `⚙️ הגדרות העסק: ${url}`,
+  // The contents are listed because this link is also the answer to "לשנות את
+  // מספר ההצעה", and a bare link does not tell you the numbering is in there.
+  settings: (url: string) =>
+    [
+      `⚙️ הגדרות העסק: ${url}`,
+      `שם ולוגו, פרטי העסק, תנאי תשלום קבועים, עיצוב ההצעה ומספר ההצעה הבא.`,
+    ].join("\n"),
   editLink: (q: Quote, url: string, sendUrl: string | null) =>
     [
       `🖊️ עריכת הצעה #${q.number}: ${url}`,
